@@ -1,0 +1,6 @@
+{
+  "name": "Rtiqa - AI Operating System for Education",
+  "description": "The official global website for Rtiqa (رتقاء), building the AI Operating System for Education and enterprise digital infrastructure.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
