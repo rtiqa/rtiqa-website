@@ -84,7 +84,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onOpenDemo, onNavigate }) 
             </p>
             <p>
               {isRtl
-                ? 'نحن نؤمن بأن الذكاء الاصطناعي يجب أن يكون أداة لتمكين الإنسان وليس لاستبداله؛ يرفع من أثر المعلم، يمنح الطالب مرشداً سقراطياً، ويمنح الإدارة رؤية تنبؤية واضحة للتميز المؤسسي.'
+                ? 'نحن نؤمن بأن الذكاء الاصطناعي يجب أن يكون أداة لتمكين الإنسان وليس لاستبداله؛ يرفع من أثر المعلم، يمنح الطالب المعلّم الذكي السقراطي، ويمنح الإدارة رؤية تنبؤية واضحة للتميز المؤسسي.'
                 : 'We build technology around human agency. Rtiqa AI empowers educators, excites students, and equips administrators with predictive clarity. Our architecture is designed for global scale, absolute data privacy, and cultural adaptability.'}
             </p>
           </div>

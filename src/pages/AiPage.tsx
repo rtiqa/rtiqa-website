@@ -99,7 +99,7 @@ export const AiPage: React.FC<AiPageProps> = ({ onOpenDemo, onNavigate }) => {
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                 {isRtl
-                  ? 'تم تصميم نماذج رتقاء بحيث تتقيد بحدود المنهج المعتمد والضوابط الأخلاقية والتربوية، مع التشفير التام لبيانات الطلاب والمؤسسات وعدم استخدامها في تدريب نماذج عامة خراجية.'
+                  ? 'تم تصميم نماذج رتقاء بحيث تتقيد بحدود المنهج المعتمد والضوابط الأخلاقية والتربوية، مع التشفير التام لبيانات الطلاب والمؤسسات وعدم استخدامها في تدريب نماذج عامة خارجية.'
                   : 'Rtiqa AI operates strictly within authorized curriculum vector indexes with fine-grained role-based access. Student data is never used to train public foundational models.'}
               </p>
             </div>

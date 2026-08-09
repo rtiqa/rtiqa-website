@@ -24,7 +24,7 @@ export const CaseStudiesPage: React.FC<CaseStudiesPageProps> = ({ onNavigate, on
       titleEn: '2. Socratic AI Guardrails',
       titleAr: '2. ضوابط المعلم والذكاء السقراطي',
       descEn: 'Educators configure AI Tutor strictness, ensuring students receive guided inquiry rather than automated homework answers.',
-      descAr: 'يحدد المعلمون حدود عمل الذكاء الاصطناعي لضمان التفكير النقدي وتجنب الإجابات الآلية المباشرة.'
+      descAr: 'يحدد المعلمون درجة صرامة المعلّم الذكي، مما يضمن تلقي الطلاب للتوجيه السقراطي وتجنب الإجابات الآلية المباشرة.'
     },
     {
       icon: BarChart3,
@@ -116,7 +116,7 @@ export const CaseStudiesPage: React.FC<CaseStudiesPageProps> = ({ onNavigate, on
 
           <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800 space-y-3">
             <Sparkles className="w-6 h-6 text-emerald-400" />
-            <h3 className="font-bold text-slate-100 text-sm">{isRtl ? 'جودة تفاعل الطالب مع AI Tutor' : 'Student Critical Inquiry Depth'}</h3>
+            <h3 className="font-bold text-slate-100 text-sm">{isRtl ? 'عمق التفكير والتعلم عبر المعلّم الذكي' : 'Student Critical Inquiry Depth'}</h3>
             <p className="text-xs text-slate-400 leading-relaxed">
               {isRtl ? 'قياس نسبة الفهم والاستفسارات التفاعلية مقارنة بالتلقين التقليدي.' : 'Evaluating active learning engagement and self-directed study progress via Socratic tutoring.'}
             </p>

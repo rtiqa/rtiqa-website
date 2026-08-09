@@ -43,7 +43,7 @@ const faqData: FaqItem[] = [
     questionEn: 'How does Artificial Intelligence function within Rtiqa?',
     questionAr: 'كيف يعمل الذكاء الاصطناعي داخل منظومة رتقاء؟',
     answerEn: 'Rtiqa AI combines pedagogical guardrails with localized Knowledge Graphs (RAG). It provides Socratic student tutoring, automated lesson design for teachers, and predictive analytics for administrators, keeping human educators strictly in control.',
-    answerAr: 'يعتمد ذكاء رتقاء على ضوابط تربوية ونماذج معزولة مع قواعد معرفية محلية (RAG). يقدم إرشاداً سقراطياً للطلاب، وتصميماً آلياً للدروس للمعلمين، وتحليلات تنبئية للقيادات مع الحفاظ التام على الإشراف البشري.'
+    answerAr: 'يجمع ذكاء رتقاء الاصطناعي بين الضوابط التربوية والرسوم البيانية المعرفية المحلية (RAG). ويقدم التوجيه السقراطي عبر المعلّم الذكي، والتصميم الآلي للدروس للمعلمين، والتحليلات التنبؤية للقيادات مع الحفاظ التام على الإشراف البشري.'
   },
   {
     id: 'faq-5',
@@ -57,9 +57,9 @@ const faqData: FaqItem[] = [
     id: 'faq-6',
     category: 'tech',
     questionEn: 'Does Rtiqa support operations in low-connectivity or offline campus environments?',
-    questionAr: 'هل تدعم رتقاء العمل في البيئات ذات الاتصال المحدود أو الانقطاع عن إنترنت؟',
+    questionAr: 'هل تدعم رتقاء العمل في البيئات ذات الاتصال المحدود أو عند انقطاع الاتصال بالإنترنت؟',
     answerEn: 'Yes. The Rtiqa core architecture includes local edge node synchronization capabilities designed to cache attendance, grades, and resources locally during offline periods and reconcile data seamlessly once reconnected.',
-    answerAr: 'نعم، تم تصميم المعمارية التقنية لـ رتقاء لدعم المزامنة السحابية الذكية وحفظ البيانات محلياً على مستوى المدرسة عند انقطاع الاتصال، ثم رفعها ومزامنتها تلقائياً فور عودة الإنترنت.'
+    answerAr: 'نعم، تم تصميم المعمارية التقنية لـ رتقاء لدعم المزامنة السحابية الذكية وحفظ البيانات محلياً على مستوى المدرسة عند انقطاع الاتصال بالإنترنت، ثم رفعها ومزامنتها تلقائياً فور عودة الاتصال.'
   },
   {
     id: 'faq-7',
@@ -67,7 +67,7 @@ const faqData: FaqItem[] = [
     questionEn: 'Can Rtiqa be customized to match national curricula and institutional workflows?',
     questionAr: 'هل يمكن تخصيص رتقاء لترتبط بالمنهج الوطني والأنظمة الداخلية للمؤسسة؟',
     answerEn: 'Yes. Rtiqa is modular and configurable. Institutions can map custom grading scales, behavioral frameworks, local academic regulations, and enterprise identity standards.',
-    answerAr: 'نعم، تتميز منصة رتقاء بالمرونة والتحكم المودولاري، حيث يمكن ضبط معايير التقييم، اللوائح السلوكية، المناهج التعليمية، ونظام الهوية الرقمية للمؤسسة.'
+    answerAr: 'نعم، تتميز منصة رتقاء بالمرونة والبنية المعيارية، حيث يمكن ضبط معايير التقييم، اللوائح السلوكية، المناهج التعليمية، ونظام الهوية الرقمية للمؤسسة.'
   },
   {
     id: 'faq-8',
@@ -75,7 +75,7 @@ const faqData: FaqItem[] = [
     questionEn: 'Which products are available today versus on the strategic product roadmap?',
     questionAr: 'ما هي المنتجات المتاحة حالياً وما المنتجات المدرجة ضمن خارطة الطريق؟',
     answerEn: 'Our core architectural capabilities (School Operating Core, Teacher Assistant, AI Tutor, Parent Portal) are ready for pilot deployments. Specialized expansions such as Rtiqa Developer API and Sovereign Ministry Dashboard are under active staged development on our roadmap.',
-    answerAr: 'المكونات الأساسية (النواة المدرسية، مساعد المعلم الذكي، المرشد الطلابي، وبوابة أولياء الأمور) جاهزة للتطبيق التجريبي المؤسسي. بينما الموديولات المتخصصة كبوابة المطورين ولوحة الوزارات هي ضمن مراحل التطوير والتوسع في خارطة الطريق.'
+    answerAr: 'الإمكانات الأساسية (النواة المدرسية، مساعد المعلم، المعلّم الذكي، وبوابة أولياء الأمور) جاهزة للتطبيق التجريبي المؤسسي. بينما التوسعات المتخصصة كبوابة المطورين ولوحة الوزارات السيادية هي ضمن مراحل التطوير والتوسع في خارطة الطريق.'
   },
   {
     id: 'faq-9',

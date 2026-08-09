@@ -18,7 +18,7 @@ export const productsData: ProductItem[] = [
     ],
     featuresAr: [
       'بنية سحابية متقدمة متعددة المستأجرين',
-      'دليل هوية موحد ودخول أحادي آمن',
+      'هوية موحدة وتسجيل الدخول الموحد (SAML, OAuth2, OpenID)',
       'نسيج بيانات شامل وربط مؤسسي',
       'حماية متوافقة مع معايير الأمان العالمية SOC2 و GDPR'
     ],
@@ -44,7 +44,7 @@ export const productsData: ProductItem[] = [
     ],
     featuresAr: [
       'توليد الجداول المدرسية بذكاء اصطناعي محلي',
-      'أتمتة تسديد وتتبع الحضور والغياب',
+      'أتمتة تسجيل وتتبع الحضور والغياب',
       'إدارة المالية والمصروفات الدراسية',
       'إدارة المرافق والحافلات المدرسية'
     ],
@@ -59,7 +59,7 @@ export const productsData: ProductItem[] = [
     nameAr: 'رتقاء LMS',
     category: 'Learning',
     taglineEn: 'Adaptive Learning Experience Platform',
-    taglineAr: 'منظومة التعلم الذكي وإدارة الخبرات التعليمية',
+    taglineAr: 'منصة تجربة التعلم التكيفي',
     descriptionEn: 'Interactive learning management system featuring immersive course creation, hybrid classrooms, gamified learning paths, and automated grading.',
     descriptionAr: 'منصة تعلم تفاعلية تدعم إنشاء الفصول، الفصول الهجينة، مسارات التعلم التكيفية، والتقييم الآلي المتقدم للواجبات.',
     featuresEn: [
@@ -69,7 +69,7 @@ export const productsData: ProductItem[] = [
       'SCORM & LTI Standard Support'
     ],
     featuresAr: [
-      'مسارات تعلم فردية وتكيفية مع كل طالب',
+      'مسارات التعلم التكيفي',
       'محرك تقييم متعدد الوسائط والأسئلة',
       'تفاعل مباشر وحي في الفصل الدراسي',
       'دعم معايير SCORM و LTI العالمية'
@@ -87,7 +87,7 @@ export const productsData: ProductItem[] = [
     taglineEn: 'Cognitive Intelligence Layer for Education',
     taglineAr: 'طبقة الذكاء الاصطناعي التكيفي للمؤسسات',
     descriptionEn: 'Proprietary AI intelligence stack powering real-time tutoring, automated lesson design, institutional RAG knowledge retrieval, and predictive analytics.',
-    descriptionAr: 'محرك ذكاء اصطناعي سيادي يوفر المساعد الذكي للمعلمين، المعلم الشخصي للطلاب، والتحليل التنبئي للمؤسسة.',
+    descriptionAr: 'منظومة ذكاء اصطناعي سيادية توفر المساعد الذكي للمعلمين، والمعلّم الذكي للطلاب، واسترجاع المعرفة المؤسسية عبر الاسترجاع المعزز بالتوليد (RAG)، والتحليلات التنبؤية.',
     featuresEn: [
       'Generative Lesson & Curriculum Assistant',
       'Student Cognitive Tutor & Diagnostic Assistant',
@@ -96,8 +96,8 @@ export const productsData: ProductItem[] = [
     ],
     featuresAr: [
       'مساعد توليد الدروس والمناهج والمحتوى',
-      'معلم ذكي تكيفي ومؤشرات تشخيص الطالب',
-      'استرجاع المعرفة المؤسسية بدقة بالغة RAG',
+      'المعلّم الذكي المعرفي والمساعد التشخيصي للطالب',
+      'استرجاع المعرفة المؤسسية عبر الاسترجاع المعزز بالتوليد (RAG)',
       'التصحيح الآلي المتقدم للأسئلة المقالية'
     ],
     icon: 'Sparkles',
@@ -139,7 +139,7 @@ export const productsData: ProductItem[] = [
     taglineEn: 'Autonomous & Personalized Learning Workspace',
     taglineAr: 'مساحة التعلم الذاتي والتفوق للطلاب',
     descriptionEn: 'Student-centric space with 24/7 AI learning companion, mastery streaks, skill gap analysis, and interactive study flashcards.',
-    descriptionAr: 'بيئة تعلم متكاملة تزود الطالب بمساعد ذكي متوفر على مدار الساعة، وتحليل الثغرات الدراسية، وبطاقات استذكار موجهة.',
+    descriptionAr: 'بيئة تعلم متكاملة تزود الطالب بـ المعلّم الذكي المتوفر على مدار الساعة 24/7، وتحليل الثغرات الدراسية، وبطاقات استذكار تفاعلية.',
     featuresEn: [
       '24/7 Interactive Socratic AI Tutor',
       'Personalized Knowledge Map & Mastery Trajectory',
@@ -147,8 +147,8 @@ export const productsData: ProductItem[] = [
       'Multi-modal Study Note Summarizer'
     ],
     featuresAr: [
-      'معلم سقراطي ذكي يجيب على استفسارات الطالب 24/7',
-      'خريطة معارف مسارات التفوق والمقررات',
+      'المعلّم الذكي السقراطي التفاعلي على مدار الساعة 24/7',
+      'خريطة المعرفة المخصصة ومسار الإتقان',
       'مهام استذكار تفاعلية ونقاط إنجاز',
       'ملخصات ذكية متعددة الوسائط للمواد'
     ],
@@ -260,14 +260,14 @@ export const solutionsData: SolutionItem[] = [
     ],
     icon: 'School',
     modulesEn: ['School Operations', 'Finance & Fees', 'Parent Portal', 'Staff Management'],
-    modulesAr: ['إدارة المدارس', 'المالية والرسوم', 'بوابة أولياء الأمور', 'إدارة الكادر المالي والأكاديمي']
+    modulesAr: ['إدارة العمليات المدرسية', 'المالية والرسوم', 'بوابة أولياء الأمور', 'إدارة الموظفين']
   },
   {
     id: 'higher-ed',
     targetEn: 'Educational Institutions & Colleges',
     targetAr: 'المؤسسات التعليمية والأكاديميات',
     titleEn: 'Enterprise Learning & Institutional Governance',
-    titleAr: 'حوكومة المؤسسات وإدارة التعلم الأكاديمي',
+    titleAr: 'حوكمة المؤسسات وإدارة التعلم الأكاديمي',
     descriptionEn: 'Scale higher education delivery with accredited course management, research workflow tracking, dynamic grading, and complex credit handling.',
     descriptionAr: 'تمكين الكليات والمعاهد بالبنية الرقمية لإدارة المقررات، تتبع الأبحاث، ونظام الساعات المعتمدة والتقييم المؤسسي.',
     benefitsEn: [
@@ -308,7 +308,7 @@ export const solutionsData: SolutionItem[] = [
     ],
     icon: 'UserCheck',
     modulesEn: ['Lesson Creator', 'Quiz Generator', 'Grading Co-pilot', 'Class Diagnostics'],
-    modulesAr: ['منشئ التحضير', 'مولد الاختبارات', 'مساعد التصحيح', 'تشخيص الفصل']
+    modulesAr: ['منشئ الدروس', 'مولد الاختبارات', 'المساعد الذكي للتصحيح', 'تشخيص الفصل']
   },
   {
     id: 'students',
@@ -317,7 +317,7 @@ export const solutionsData: SolutionItem[] = [
     titleEn: 'Adaptive, Engaging, and Future-Ready Education',
     titleAr: 'تعلم تكيفي ممتع ومستقبل واعد',
     descriptionEn: 'Provide every student with a personalized 24/7 AI tutor that adapts to their pace, learning style, and specific knowledge gaps.',
-    descriptionAr: 'تزويد كل طالب بمرشد ومعلم افتراضي ذكي يتكيف مع نمط تعليمه، قدراته الاستيعابية، ويجيب على تساؤلاته في أي وقت.',
+    descriptionAr: 'تزويد كل طالب بـ المعلّم الذكي المخصص على مدار الساعة 24/7 يتكيف مع نمط تعليمه، وقدراته الاستيعابية، وفجواته المهارية.',
     benefitsEn: [
       'Tailored study pathways matching individual learning styles',
       'Socratic AI guidance encouraging critical thinking',
@@ -332,7 +332,7 @@ export const solutionsData: SolutionItem[] = [
     ],
     icon: 'Sparkles',
     modulesEn: ['Socratic Tutor', 'Mastery Hub', 'Smart Notes', 'Practice Arena'],
-    modulesAr: ['المعلم السقراطي', 'مركز الإتقان', 'الملاحظات الذكية', 'ساحة التمارين']
+    modulesAr: ['المعلّم الذكي السقراطي', 'مركز الإتقان', 'الملاحظات الذكية', 'ساحة التمارين']
   },
   {
     id: 'parents',
@@ -388,7 +388,7 @@ export const aiCapabilitiesData: AiCapability[] = [
   {
     id: 'ai-assistants',
     titleEn: 'Context-Aware AI Assistants',
-    titleAr: 'مساعدون ذكاء اصطناعي واعون ببيئة التعلم',
+    titleAr: 'مساعدو ذكاء اصطناعي واعون بالسياق',
     summaryEn: 'Specialized AI roles tuned for teachers, students, and administrators with role-based guardrails.',
     summaryAr: 'نماذج ذكاء اصطناعي متخصصة ومصممة لكل فئة: المعلم، الطالب، والإداري وفق صلاحيات دقيقة.',
     detailsEn: 'Rtiqa AI Assistants understand curriculum boundaries, grade level language, and regional educational standards. They provide safe, pedagogical support without generating hallucinated content.',
@@ -402,9 +402,9 @@ export const aiCapabilitiesData: AiCapability[] = [
     titleEn: 'Personalized Adaptive Pathways',
     titleAr: 'مسارات تعلم شخصية وتكيفية',
     summaryEn: 'Dynamic knowledge graphs that adjust content difficulty and practice mode in real-time.',
-    summaryAr: 'خرائط معارف ديناميكية تضبط مستوى صعوبة المحتوى والتمارين بناءً على استجابات الطالب.',
+    summaryAr: 'الرسوم البيانية المعرفية (Knowledge Graphs) الديناميكية التي تضبط مستوى صعوبة المحتوى ونمط التمارين في الوقت الفعلي.',
     detailsEn: 'Instead of linear static textbook progression, Rtiqa continuously estimates student cognitive load and skill mastery, dynamically recommending micro-lessons and diagnostic challenges.',
-    detailsAr: 'بدلاً من المسار الخطي الثابت، يقيس نظام رتقاء الحمل المعرفي ومدى إتقان المهارات لحظة بلحظة، ليقترح صغار الدروس والتحديات الأنسب بالطريقة المثلى.',
+    detailsAr: 'بدلاً من المسار الخطي الثابت، يقيس نظام رتقاء الحمل المعرفي ومدى إتقان المهارات لحظة بلحظة، ليقترح دروساً مصغّرة وتحديات تشخيصية تناسب كل طالب.',
     icon: 'Compass',
     tagEn: 'Adaptive Engine',
     tagAr: 'محرك تكيفي'
@@ -424,14 +424,14 @@ export const aiCapabilitiesData: AiCapability[] = [
   {
     id: 'knowledge-systems',
     titleEn: 'Institutional Knowledge & Secure RAG',
-    titleAr: 'استرجاع المعرفة المؤسسية الآمن RAG',
+    titleAr: 'المعرفة المؤسسية والاسترجاع المعزز بالتوليد (RAG) الآمن',
     summaryEn: 'Connect school regulations, policies, and historic archives into a searchable AI knowledge brain.',
     summaryAr: 'ربط اللوائح المدرسية، السياسات، والأرشيف التاريخي في عقل مؤسسي يجيب فوراً بدقة.',
     detailsEn: 'Rtiqa builds a private vector index of all school policies, curriculum guides, and internal documentation, enabling staff to query institutional knowledge with cited source accuracy.',
-    detailsAr: 'يبني رتقاء فهماً عميقاً لجميع اللوائح والوثائق الخاصة بالجهة في بيئة معزولة تماماً، مما يسمح بفحص واستعلام المعلومات مع التوثيق المباشر للمصدر.',
+    detailsAr: 'يبني نظام رتقاء فهرس المتجهات (Vector Index) الخاص بكافة سياسات المدرسة وأدلة المناهج والوثائق الداخلية، مما يمكّن الموظفين من الاستعلام عن المعرفة المؤسسية بدقة مع إسناد المصادر.',
     icon: 'Database',
     tagEn: 'RAG & Vector Search',
-    tagAr: 'بحث متقدم وRAG'
+    tagAr: 'فهرس المتجهات والاسترجاع المعزز بالتوليد (RAG)'
   },
   {
     id: 'automated-workflows',
@@ -488,7 +488,7 @@ By adopting a sovereign, unified AI architecture, educational institutions trans
 
 نظام التشغيل بالذكاء الاصطناعي ليس مجرد بوابة إدارية أو نظام إدارة تعلم آخر؛ بل هو طبقة ذكاء مؤسسية ترتبط بكافة الجوانب التشغيلية والأكاديمية:
 
-1. **بنية معرفية موحدة**: تتدفق كل إنجازات الطلاب، المخرجات التعليمية، والبيانات الإدارية إلى شجرة معرفية موحدة وآمنة.
+1. **بنية معرفية موحدة**: تتدفق كل إنجازات الطلاب، المخرجات التعليمية، والبيانات الإدارية إلى رسم بياني معرفي موحد وآمن.
 2. **دعم متسق مع السياق**: يتفاعل المعلم والطالب والإداري مع نماذج ذكاء اصطناعي تفهم السياق الموحد. فعندما ينشئ المعلم تحضيراً، يفهم مساعد الطالب فوراً الأهداف المقررة.
 3. **أتمتة العمليات التشغيلية**: بدءاً من إنشاء الجداول المدرسية إلى التنبيه بالتعثر الأكاديمي، يقوم النظام بالتنبؤ والعمل الاستباقي بدلاً من مجرد التجميع الساكن.
 
@@ -508,7 +508,7 @@ By adopting a sovereign, unified AI architecture, educational institutions trans
     id: '2',
     slug: 'future-of-personalized-tutoring',
     titleEn: 'The Socratic AI Companion: Redefining Student Guidance',
-    titleAr: 'المعلم السقراطي الذكي: إعادات تعريف التوجيه والتعلم الذاتي',
+    titleAr: 'المعلّم الذكي السقراطي: إعادة تعريف التوجيه والتعلم الذاتي',
     excerptEn: 'Why generative AI must act as a Socratic guide rather than an answer machine, building student problem-solving skills.',
     excerptAr: 'لماذا يجب أن يعمل الذكاء الاصطناعي كمرشد سقراطي يُحفّز التفكير بدلاً من إعطاء الإجابات المباشرة الجاهزة.',
     contentEn: `When generative AI first entered education, many feared it would encourage passive learning or homework shortcuts. However, when built with pedagogical intentionality, AI can become the most effective Socratic tutor ever created.
@@ -767,7 +767,7 @@ export const UI_TEXT = {
     futureOfEducationSub: 'يتجاوز التعليم المناهج التقليدية والأدوات المنعزلة نحو منظومة معرفية وتكيفية متكاملة.',
     rtiqaEcosystem: 'منظومة رتقاء المترابطة',
     rtiqaEcosystemSub: 'تسعة منتجات ذكية متكاملة تعمل بسلاسة تحت مظلة نظام تشغيل مؤسسي موحد.',
-    aiPoweredIntelligence: 'البنية الأساسية لذكاء رتقاء الإصطناعي',
+    aiPoweredIntelligence: 'البنية الأساسية لذكاء رتقاء الاصطناعي',
     aiPoweredIntelligenceSub: 'طبقة ذكاء سيادية صُممت لتدبر السياق التعليمي، المناهج الدراسية، والعمليات الإدارية.',
     whyRtiqa: 'لماذا تختار المؤسسات العالمية رتقاء؟',
     globalVision: 'رؤية عالمية وسيادة رقمية محلياً',
@@ -795,7 +795,7 @@ export const UI_TEXT = {
     securitySovereignty: 'الأمان والسيادة الرقمية',
     developerPortal: 'بوابة المطورين',
     subscribeNewsletter: 'اشترك في النشرة البريدية التقنية',
-    emailPlaceholder: 'أدخل بريدك الإلكتروني المؤسسي...',
+    emailPlaceholder: 'أدخل بريدك الإلكتروني المهني...',
     subscribeBtn: 'اشتراك',
     subscribedMsg: 'شكراً لاشتراكك في النشرة البريدية لشركة رتقاء.',
     
@@ -803,7 +803,7 @@ export const UI_TEXT = {
     demoModalTitle: 'جدولة عرض توضيحي لمنظومة رتقاء',
     demoModalSub: 'اكتشف كيف يمكن لـ رتقاء توحيد عملياتك المدرسية وتجربة التعلم بشكل كامل.',
     formName: 'الاسم الكامل',
-    formEmail: 'البريد الإلكتروني العملي',
+    formEmail: 'البريد الإلكتروني المهني',
     formOrg: 'اسم المدرسة / المؤسسة التعليمية',
     formType: 'نوع المؤسسة',
     formRole: 'المسمى الوظيفي / الدور',
