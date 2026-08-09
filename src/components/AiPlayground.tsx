@@ -177,7 +177,7 @@ export const AiPlayground: React.FC = () => {
             <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
               {t.aiDemoTitle}
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 uppercase font-mono tracking-wide">
-                Live Simulation
+                {isRtl ? 'محاكاة توضيحية' : 'Live Simulation'}
               </span>
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">{t.aiDemoSub}</p>
