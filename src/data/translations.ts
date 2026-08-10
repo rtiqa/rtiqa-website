@@ -8,24 +8,24 @@ export const productsData: ProductItem[] = [
     category: 'Infrastructure',
     taglineEn: 'The Enterprise Digital Operating Foundation',
     taglineAr: 'البنية الأساسية والتشغيلية الرقمية للمؤسسات',
-    descriptionEn: 'Unified identity, cloud security, multi-tenant directory, data fabric, and system integration bus engineered for global education systems.',
+    descriptionEn: 'Unified identity architecture, multi-tenant directory, data fabric, and system integration bus engineered for global education systems.',
     descriptionAr: 'منظومة موحدة للهوية والشبكات، الأمان السحابي، ودليل بيانات شامل ومحرك ربط ذكي صُمم خصيصاً للمؤسسات التعليمية الشاملة.',
     featuresEn: [
-      'Multi-tenant Cloud Architecture',
-      'Unified Identity & SSO (SAML, OAuth2, OpenID)',
-      'Global Data Fabric & Enterprise Bus',
-      'SOC2 & GDPR Compliant Security'
+      'Multi-tenant Cloud Architecture Target',
+      'Unified Identity & SSO Goals (SAML, OAuth2, OpenID Architecture)',
+      'Global Data Fabric & Enterprise Bus Blueprint',
+      'Designed for SOC2 & GDPR Compliance Frameworks'
     ],
     featuresAr: [
-      'بنية سحابية متقدمة متعددة المستأجرين',
-      'هوية موحدة وتسجيل الدخول الموحد (SAML, OAuth2, OpenID)',
+      'بنية سحابية متقدمة متعددة المستأجرين (هدف معماري)',
+      'هوية موحدة وتسجيل الدخول الموحد (إطار معماري لـ SAML, OAuth2, OpenID)',
       'نسيج بيانات شامل وربط مؤسسي',
-      'حماية متوافقة مع معايير الأمان العالمية SOC2 و GDPR'
+      'تصميم يستهدف التوافق مع معايير الأمان العالمية SOC2 و GDPR'
     ],
     icon: 'Cpu',
-    badge: 'Foundation',
-    statusEn: 'Core Architecture',
-    statusAr: 'البنية الأساسية'
+    badge: 'Core Framework',
+    statusEn: 'Architectural Framework / Core Prototype',
+    statusAr: 'إطار معماري / نموذج أولي'
   },
   {
     id: 'rtiqa-school',
@@ -34,24 +34,24 @@ export const productsData: ProductItem[] = [
     category: 'Operations',
     taglineEn: 'Intelligent School Operations & ERP',
     taglineAr: 'إدارة وتخطيط العمليات المدرسية الذكية',
-    descriptionEn: 'Next-generation administrative suite covering admissions, attendance, scheduling, staffing, finance, and facilities with real-time AI automation.',
+    descriptionEn: 'Next-generation administrative suite covering admissions, attendance, scheduling, staffing, finance, and facilities with planned AI automation.',
     descriptionAr: 'منظومة إدارية شاملة للقبول، الحضور، الجدول المدرسي، الموارد البشرية، والعمليات المالية مع أتمتة تدفقات العمل بالذكاء الاصطناعي.',
     featuresEn: [
-      'Dynamic AI Timetable Generator',
-      'Automated Attendance & Micro-tracking',
-      'Integrated Finance & Tuition Engine',
-      'Facility & Transport Management'
+      'Dynamic AI Timetable Generator (Planned Concept)',
+      'Automated Attendance & Micro-tracking (Roadmap)',
+      'Integrated Finance & Tuition Engine (Roadmap)',
+      'Facility & Transport Management (Roadmap)'
     ],
     featuresAr: [
-      'توليد الجداول المدرسية بذكاء اصطناعي محلي',
-      'أتمتة تسجيل وتتبع الحضور والغياب',
-      'إدارة المالية والمصروفات الدراسية',
-      'إدارة المرافق والحافلات المدرسية'
+      'توليد الجداول المدرسية بذكاء اصطناعي محلي (مفهوم مخطط)',
+      'أتمتة تسجيل وتتبع الحضور والغياب (خارطة الطريق)',
+      'إدارة المالية والمصروفات الدراسية (خارطة الطريق)',
+      'إدارة المرافق والحافلات المدرسية (خارطة الطريق)'
     ],
     icon: 'Building2',
-    badge: 'Coming Soon',
-    statusEn: 'Roadmap / Coming Soon',
-    statusAr: 'قادم قريباً / خريطة الطريق'
+    badge: 'Planned',
+    statusEn: 'Roadmap / Planned Module',
+    statusAr: 'مخطط / خارطة الطريق'
   },
   {
     id: 'rtiqa-lms',
@@ -60,24 +60,24 @@ export const productsData: ProductItem[] = [
     category: 'Learning',
     taglineEn: 'Adaptive Learning Experience Platform',
     taglineAr: 'منصة تجربة التعلم التكيفي',
-    descriptionEn: 'Interactive learning management system featuring immersive course creation, hybrid classrooms, gamified learning paths, and automated grading.',
-    descriptionAr: 'منصة تعلم تفاعلية تدعم إنشاء الفصول، الفصول الهجينة، مسارات التعلم التكيفية، والتقييم الآلي المتقدم للواجبات.',
+    descriptionEn: 'Interactive learning management system concept featuring immersive course creation, hybrid classrooms, gamified learning paths, and automated grading.',
+    descriptionAr: 'منصة تعلم تفاعلية لإنشاء الفصول وتجربة التعلم التكيفية (مفهوم مخطط).',
     featuresEn: [
-      'Adaptive Learning Pathways',
-      'Multimedia Assessment Engine',
-      'Real-time Classroom Interaction',
-      'SCORM & LTI Standard Support'
+      'Adaptive Learning Pathways (Roadmap)',
+      'Multimedia Assessment Engine (Roadmap)',
+      'Real-time Classroom Interaction (Roadmap)',
+      'SCORM & LTI Standard Support Concept'
     ],
     featuresAr: [
-      'مسارات التعلم التكيفي',
-      'محرك تقييم متعدد الوسائط والأسئلة',
-      'تفاعل مباشر وحي في الفصل الدراسي',
-      'دعم معايير SCORM و LTI العالمية'
+      'مسارات التعلم التكيفي (خارطة الطريق)',
+      'محرك تقييم متعدد الوسائط والأسئلة (خارطة الطريق)',
+      'تفاعل مباشر وحي في الفصل الدراسي (خارطة الطريق)',
+      'دعم معايير SCORM و LTI العالمية (مفهوم مخطط)'
     ],
     icon: 'GraduationCap',
-    badge: 'Coming Soon',
-    statusEn: 'Roadmap / Coming Soon',
-    statusAr: 'قادم قريباً / خريطة الطريق'
+    badge: 'Planned',
+    statusEn: 'Roadmap / Planned Module',
+    statusAr: 'مخطط / خارطة الطريق'
   },
   {
     id: 'rtiqa-ai',
@@ -86,24 +86,24 @@ export const productsData: ProductItem[] = [
     category: 'Artificial Intelligence',
     taglineEn: 'Cognitive Intelligence Layer for Education',
     taglineAr: 'طبقة الذكاء الاصطناعي التكيفي للمؤسسات',
-    descriptionEn: 'Proprietary AI intelligence stack powering real-time tutoring, automated lesson design, institutional RAG knowledge retrieval, and predictive analytics.',
-    descriptionAr: 'منظومة ذكاء اصطناعي سيادية توفر المساعد الذكي للمعلمين، والمعلّم الذكي للطلاب، واسترجاع المعرفة المؤسسية عبر الاسترجاع المعزز بالتوليد (RAG)، والتحليلات التنبؤية.',
+    descriptionEn: 'Proprietary AI intelligence stack designed for real-time tutoring simulation, automated lesson design, institutional RAG knowledge retrieval, and predictive analytics.',
+    descriptionAr: 'منظومة ذكاء اصطناعي سيادية مصممة لتوفير المساعد الذكي للمعلمين، والمعلّم الذكي للطلاب، واسترجاع المعرفة المؤسسية عبر الاسترجاع المعزز بالتوليد (RAG)، والتحليلات التنبؤية.',
     featuresEn: [
-      'Generative Lesson & Curriculum Assistant',
-      'Student Cognitive Tutor & Diagnostic Assistant',
-      'Institutional Document RAG Search',
-      'Automated Rubric & Open-ended Essay Grading'
+      'Generative Lesson & Curriculum Assistant (Interactive Demo)',
+      'Student Cognitive Tutor & Diagnostic Assistant (Simulated)',
+      'Institutional Document RAG Search Concept',
+      'Automated Rubric & Open-ended Essay Grading Concept'
     ],
     featuresAr: [
-      'مساعد توليد الدروس والمناهج والمحتوى',
-      'المعلّم الذكي المعرفي والمساعد التشخيصي للطالب',
-      'استرجاع المعرفة المؤسسية عبر الاسترجاع المعزز بالتوليد (RAG)',
-      'التصحيح الآلي المتقدم للأسئلة المقالية'
+      'مساعد توليد الدروس والمناهج والمحتوى (عرض توضيحي تفاعلي)',
+      'المعلّم الذكي المعرفي والمساعد التشخيصي للطالب (محاكاة)',
+      'استرجاع المعرفة المؤسسية عبر الاسترجاع المعزز بالتوليد RAG (مفهوم مخطط)',
+      'التصحيح الآلي المتقدم للأسئلة المقالية (مفهوم مخطط)'
     ],
     icon: 'Sparkles',
-    badge: 'Core AI',
-    statusEn: 'Core Engine Live',
-    statusAr: 'المحرك الأساسي نشط'
+    badge: 'Interactive Demo',
+    statusEn: 'Interactive Demo / AI Prototype',
+    statusAr: 'عرض توضيحي / نموذج أولي'
   },
   {
     id: 'rtiqa-teacher',
@@ -112,24 +112,24 @@ export const productsData: ProductItem[] = [
     category: 'Empowerment',
     taglineEn: 'AI Co-pilot for Educators',
     taglineAr: 'المساعد الذكي الفائق للإنتاجية والتدريس',
-    descriptionEn: 'Empowering teachers with instant AI lesson planning, automated quiz generation, student progress alerts, and personalized intervention blueprints.',
+    descriptionEn: 'Empowering teachers with planned instant AI lesson planning, automated quiz generation, student progress alerts, and personalized intervention blueprints.',
     descriptionAr: 'تمكين للمعلمين بالأدوات الذكية لإعداد الدروس والاختبارات في ثوانٍ، وتتبع سلوك وأداء الطلاب وخطط الدعم.',
     featuresEn: [
-      '1-Click Lesson Plan Builder',
-      'Automated Quiz & Assessment Creator',
-      'Classroom Engagement Monitoring',
-      'Personalized Feedback Generator'
+      '1-Click Lesson Plan Builder (Roadmap)',
+      'Automated Quiz & Assessment Creator (Roadmap)',
+      'Classroom Engagement Monitoring (Roadmap)',
+      'Personalized Feedback Generator (Roadmap)'
     ],
     featuresAr: [
-      'بناء التحضير والخطط الدراسية بضغطة زر',
-      'إنشاء بنوك الأسئلة والاختبارات التكيفية',
-      'متابعة تفاعل الفصل والتنبيهات المباشرة',
-      'توليد التغذية الراجعة التكيفية للطلاب'
+      'بناء التحضير والخطط الدراسية بضغطة زر (خارطة الطريق)',
+      'إنشاء بنوك الأسئلة والاختبارات التكيفية (خارطة الطريق)',
+      'متابعة تفاعل الفصل والتنبيهات المباشرة (خارطة الطريق)',
+      'توليد التغذية الراجعة التكيفية للطلاب (خارطة الطريق)'
     ],
     icon: 'UserCheck',
-    badge: 'Coming Soon',
-    statusEn: 'Roadmap / Coming Soon',
-    statusAr: 'قادم قريباً / خريطة الطريق'
+    badge: 'Planned',
+    statusEn: 'Roadmap / Planned Module',
+    statusAr: 'مخطط / خارطة الطريق'
   },
   {
     id: 'rtiqa-student',
@@ -138,24 +138,24 @@ export const productsData: ProductItem[] = [
     category: 'Experience',
     taglineEn: 'Autonomous & Personalized Learning Workspace',
     taglineAr: 'مساحة التعلم الذاتي والتفوق للطلاب',
-    descriptionEn: 'Student-centric space with 24/7 AI learning companion, mastery streaks, skill gap analysis, and interactive study flashcards.',
+    descriptionEn: 'Student-centric space with planned 24/7 AI learning companion, mastery streaks, skill gap analysis, and interactive study flashcards.',
     descriptionAr: 'بيئة تعلم متكاملة تزود الطالب بـ المعلّم الذكي المتوفر على مدار الساعة 24/7، وتحليل الثغرات الدراسية، وبطاقات استذكار تفاعلية.',
     featuresEn: [
-      '24/7 Interactive Socratic AI Tutor',
-      'Personalized Knowledge Map & Mastery Trajectory',
-      'Gamified Study Quests & Badges',
-      'Multi-modal Study Note Summarizer'
+      '24/7 Interactive Socratic AI Tutor (Planned)',
+      'Personalized Knowledge Map & Mastery Trajectory (Roadmap)',
+      'Gamified Study Quests & Badges (Roadmap)',
+      'Multi-modal Study Note Summarizer (Roadmap)'
     ],
     featuresAr: [
-      'المعلّم الذكي السقراطي التفاعلي على مدار الساعة 24/7',
-      'خريطة المعرفة المخصصة ومسار الإتقان',
-      'مهام استذكار تفاعلية ونقاط إنجاز',
-      'ملخصات ذكية متعددة الوسائط للمواد'
+      'المعلّم الذكي السقراطي التفاعلي على مدار الساعة 24/7 (مخطط)',
+      'خريطة المعرفة المخصصة ومسار الإتقان (خارطة الطريق)',
+      'مهام استذكار تفاعلية ونقاط إنجاز (خارطة الطريق)',
+      'ملخصات ذكية متعددة الوسائط للمواد (خارطة الطريق)'
     ],
     icon: 'BookOpen',
-    badge: 'Coming Soon',
-    statusEn: 'Roadmap / Coming Soon',
-    statusAr: 'قادم قريباً / خريطة الطريق'
+    badge: 'Planned',
+    statusEn: 'Roadmap / Planned Module',
+    statusAr: 'مخطط / خارطة الطريق'
   },
   {
     id: 'rtiqa-parent',
@@ -167,21 +167,21 @@ export const productsData: ProductItem[] = [
     descriptionEn: 'Direct window for parents into academic milestones, attendance, behavioral insights, teacher messaging, and seamless fee management.',
     descriptionAr: 'نافذة موحدة تمنح ولي الأمر شفافية كاملة على تحصيل أبنائه، الحضور، التقارير السلوكية، والتواصل المباشر مع المدرسة.',
     featuresEn: [
-      'Real-time Grade & Attendance Feed',
-      'Direct School & Teacher Messaging',
-      'AI Digest of Student Weekly Growth',
-      'One-tap Digital Tuition & Fee Payments'
+      'Real-time Grade & Attendance Feed (Roadmap)',
+      'Direct School & Teacher Messaging (Roadmap)',
+      'AI Digest of Student Weekly Growth (Roadmap)',
+      'Digital Tuition & Fee Payments Concept (Roadmap)'
     ],
     featuresAr: [
-      'تحديثات فورية للدرجات والحضور',
-      'قناة تواصل موحدة مع إدارة المدرسة والمعلمين',
-      'ملخص أسبوعي موجه بالذكاء الاصطناعي لتطور الطالب',
-      'دفع الرسوم المدرسية الرقمية بضغطة واحدة'
+      'تحديثات فورية للدرجات والحضور (خارطة الطريق)',
+      'قناة تواصل موحدة مع إدارة المدرسة والمعلمين (خارطة الطريق)',
+      'ملخص أسبوعي موجه بالذكاء الاصطناعي لتطور الطالب (خارطة الطريق)',
+      'دفع الرسوم المدرسية الرقمية (خارطة الطريق)'
     ],
     icon: 'Users',
-    badge: 'Coming Soon',
-    statusEn: 'Roadmap / Coming Soon',
-    statusAr: 'قادم قريباً / خريطة الطريق'
+    badge: 'Planned',
+    statusEn: 'Roadmap / Planned Module',
+    statusAr: 'مخطط / خارطة الطريق'
   },
   {
     id: 'rtiqa-analytics',
@@ -190,24 +190,24 @@ export const productsData: ProductItem[] = [
     category: 'Intelligence',
     taglineEn: 'Institutional Business Intelligence & Predictive Science',
     taglineAr: 'الذكاء المؤسسي والتحليل التنبئي المتقدم',
-    descriptionEn: 'Executive intelligence platform consolidating academic trends, operational efficiency metrics, financial health, and drop-out prediction models.',
+    descriptionEn: 'Executive intelligence platform concept consolidating academic trends, operational efficiency metrics, financial health, and drop-out prediction models.',
     descriptionAr: 'لوحات قيادة تنفيذية للقيادات والمدراء لقياس مؤشرات الأداء، النجاح الأكاديمي، الكفاءة التشغيلية والتنبؤ بالخطر المبكر.',
     featuresEn: [
-      'Executive Dashboards & KPI Tracking',
-      'Predictive Student Retention Algorithms',
-      'Resource Utilization Analytics',
-      'Automated Ministry & Accreditation Reports'
+      'Executive Dashboards & KPI Tracking (Prototype)',
+      'Predictive Student Retention Algorithms (Concept)',
+      'Resource Utilization Analytics (Roadmap)',
+      'Automated Ministry & Accreditation Reports (Roadmap)'
     ],
     featuresAr: [
-      'لوحات تحكم استراتيجية للقيادة التعليمية',
-      'خوارزميات التنبؤ بالتعثر الأكاديمي المبكر',
-      'تحليلات كفاءة استخدام الموارد والميزانيات',
-      'توليد التقارير المعتمدة للجهات الرسمية'
+      'لوحات تحكم استراتيجية للقيادة التعليمية (نموذج أولي)',
+      'خوارزميات التنبؤ بالتعثر الأكاديمي المبكر (مفهوم)',
+      'تحليلات كفاءة استخدام الموارد والميزانيات (خارطة الطريق)',
+      'توليد التقارير المعتمدة للجهات الرسمية (خارطة الطريق)'
     ],
     icon: 'BarChart3',
-    badge: 'Core Analytics',
-    statusEn: 'Core Analytics',
-    statusAr: 'التحليلات الأساسية'
+    badge: 'Prototype',
+    statusEn: 'Prototype / Analytics Roadmap',
+    statusAr: 'نموذج أولي / خارطة الطريق'
   },
   {
     id: 'rtiqa-developer',
@@ -216,24 +216,24 @@ export const productsData: ProductItem[] = [
     category: 'Extensibility',
     taglineEn: 'Open APIs, SDKs & App Ecosystem',
     taglineAr: 'منصة المطورين والربط البرمجي الشامل',
-    descriptionEn: 'Extensible ecosystem enabling third-party developers, EdTech startups, and internal IT teams to extend and build custom workflows upon Rtiqa.',
+    descriptionEn: 'Extensible ecosystem concept enabling third-party developers, EdTech startups, and internal IT teams to extend and build custom workflows upon Rtiqa.',
     descriptionAr: 'بيئة برمجية مفتوحة تمكّن الشركات التقنية والشركاء من بناء تطبيقات ودمج حلول جديدة على البنية الرقمية لـ Rtiqa.',
     featuresEn: [
-      'GraphQL & RESTful OpenAPI Specifications',
-      'Webhooks & Event Stream Integrations',
-      'JavaScript, Python & Mobile SDKs',
-      'Developer Marketplace & Sandbox'
+      'GraphQL & RESTful OpenAPI Specifications (Roadmap)',
+      'Webhooks & Event Stream Integrations (Roadmap)',
+      'JavaScript, Python & Mobile SDKs (Roadmap)',
+      'Developer Sandbox Concept (Roadmap)'
     ],
     featuresAr: [
-      'واجهات برمجة التطبيقات RESTful & GraphQL',
-      'دعم الـ Webhooks والأحداث المباشرة',
-      'مكتبات ربط باللغات الحديثة (Python, JS, Swift)',
-      'بيئة اختبار تجريبية للمطورين Marketplace'
+      'واجهات برمجة التطبيقات RESTful & GraphQL (خارطة الطريق)',
+      'دعم الـ Webhooks والأحداث المباشرة (خارطة الطريق)',
+      'مكتبات ربط باللغات الحديثة (خارطة الطريق)',
+      'بيئة اختبار تجريبية للمطورين Sandbox (خارطة الطريق)'
     ],
     icon: 'Code2',
-    badge: 'Developer Beta',
-    statusEn: 'Developer Beta',
-    statusAr: 'تجريبي للمطورين'
+    badge: 'Planned',
+    statusEn: 'Roadmap / Developer API',
+    statusAr: 'مخطط / خارطة المطورين'
   }
 ];
 
@@ -244,19 +244,19 @@ export const solutionsData: SolutionItem[] = [
     targetAr: 'المدارس ومجمعات المدارس',
     titleEn: 'Complete Digital Infrastructure for School Excellence',
     titleAr: 'بنية رقمية متكاملة لتميز وتحول المدارس',
-    descriptionEn: 'Unify administration, academic delivery, parent engagement, and operational compliance into a single intelligent cloud platform.',
+    descriptionEn: 'Unify administration, academic delivery, parent engagement, and operational compliance into a single intelligent cloud platform concept.',
     descriptionAr: 'توحيد جميع العمليات الإدارية، الأكاديمية، التواصل مع أولياء الأمور والامتثال في منصة سحابية ذكية واحدة.',
     benefitsEn: [
-      'Up to 60% reduction in administrative overhead',
-      'Instant AI timetable & substitution generation',
-      'Unified multi-branch school management',
-      'Streamlined fee collection and financial workflows'
+      'Projected target of up to 60% reduction in administrative overhead (Model Estimate)',
+      'Instant AI timetable & substitution generation (Target Concept)',
+      'Unified multi-branch school management blueprint',
+      'Streamlined fee collection and financial workflows (Roadmap)'
     ],
     benefitsAr: [
-      'تقليل التكاليف التشغيلية والإدارية بنسبة تصل إلى 60%',
-      'توليد آلي للجداول والاحتياط في ثوانٍ',
-      'إدارة موحدة لفروع المدارس والمجموعات التعليمية',
-      'تحصيل مالي رقمي مبسط وتقارير محاسبية موحدة'
+      'تخفيض مستهدف للتكاليف التشغيلية والإدارية تصل إلى 60% (تقدير نموذجي)',
+      'توليد آلي للجداول والاحتياط (مفهوم مستهدف)',
+      'إدارة موحدة لفروع المدارس والمجموعات التعليمية (مخطط)',
+      'تحصيل مالي رقمي مبسط وتقارير محاسبية موحدة (خارطة الطريق)'
     ],
     icon: 'School',
     modulesEn: ['School Operations', 'Finance & Fees', 'Parent Portal', 'Staff Management'],
@@ -271,16 +271,16 @@ export const solutionsData: SolutionItem[] = [
     descriptionEn: 'Scale higher education delivery with accredited course management, research workflow tracking, dynamic grading, and complex credit handling.',
     descriptionAr: 'تمكين الكليات والمعاهد بالبنية الرقمية لإدارة المقررات، تتبع الأبحاث، ونظام الساعات المعتمدة والتقييم المؤسسي.',
     benefitsEn: [
-      'Multi-department governance and accreditation support',
-      'Complex credit hour & prerequisite engine',
-      'Seamless research and thesis workflow support',
-      'Enterprise analytics for institutional success'
+      'Multi-department governance and accreditation support goals',
+      'Complex credit hour & prerequisite engine architecture',
+      'Seamless research and thesis workflow support concept',
+      'Enterprise analytics blueprint for institutional success'
     ],
     benefitsAr: [
-      'حوكمة متعددة الأقسام والاعتماد الأكاديمي',
-      'محرك متطور للساعات المعتمدة والمتطلبات',
-      'دعم مسارات الأبحاث والرسائل العلمية',
-      'تحليلات استراتيجية للأداء المؤسسي والاعتمادات'
+      'حوكمة متعددة الأقسام والاعتماد الأكاديمي (أهداف معمارية)',
+      'محرك متطور للساعات المعتمدة والمتطلبات (مخطط)',
+      'دعم مسارات الأبحاث والرسائل العلمية (مفهوم)',
+      'تحليلات استراتيجية للأداء المؤسسي والاعتمادات (مخطط)'
     ],
     icon: 'Landmark',
     modulesEn: ['Academic Registry', 'Credit Engine', 'LMS', 'Research Hub'],
@@ -295,16 +295,16 @@ export const solutionsData: SolutionItem[] = [
     descriptionEn: 'Free educators from tedious routine work so they can focus on inspiring students, using automated lesson planning, grading, and diagnostic insights.',
     descriptionAr: 'تفريغ المعلم من الأعباء الروتينية ليركز على إلهام وتوجيه الطلاب عبر أتمتة إعداد التحضير، التصحيح المباشر، والتشخيص.',
     benefitsEn: [
-      'Save 8+ hours per week on lesson planning & test prep',
-      'Instant objective and rubric-based auto-grading',
-      'Automatic generation of differentiated exercises',
-      'Deep diagnostic charts of classroom learning gaps'
+      'Estimated savings of up to 8 hours per week on lesson planning & test prep (Target Estimate)',
+      'Instant objective and rubric-based auto-grading concept',
+      'Automatic generation of differentiated exercises (Interactive Demo)',
+      'Deep diagnostic charts of classroom learning gaps (Roadmap)'
     ],
     benefitsAr: [
-      'توفير أكثر من 8 ساعات أسبوعياً من إعداد الدروس',
-      'تصحيح آلي فوري مع تغذية راجعة دقيقة للطلاب',
-      'توليد تمارين وأنشطة متمايزة تناسب الفروق الفردية',
-      'تشخيص دقيق للفجوات التعلمية داخل الصف'
+      'توفير تقديري مستهدف يصل إلى 8 ساعات أسبوعياً من إعداد الدروس (تقدير نموذجي)',
+      'تصحيح آلي فوري مع تغذية راجعة دقيقة للطلاب (مفهوم)',
+      'توليد تمارين وأنشطة متمايزة يناسب الفروق الفردية (عرض توضيحي)',
+      'تشخيص دقيق للفجوات التعلمية داخل الصف (خارطة الطريق)'
     ],
     icon: 'UserCheck',
     modulesEn: ['Lesson Creator', 'Quiz Generator', 'Grading Co-pilot', 'Class Diagnostics'],
@@ -316,19 +316,19 @@ export const solutionsData: SolutionItem[] = [
     targetAr: 'الطلاب والمتعلمون',
     titleEn: 'Adaptive, Engaging, and Future-Ready Education',
     titleAr: 'تعلم تكيفي ممتع ومستقبل واعد',
-    descriptionEn: 'Provide every student with a personalized 24/7 AI tutor that adapts to their pace, learning style, and specific knowledge gaps.',
+    descriptionEn: 'Provide every student with a personalized 24/7 AI tutor concept that adapts to their pace, learning style, and specific knowledge gaps.',
     descriptionAr: 'تزويد كل طالب بـ المعلّم الذكي المخصص على مدار الساعة 24/7 يتكيف مع نمط تعليمه، وقدراته الاستيعابية، وفجواته المهارية.',
     benefitsEn: [
-      'Tailored study pathways matching individual learning styles',
-      'Socratic AI guidance encouraging critical thinking',
-      'Real-time feedback on homework and practice questions',
-      'Gamified learning streaks and mastery indicators'
+      'Tailored study pathways matching individual learning styles (Concept)',
+      'Socratic AI guidance encouraging critical thinking (Interactive Demo)',
+      'Real-time feedback on homework and practice questions (Simulated)',
+      'Gamified learning streaks and mastery indicators (Roadmap)'
     ],
     benefitsAr: [
-      'مسارات تعلم مخصصة توافق نمط وسرعة الطالب',
-      'توجيه سقراطي ذكي يحفز التفكير النقدي',
-      'تغذية راجعة فورية على الواجبات والتمارين',
-      'وسام إنجاز وشارات تقدم تحفز التفوق المستمر'
+      'مسارات تعلم مخصصة توافق نمط وسرعة الطالب (مفهوم)',
+      'توجيه سقراطي ذكي يحفز التفكير النقدي (عرض توضيحي تفاعلي)',
+      'تغذية راجعة فورية على الواجبات والتمارين (محاكاة)',
+      'وسام إنجاز وشارات تقدم تحفز التفوق المستمر (خارطة الطريق)'
     ],
     icon: 'Sparkles',
     modulesEn: ['Socratic Tutor', 'Mastery Hub', 'Smart Notes', 'Practice Arena'],
@@ -343,16 +343,16 @@ export const solutionsData: SolutionItem[] = [
     descriptionEn: 'Connect families closely to their children learning journey with actionable AI summaries, behavioral updates, and instant school updates.',
     descriptionAr: 'ربط أولياء الأمور برحلة أطفالهم التعليمية عبر تقارير ملخصة ذكية، متابعة فورية للحضور، وقنوات تواصل موحدة.',
     benefitsEn: [
-      'Instant attendance and academic notifications',
-      'Weekly AI digest summarizing strengths & focus areas',
-      'Direct, safe messaging channel with teachers and administration',
-      'Hassle-free mobile fee payment options'
+      'Instant attendance and academic notifications (Roadmap)',
+      'Weekly AI digest summarizing strengths & focus areas (Simulated Concept)',
+      'Direct, safe messaging channel with teachers and administration (Roadmap)',
+      'Hassle-free mobile fee payment options (Roadmap)'
     ],
     benefitsAr: [
-      'إشعارات فورية بالحضور والنقاط الأكاديمية',
-      'تقرير أسبوعي ذكي يلخص نقاط القوة ومجالات التحسين',
-      'قناة تواصل آمنة ومباشرة مع المعلمين والإدارة',
-      'دفع وتتبع الرسوم المدرسية بمرونة كاملة'
+      'إشعارات فورية بالحضور والنقاط الأكاديمية (خارطة الطريق)',
+      'تقرير أسبوعي ذكي يلخص نقاط القوة ومجالات التحسين (مفهوم محاكاة)',
+      'قناة تواصل آمنة ومباشرة مع المعلمين والإدارة (خارطة الطريق)',
+      'دفع وتتبع الرسوم المدرسية بمرونة كاملة (خارطة الطريق)'
     ],
     icon: 'HeartHandshake',
     modulesEn: ['Child Dashboard', 'Weekly AI Digest', 'School Chat', 'Digital Payments'],
@@ -364,19 +364,19 @@ export const solutionsData: SolutionItem[] = [
     targetAr: 'المؤسسات الكبرى والجهات التعليمية',
     titleEn: 'National & Regional Education Ecosystem Digitalization',
     titleAr: 'التحول الرقمي الشامل للمنظومات التعليمية الكبرى',
-    descriptionEn: 'Deploy sovereign digital education architecture capable of serving hundreds of thousands of students with full data sovereignty and deep intelligence.',
+    descriptionEn: 'Deploy sovereign digital education architecture blueprints capable of serving large student populations with full data sovereignty and deep intelligence.',
     descriptionAr: 'نشر بنية تحتية رقمية وسيادية قادرة على خدمة ملايين الطلاب والمؤسسات مع أمان متكامل وسيادة كاملة للبيانات.',
     benefitsEn: [
-      'Sovereign multi-region deployment models',
-      'Real-time national learning metrics & literacy heatmaps',
-      'Standardized digital curriculum distribution',
-      'Zero-trust security and data protection standards'
+      'Sovereign multi-region deployment models (Architecture Goal)',
+      'Real-time national learning metrics & literacy heatmaps (Roadmap)',
+      'Standardized digital curriculum distribution (Roadmap)',
+      'Zero-trust security and data protection architecture goals'
     ],
     benefitsAr: [
-      'خيارات نشر سيادية سحابية أو محلياً On-Premise',
-      'خرائط حرارية ومؤشرات وطنية لمستوى التعلم',
-      'توزيع معتمد للمناهج والمحتوى الرقمي الموحد',
-      'معايير أمان وانضباط عالية Zero-Trust'
+      'خيارات نشر سيادية سحابية أو محلياً On-Premise (هدف معماري)',
+      'خرائط حرارية ومؤشرات وطنية لمستوى التعلم (خارطة الطريق)',
+      'توزيع معتمد للمناهج والمحتوى الرقمي الموحد (خارطة الطريق)',
+      'معايير معمارية مستهدفة وفق مبادئ Zero-Trust'
     ],
     icon: 'Globe2',
     modulesEn: ['National Analytics', 'Curriculum Hub', 'Sovereignty Engine', 'Standard Compliance'],
@@ -722,6 +722,11 @@ export const UI_TEXT = {
     formSending: 'Submitting Inquiry...',
     formSuccessTitle: 'Message Received Successfully',
     formSuccessMsg: 'Thank you for reaching out to Rtiqa. An enterprise solution specialist will contact you shortly.',
+    formErrorTitle: 'Submission Failed',
+    formErrorGeneric: 'Unable to process your submission at this time. Please check your network connection and try again.',
+    formErrorEmail: 'Please enter a valid work email address.',
+    formErrorRequired: 'Please complete all required fields marked with *.',
+    formTryAgain: 'Try Again',
     closeModal: 'Close Window',
     
     // Org Types Options
@@ -813,6 +818,11 @@ export const UI_TEXT = {
     formSending: 'جاري إرسال الاستفسار...',
     formSuccessTitle: 'تم إرسال الرسالة بنجاح',
     formSuccessMsg: 'شكراً لتواصلك مع رتقاء. سيتواصل معك مستشار الحلول الرقمية في أقرب وقت.',
+    formErrorTitle: 'تعذر إرسال الطلب',
+    formErrorGeneric: 'عذراً، تعذر معالجة طلبك في الوقت الحالي. يرجى التحقق من اتصال الإنترنت وإعادة المحاولة.',
+    formErrorEmail: 'يرجى إدخال عنوان بريد إلكتروني صحيح.',
+    formErrorRequired: 'يرجى إكمال جميع الحقول المطلوبة المشار إليها بعلامة *.',
+    formTryAgain: 'إعادة المحاولة',
     closeModal: 'إغلاق النافذة',
     
     // Org Types Options

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { PageId } from './types';
+import { updateSeoMetadata } from './services/seoService';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { SearchModal } from './components/SearchModal';
@@ -24,47 +25,13 @@ const MainAppContent: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isDemoOpen, setIsDemoOpen] = useState(false);
 
-  // Dynamic Title Management for SEO & User Experience
+  // Dynamic Title, Meta Description, OG & Canonical Management for SEO
   useEffect(() => {
-    const titlesEn: Record<string, string> = {
-      home: 'Rtiqa (رتقاء) | AI Operating System for Education',
-      products: 'Products & Ecosystem | Rtiqa (رتقاء)',
-      solutions: 'Tailored Educational Solutions | Rtiqa (رتقاء)',
-      ai: 'Sovereign AI Engine | Rtiqa (رتقاء)',
-      about: 'About Us & Global Vision | Rtiqa (رتقاء)',
-      blog: 'Insights & Research | Rtiqa (رتقاء)',
-      contact: 'Contact Enterprise Team | Rtiqa (رتقاء)',
-      legal: 'Legal Policies & Governance | Rtiqa (رتقاء)',
-      security: 'Security Principles & Architecture | Rtiqa (رتقاء)',
-      privacy: 'Privacy Policy & Student Data Protection | Rtiqa (رتقاء)',
-      terms: 'Terms of Service & Enterprise Agreement | Rtiqa (رتقاء)',
-      'ai-governance': 'Responsible AI Governance & Ethics | Rtiqa (رتقاء)',
-      faq: 'Frequently Asked Questions & Knowledge Base | Rtiqa (رتقاء)',
-      'case-studies': 'Case Studies & Institutional Pilot Research | Rtiqa (رتقاء)',
-      notFound: '404 - Page Not Found | Rtiqa (رتقاء)'
-    };
-
-    const titlesAr: Record<string, string> = {
-      home: 'رتقاء (Rtiqa) | نظام التشغيل بالذكاء الاصطناعي للتعليم',
-      products: 'منظومة المنتجات والحلول | رتقاء (Rtiqa)',
-      solutions: 'الحلول المخصصة للمؤسسات والتعليم | رتقاء (Rtiqa)',
-      ai: 'محرك الذكاء الاصطناعي السيادي | رتقاء (Rtiqa)',
-      about: 'عن الشركة والرؤية العالمية | رتقاء (Rtiqa)',
-      blog: 'الأبحاث والأفكار الرقمية | رتقاء (Rtiqa)',
-      contact: 'تواصل مع فريق المؤسسات | رتقاء (Rtiqa)',
-      legal: 'الأمان والسيادة والحوكمة | رتقاء (Rtiqa)',
-      security: 'مبادئ الأمن والسيادة الرقمية | رتقاء (Rtiqa)',
-      privacy: 'سياسة الخصوصية وحماية البيانات | رتقاء (Rtiqa)',
-      terms: 'شروط الخدمة والاتفاقية المؤسسية | رتقاء (Rtiqa)',
-      'ai-governance': 'حوكمة الذكاء الاصطناعي والتربية | رتقاء (Rtiqa)',
-      faq: 'الأسئلة الشائعة والمعرفية | رتقاء (Rtiqa)',
-      'case-studies': 'قصص النجاح ودراسات الحالة | رتقاء (Rtiqa)',
-      notFound: '404 - الصفحة غير موجودة | رتقاء (Rtiqa)'
-    };
-
-    const pageTitle = (isRtl ? titlesAr[currentPage] : titlesEn[currentPage]) || titlesEn.home;
-    document.title = pageTitle;
-  }, [currentPage, isRtl, language]);
+    const key = detailId && ['security', 'privacy', 'terms', 'ai-governance'].includes(detailId)
+      ? detailId
+      : currentPage;
+    updateSeoMetadata(key, language, detailId);
+  }, [currentPage, detailId, language]);
 
   // Sync hash routing if user manually navigates or uses back button
   useEffect(() => {

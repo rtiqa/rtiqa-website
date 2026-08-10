@@ -93,7 +93,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({ initialArticleId, onNavigate
                 <div className="relative h-48 rounded-2xl overflow-hidden mb-5 bg-slate-950">
                   <img
                     src={post.image}
-                    alt={post.titleEn}
+                    alt={isRtl ? post.titleAr : post.titleEn}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   <span className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md text-emerald-400 text-[10px] font-mono px-2.5 py-1 rounded-full font-bold border border-slate-800">
@@ -160,7 +160,7 @@ export const BlogPage: React.FC<BlogPageProps> = ({ initialArticleId, onNavigate
             </div>
 
             <div className="h-64 sm:h-80 rounded-2xl overflow-hidden bg-slate-950">
-              <img src={activePost.image} alt="Header" className="w-full h-full object-cover" />
+              <img src={activePost.image} alt={isRtl ? activePost.titleAr : activePost.titleEn} className="w-full h-full object-cover" />
             </div>
 
             <div className="prose prose-invert max-w-none text-slate-300 text-sm leading-relaxed whitespace-pre-line space-y-4">

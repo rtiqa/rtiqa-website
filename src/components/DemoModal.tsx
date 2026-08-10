@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { X, Send, CheckCircle2, Sparkles, Building, Mail, User, MessageSquare } from 'lucide-react';
+import { X, Send, CheckCircle2, AlertCircle, Sparkles, Building, Mail, User, MessageSquare } from 'lucide-react';
+import { submitDemoRequest, validateEmail } from '../services/formService';
 
 interface DemoModalProps {
   isOpen: boolean;
@@ -11,6 +12,9 @@ export const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
   const { isRtl, t } = useLanguage();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -23,17 +27,56 @@ export const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const errors: { [key: string]: string } = {};
+
+    if (!formData.name.trim()) {
+      errors.name = t.formErrorRequired;
+    }
+    if (!formData.email.trim()) {
+      errors.email = t.formErrorRequired;
+    } else if (!validateEmail(formData.email)) {
+      errors.email = t.formErrorEmail;
+    }
+    if (!formData.organization.trim()) {
+      errors.organization = t.formErrorRequired;
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    const result = await submitDemoRequest(formData);
+
+    setLoading(false);
+
+    if (result.success) {
       setSubmitted(true);
-    }, 1200);
+      setValidationErrors({});
+    } else {
+      if (result.error === 'INVALID_EMAIL_FORMAT') {
+        setValidationErrors({ email: t.formErrorEmail });
+        setErrorMessage(t.formErrorEmail);
+      } else {
+        setErrorMessage(result.message || t.formErrorGeneric);
+      }
+    }
   };
 
   const handleReset = () => {
     setSubmitted(false);
+    setErrorMessage(null);
+    setValidationErrors({});
     setFormData({
       name: '',
       email: '',
@@ -85,58 +128,99 @@ export const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              {errorMessage && (
+                <div role="alert" className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 shrink-0" />
+                  <div>
+                    <p className="font-bold">{t.formErrorTitle}</p>
+                    <p className="text-slate-300 mt-0.5">{errorMessage}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <label htmlFor="demo-name" className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 text-emerald-400" />
                     {t.formName} *
                   </label>
                   <input
+                    id="demo-name"
                     type="text"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, name: e.target.value });
+                      if (validationErrors.name) setValidationErrors({ ...validationErrors, name: '' });
+                    }}
                     placeholder={isRtl ? 'د. أحمد علي' : 'Dr. Sarah Jenkins'}
-                    className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition"
+                    aria-invalid={!!validationErrors.name}
+                    className={`w-full bg-slate-950/80 border ${
+                      validationErrors.name ? 'border-red-500' : 'border-slate-800 focus:border-emerald-500'
+                    } text-slate-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition`}
                   />
+                  {validationErrors.name && (
+                    <p className="text-red-400 text-[11px] mt-1">{validationErrors.name}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <label htmlFor="demo-email" className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
                     <Mail className="w-3.5 h-3.5 text-emerald-400" />
                     {t.formEmail} *
                   </label>
                   <input
+                    id="demo-email"
                     type="email"
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, email: e.target.value });
+                      if (validationErrors.email) setValidationErrors({ ...validationErrors, email: '' });
+                    }}
                     placeholder="name@institution.edu"
-                    className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition"
+                    aria-invalid={!!validationErrors.email}
+                    className={`w-full bg-slate-950/80 border ${
+                      validationErrors.email ? 'border-red-500' : 'border-slate-800 focus:border-emerald-500'
+                    } text-slate-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition`}
                   />
+                  {validationErrors.email && (
+                    <p className="text-red-400 text-[11px] mt-1">{validationErrors.email}</p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
+                  <label htmlFor="demo-org" className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
                     <Building className="w-3.5 h-3.5 text-emerald-400" />
                     {t.formOrg} *
                   </label>
                   <input
+                    id="demo-org"
                     type="text"
                     required
                     value={formData.organization}
-                    onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, organization: e.target.value });
+                      if (validationErrors.organization) setValidationErrors({ ...validationErrors, organization: '' });
+                    }}
                     placeholder={isRtl ? 'مدارس المستقبل الدولية' : 'Global Education Network'}
-                    className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition"
+                    aria-invalid={!!validationErrors.organization}
+                    className={`w-full bg-slate-950/80 border ${
+                      validationErrors.organization ? 'border-red-500' : 'border-slate-800 focus:border-emerald-500'
+                    } text-slate-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition`}
                   />
+                  {validationErrors.organization && (
+                    <p className="text-red-400 text-[11px] mt-1">{validationErrors.organization}</p>
+                  )}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-300 mb-1.5">
+                  <label htmlFor="demo-type" className="block text-xs font-medium text-slate-300 mb-1.5">
                     {t.formType}
                   </label>
                   <select
+                    id="demo-type"
                     value={formData.orgType}
                     onChange={(e) => setFormData({ ...formData, orgType: e.target.value })}
                     className="w-full bg-slate-950/80 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none transition"
@@ -151,11 +235,12 @@ export const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <label htmlFor="demo-message" className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center gap-1.5">
                   <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
                   {t.formMessage}
                 </label>
                 <textarea
+                  id="demo-message"
                   rows={3}
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -175,7 +260,7 @@ export const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-sm transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-sm transition shadow-lg shadow-emerald-500/20 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <span>{t.formSending}</span>
@@ -194,3 +279,4 @@ export const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose }) => {
     </div>
   );
 };
+

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { PageId } from '../types';
-import { Globe, Mail, ArrowRight, ShieldCheck, Sparkles, Check, Github, Twitter, Linkedin } from 'lucide-react';
+import { Globe, Mail, ArrowRight, ShieldCheck, Sparkles, Check, AlertCircle, Github, Twitter, Linkedin } from 'lucide-react';
 import { productsData } from '../data/translations';
+import { submitNewsletterSubscription, validateEmail } from '../services/formService';
 
 interface FooterProps {
   onNavigate: (page: PageId, detailId?: string) => void;
@@ -13,13 +14,29 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenDemo }) => {
   const { language, toggleLanguage, isRtl, t } = useLanguage();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeError, setSubscribeError] = useState<string | null>(null);
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (email.trim()) {
+    setSubscribeError(null);
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !validateEmail(trimmedEmail)) {
+      setSubscribeError(t.formErrorEmail);
+      return;
+    }
+
+    setSubscribing(true);
+    const result = await submitNewsletterSubscription(trimmedEmail);
+    setSubscribing(false);
+
+    if (result.success) {
       setSubscribed(true);
       setEmail('');
-      setTimeout(() => setSubscribed(false), 4000);
+      setTimeout(() => setSubscribed(false), 5000);
+    } else {
+      setSubscribeError(result.message || t.formErrorGeneric);
     }
   };
 
@@ -65,22 +82,35 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenDemo }) => {
                 <Mail className="w-3.5 h-3.5 text-emerald-400" />
                 {t.subscribeNewsletter}
               </label>
-              <form onSubmit={handleSubscribe} className="flex items-center gap-2 max-w-sm">
+              <form onSubmit={handleSubscribe} noValidate className="flex items-center gap-2 max-w-sm">
                 <input
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (subscribeError) setSubscribeError(null);
+                  }}
                   placeholder={t.emailPlaceholder}
-                  className="w-full bg-slate-900 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs focus:outline-none transition"
+                  aria-invalid={!!subscribeError}
+                  className={`w-full bg-slate-900 border ${
+                    subscribeError ? 'border-red-500' : 'border-slate-800 focus:border-emerald-500'
+                  } text-slate-100 rounded-xl px-3.5 py-2 text-xs focus:outline-none transition`}
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition shrink-0"
+                  disabled={subscribing}
+                  className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl transition shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {t.subscribeBtn}
+                  {subscribing ? '...' : t.subscribeBtn}
                 </button>
               </form>
+              {subscribeError && (
+                <p className="text-[11px] text-red-400 flex items-center gap-1 mt-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {subscribeError}
+                </p>
+              )}
               {subscribed && (
                 <p className="text-[11px] text-emerald-400 flex items-center gap-1 mt-1">
                   <Check className="w-3 h-3" />

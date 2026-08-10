@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { PageId } from '../types';
-import { Mail, Phone, MapPin, Send, CheckCircle2, Sparkles, Building, Globe, MessageSquare } from 'lucide-react';
+import { Mail, Send, CheckCircle2, AlertCircle, Sparkles, Building, Globe } from 'lucide-react';
+import { submitContactForm, validateEmail } from '../services/formService';
 
 interface ContactPageProps {
   onNavigate: (page: PageId) => void;
@@ -11,6 +12,9 @@ export const ContactPage: React.FC<ContactPageProps> = () => {
   const { isRtl, t } = useLanguage();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,13 +23,63 @@ export const ContactPage: React.FC<ContactPageProps> = () => {
     message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateForm = () => {
+    const errors: { [key: string]: string } = {};
+
+    if (!formData.name.trim()) {
+      errors.name = t.formErrorRequired;
+    }
+    if (!formData.email.trim()) {
+      errors.email = t.formErrorRequired;
+    } else if (!validateEmail(formData.email)) {
+      errors.email = t.formErrorEmail;
+    }
+    if (!formData.organization.trim()) {
+      errors.organization = t.formErrorRequired;
+    }
+    if (!formData.subject.trim()) {
+      errors.subject = t.formErrorRequired;
+    }
+    if (!formData.message.trim()) {
+      errors.message = t.formErrorRequired;
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
+
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+
+    const result = await submitContactForm(formData);
+
+    setLoading(false);
+
+    if (result.success) {
       setSubmitted(true);
-    }, 1000);
+      setFormData({
+        name: '',
+        email: '',
+        organization: '',
+        subject: '',
+        message: '',
+      });
+      setValidationErrors({});
+    } else {
+      if (result.error === 'INVALID_EMAIL_FORMAT') {
+        setValidationErrors({ email: t.formErrorEmail });
+        setErrorMessage(t.formErrorEmail);
+      } else {
+        setErrorMessage(result.message || t.formErrorGeneric);
+      }
+    }
   };
 
   return (
@@ -66,83 +120,143 @@ export const ContactPage: React.FC<ContactPageProps> = () => {
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} noValidate className="space-y-5">
+                {errorMessage && (
+                  <div role="alert" className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-3">
+                    <AlertCircle className="w-5 h-5 shrink-0" />
+                    <div>
+                      <p className="font-bold">{t.formErrorTitle}</p>
+                      <p className="text-slate-300 mt-0.5">{errorMessage}</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-2">
+                    <label htmlFor="contact-name" className="block text-xs font-semibold text-slate-300 mb-2">
                       {t.formName} *
                     </label>
                     <input
+                      id="contact-name"
                       type="text"
                       required
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, name: e.target.value });
+                        if (validationErrors.name) setValidationErrors({ ...validationErrors, name: '' });
+                      }}
                       placeholder={isRtl ? 'الاسم الكامل' : 'Full Name'}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition"
+                      aria-invalid={!!validationErrors.name}
+                      className={`w-full bg-slate-950 border ${
+                        validationErrors.name ? 'border-red-500' : 'border-slate-800 focus:border-emerald-500'
+                      } text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition`}
                     />
+                    {validationErrors.name && (
+                      <p className="text-red-400 text-[11px] mt-1">{validationErrors.name}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-2">
+                    <label htmlFor="contact-email" className="block text-xs font-semibold text-slate-300 mb-2">
                       {t.formEmail} *
                     </label>
                     <input
+                      id="contact-email"
                       type="email"
                       required
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, email: e.target.value });
+                        if (validationErrors.email) setValidationErrors({ ...validationErrors, email: '' });
+                      }}
                       placeholder="name@institution.com"
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition"
+                      aria-invalid={!!validationErrors.email}
+                      className={`w-full bg-slate-950 border ${
+                        validationErrors.email ? 'border-red-500' : 'border-slate-800 focus:border-emerald-500'
+                      } text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition`}
                     />
+                    {validationErrors.email && (
+                      <p className="text-red-400 text-[11px] mt-1">{validationErrors.email}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-2">
+                    <label htmlFor="contact-org" className="block text-xs font-semibold text-slate-300 mb-2">
                       {t.formOrg} *
                     </label>
                     <input
+                      id="contact-org"
                       type="text"
                       required
                       value={formData.organization}
-                      onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, organization: e.target.value });
+                        if (validationErrors.organization) setValidationErrors({ ...validationErrors, organization: '' });
+                      }}
                       placeholder={isRtl ? 'المدرسة / الجامعة' : 'Organization Name'}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition"
+                      aria-invalid={!!validationErrors.organization}
+                      className={`w-full bg-slate-950 border ${
+                        validationErrors.organization ? 'border-red-500' : 'border-slate-800 focus:border-emerald-500'
+                      } text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition`}
                     />
+                    {validationErrors.organization && (
+                      <p className="text-red-400 text-[11px] mt-1">{validationErrors.organization}</p>
+                    )}
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-2">
+                    <label htmlFor="contact-subject" className="block text-xs font-semibold text-slate-300 mb-2">
                       {t.formSubject} *
                     </label>
                     <input
+                      id="contact-subject"
                       type="text"
                       required
                       value={formData.subject}
-                      onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, subject: e.target.value });
+                        if (validationErrors.subject) setValidationErrors({ ...validationErrors, subject: '' });
+                      }}
                       placeholder={isRtl ? 'موضوع الرسالة' : 'Inquiry Subject'}
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition"
+                      aria-invalid={!!validationErrors.subject}
+                      className={`w-full bg-slate-950 border ${
+                        validationErrors.subject ? 'border-red-500' : 'border-slate-800 focus:border-emerald-500'
+                      } text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition`}
                     />
+                    {validationErrors.subject && (
+                      <p className="text-red-400 text-[11px] mt-1">{validationErrors.subject}</p>
+                    )}
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-2">
+                  <label htmlFor="contact-message" className="block text-xs font-semibold text-slate-300 mb-2">
                     {t.formMessage} *
                   </label>
                   <textarea
+                    id="contact-message"
                     rows={4}
                     required
                     value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                    onChange={(e) => {
+                      setFormData({ ...formData, message: e.target.value });
+                      if (validationErrors.message) setValidationErrors({ ...validationErrors, message: '' });
+                    }}
                     placeholder={isRtl ? 'اكتب تفاصيل استفسارك أو طلبك هنا...' : 'Write your inquiry or project scope here...'}
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-emerald-500 text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition resize-none"
+                    aria-invalid={!!validationErrors.message}
+                    className={`w-full bg-slate-950 border ${
+                      validationErrors.message ? 'border-red-500' : 'border-slate-800 focus:border-emerald-500'
+                    } text-slate-100 rounded-xl px-4 py-3 text-xs focus:outline-none transition resize-none`}
                   />
+                  {validationErrors.message && (
+                    <p className="text-red-400 text-[11px] mt-1">{validationErrors.message}</p>
+                  )}
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-sm transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-sm transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? (
                     <span>{t.formSending}</span>
@@ -216,3 +330,4 @@ export const ContactPage: React.FC<ContactPageProps> = () => {
     </div>
   );
 };
+

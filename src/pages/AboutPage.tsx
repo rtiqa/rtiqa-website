@@ -39,9 +39,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onOpenDemo, onNavigate }) 
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
               <Compass className="w-6 h-6" />
             </div>
-            <h3 className="text-2xl font-extrabold text-slate-100">
+            <h2 className="text-2xl font-extrabold text-slate-100">
               {isRtl ? 'رؤية رتقاء' : 'Our Vision'}
-            </h3>
+            </h2>
             <p className="text-sm text-slate-300 leading-relaxed">
               {isRtl
                 ? 'بناء مستقبل أكثر ذكاءً وكفاءة للتعليم من خلال الذكاء الاصطناعي والبرمجيات الحديثة والبنية الرقمية المتكاملة.'
@@ -54,9 +54,9 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onOpenDemo, onNavigate }) 
             <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
               <Target className="w-6 h-6" />
             </div>
-            <h3 className="text-2xl font-extrabold text-slate-100">
+            <h2 className="text-2xl font-extrabold text-slate-100">
               {isRtl ? 'رسالة رتقاء' : 'Our Mission'}
-            </h3>
+            </h2>
             <p className="text-sm text-slate-300 leading-relaxed">
               {isRtl
                 ? 'تمكين المدارس والمؤسسات التعليمية والمعلمين والطلاب من خلال منظومة تقنية ذكية تجعل التعليم والإدارة والتعلم أكثر كفاءة وذكاءً وسهولة.'
