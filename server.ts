@@ -2,9 +2,8 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 
-async function startServer() {
+export async function createApp() {
   const app = express();
-  const PORT = 3000;
 
   // SEC-01: HTTP Security Headers
   app.use((req, res, next) => {
@@ -108,6 +107,11 @@ async function startServer() {
   const isValidEmail = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
+
+  // API Route: Health Check
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok' });
+  });
 
   // API Route: Contact Form
   app.post('/api/contact', formRateLimiter, async (req, res) => {
@@ -258,23 +262,53 @@ async function startServer() {
   });
 
   // Vite middleware for development vs static build serving for production
-  if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
-  } else {
+  if (process.env.NODE_ENV === 'production') {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
+  } else if (process.env.NODE_ENV !== 'test') {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: 'spa',
+    });
+    app.use(vite.middlewares);
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://0.0.0.0:${PORT}`);
-  });
+  return app;
 }
 
-startServer();
+export async function startServer() {
+  const app = await createApp();
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  });
+
+  const handleShutdown = (signal: string) => {
+    console.log(`Received ${signal}, initiating graceful shutdown...`);
+    server.close(() => {
+      console.log('HTTP server closed cleanly.');
+      process.exit(0);
+    });
+
+    setTimeout(() => {
+      console.error('Forcing shutdown due to timeout.');
+      process.exit(1);
+    }, 10000).unref();
+  };
+
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
+
+  return server;
+}
+
+if (process.env.NODE_ENV !== 'test') {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}

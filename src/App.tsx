@@ -7,16 +7,27 @@ import { Footer } from './components/Footer';
 import { SearchModal } from './components/SearchModal';
 import { DemoModal } from './components/DemoModal';
 import { HomePage } from './pages/HomePage';
-import { ProductsPage } from './pages/ProductsPage';
-import { SolutionsPage } from './pages/SolutionsPage';
-import { AiPage } from './pages/AiPage';
-import { AboutPage } from './pages/AboutPage';
-import { BlogPage } from './pages/BlogPage';
-import { ContactPage } from './pages/ContactPage';
-import { LegalPage } from './pages/LegalPage';
-import { FaqPage } from './pages/FaqPage';
-import { CaseStudiesPage } from './pages/CaseStudiesPage';
-import { NotFoundPage } from './pages/NotFoundPage';
+
+// Route-based code splitting for secondary pages
+const ProductsPage = React.lazy(() => import('./pages/ProductsPage').then(m => ({ default: m.ProductsPage })));
+const SolutionsPage = React.lazy(() => import('./pages/SolutionsPage').then(m => ({ default: m.SolutionsPage })));
+const AiPage = React.lazy(() => import('./pages/AiPage').then(m => ({ default: m.AiPage })));
+const AboutPage = React.lazy(() => import('./pages/AboutPage').then(m => ({ default: m.AboutPage })));
+const BlogPage = React.lazy(() => import('./pages/BlogPage').then(m => ({ default: m.BlogPage })));
+const ContactPage = React.lazy(() => import('./pages/ContactPage').then(m => ({ default: m.ContactPage })));
+const LegalPage = React.lazy(() => import('./pages/LegalPage').then(m => ({ default: m.LegalPage })));
+const FaqPage = React.lazy(() => import('./pages/FaqPage').then(m => ({ default: m.FaqPage })));
+const CaseStudiesPage = React.lazy(() => import('./pages/CaseStudiesPage').then(m => ({ default: m.CaseStudiesPage })));
+const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+
+const PageLoadingFallback: React.FC = () => (
+  <div className="min-h-[60vh] flex items-center justify-center">
+    <div className="flex flex-col items-center gap-3">
+      <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+      <span className="text-xs text-slate-500 font-medium tracking-wider uppercase">Loading...</span>
+    </div>
+  </div>
+);
 
 const MainAppContent: React.FC = () => {
   const { isRtl, language } = useLanguage();
@@ -87,47 +98,49 @@ const MainAppContent: React.FC = () => {
 
       {/* Main Page Body */}
       <main className="flex-1">
-        {currentPage === 'home' && (
-          <HomePage onNavigate={handleNavigate} onOpenDemo={() => setIsDemoOpen(true)} />
-        )}
-        {currentPage === 'products' && (
-          <ProductsPage
-            initialProductId={detailId}
-            onOpenDemo={() => setIsDemoOpen(true)}
-            onNavigate={handleNavigate}
-          />
-        )}
-        {currentPage === 'solutions' && (
-          <SolutionsPage
-            initialSolutionId={detailId}
-            onOpenDemo={() => setIsDemoOpen(true)}
-            onNavigate={handleNavigate}
-          />
-        )}
-        {currentPage === 'ai' && (
-          <AiPage onOpenDemo={() => setIsDemoOpen(true)} onNavigate={handleNavigate} />
-        )}
-        {currentPage === 'about' && (
-          <AboutPage onOpenDemo={() => setIsDemoOpen(true)} onNavigate={handleNavigate} />
-        )}
-        {currentPage === 'blog' && (
-          <BlogPage initialArticleId={detailId} onNavigate={handleNavigate} />
-        )}
-        {currentPage === 'contact' && (
-          <ContactPage onNavigate={handleNavigate} />
-        )}
-        {currentPage === 'legal' && (
-          <LegalPage initialTab={detailId} onNavigate={handleNavigate} />
-        )}
-        {currentPage === 'faq' && (
-          <FaqPage onNavigate={handleNavigate} onOpenDemo={() => setIsDemoOpen(true)} />
-        )}
-        {currentPage === 'case-studies' && (
-          <CaseStudiesPage onNavigate={handleNavigate} onOpenDemo={() => setIsDemoOpen(true)} />
-        )}
-        {currentPage === 'notFound' && (
-          <NotFoundPage onNavigate={handleNavigate} onOpenSearch={() => setIsSearchOpen(true)} />
-        )}
+        <React.Suspense fallback={<PageLoadingFallback />}>
+          {currentPage === 'home' && (
+            <HomePage onNavigate={handleNavigate} onOpenDemo={() => setIsDemoOpen(true)} />
+          )}
+          {currentPage === 'products' && (
+            <ProductsPage
+              initialProductId={detailId}
+              onOpenDemo={() => setIsDemoOpen(true)}
+              onNavigate={handleNavigate}
+            />
+          )}
+          {currentPage === 'solutions' && (
+            <SolutionsPage
+              initialSolutionId={detailId}
+              onOpenDemo={() => setIsDemoOpen(true)}
+              onNavigate={handleNavigate}
+            />
+          )}
+          {currentPage === 'ai' && (
+            <AiPage onOpenDemo={() => setIsDemoOpen(true)} onNavigate={handleNavigate} />
+          )}
+          {currentPage === 'about' && (
+            <AboutPage onOpenDemo={() => setIsDemoOpen(true)} onNavigate={handleNavigate} />
+          )}
+          {currentPage === 'blog' && (
+            <BlogPage initialArticleId={detailId} onNavigate={handleNavigate} />
+          )}
+          {currentPage === 'contact' && (
+            <ContactPage onNavigate={handleNavigate} />
+          )}
+          {currentPage === 'legal' && (
+            <LegalPage initialTab={detailId} onNavigate={handleNavigate} />
+          )}
+          {currentPage === 'faq' && (
+            <FaqPage onNavigate={handleNavigate} onOpenDemo={() => setIsDemoOpen(true)} />
+          )}
+          {currentPage === 'case-studies' && (
+            <CaseStudiesPage onNavigate={handleNavigate} onOpenDemo={() => setIsDemoOpen(true)} />
+          )}
+          {currentPage === 'notFound' && (
+            <NotFoundPage onNavigate={handleNavigate} onOpenSearch={() => setIsSearchOpen(true)} />
+          )}
+        </React.Suspense>
       </main>
 
       {/* Footer */}
