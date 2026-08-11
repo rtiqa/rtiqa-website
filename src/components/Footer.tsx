@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { PageId } from '../types';
-import { Globe, Mail, ArrowRight, ShieldCheck, Sparkles, Check, AlertCircle, Github, Twitter, Linkedin } from 'lucide-react';
+import { Globe, Mail, ShieldCheck, Sparkles, Check, AlertCircle } from 'lucide-react';
 import { productsData } from '../data/translations';
 import { submitNewsletterSubscription, validateEmail } from '../services/formService';
 
@@ -75,6 +75,16 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenDemo }) => {
             <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
               {t.footerDesc}
             </p>
+
+            <div className="pt-1">
+              <a
+                href="mailto:info@rtiqa.com"
+                className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition inline-flex items-center gap-1.5"
+              >
+                <Mail className="w-3.5 h-3.5" />
+                <span>info@rtiqa.com</span>
+              </a>
+            </div>
 
             {/* Newsletter */}
             <div className="space-y-2 pt-2">
@@ -244,19 +254,14 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenDemo }) => {
         <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>{t.allRightsReserved}</div>
 
-          {/* Socials & Language */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 text-slate-400">
-              <a href="https://twitter.com" target="_blank" rel="noreferrer" className="hover:text-slate-100 transition" aria-label="Twitter">
-                <Twitter className="w-4 h-4" />
-              </a>
-              <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="hover:text-slate-100 transition" aria-label="LinkedIn">
-                <Linkedin className="w-4 h-4" />
-              </a>
-              <a href="https://github.com" target="_blank" rel="noreferrer" className="hover:text-slate-100 transition" aria-label="GitHub">
-                <Github className="w-4 h-4" />
-              </a>
-            </div>
+          <div className="flex items-center gap-6">
+            <a
+              href="mailto:info@rtiqa.com"
+              className="hover:text-emerald-400 transition flex items-center gap-1.5"
+            >
+              <Mail className="w-3.5 h-3.5 text-emerald-400" />
+              <span>info@rtiqa.com</span>
+            </a>
 
             <button
               onClick={toggleLanguage}

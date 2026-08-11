@@ -1,8 +1,18 @@
 <!doctype html>
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('rtiqa_lang');
+          var lang = (saved === 'ar' || saved === 'en') ? saved : 'ar';
+          document.documentElement.lang = lang;
+          document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        } catch (e) {}
+      })();
+    </script>
     <title>Rtiqa (رتقاء) | AI Operating System for Education</title>
     <meta name="description" content="Rtiqa (رتقاء) is a global technology and AI company building the intelligent operating system and digital infrastructure for education, schools, and enterprise learning." />
     <meta name="keywords" content="Rtiqa, رتقاء, EdTech, AI Education, AI Operating System, Sovereign AI, LMS, School ERP, Pedagogical AI, Learning Technology" />

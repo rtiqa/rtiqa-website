@@ -15,8 +15,21 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('rtiqa_lang') as Language;
-    return saved === 'ar' || saved === 'en' ? saved : 'en';
+    let initial: Language = 'ar';
+    try {
+      const saved = localStorage.getItem('rtiqa_lang') as Language;
+      if (saved === 'ar' || saved === 'en') {
+        initial = saved;
+      }
+    } catch (e) {
+      console.warn('Unable to access localStorage for language setting:', e);
+    }
+
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = initial;
+      document.documentElement.dir = initial === 'ar' ? 'rtl' : 'ltr';
+    }
+    return initial;
   });
 
   const dir: Direction = language === 'ar' ? 'rtl' : 'ltr';
@@ -26,7 +39,11 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = dir;
-    localStorage.setItem('rtiqa_lang', language);
+    try {
+      localStorage.setItem('rtiqa_lang', language);
+    } catch (e) {
+      console.warn('Unable to save language setting to localStorage:', e);
+    }
   }, [language, dir]);
 
   const setLanguage = (lang: Language) => {

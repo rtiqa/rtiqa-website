@@ -285,7 +285,11 @@ export const ContactPage: React.FC<ContactPageProps> = () => {
                   </div>
                   <div>
                     <span className="text-slate-400 font-mono">GLOBAL ENTERPRISE EMAIL</span>
-                    <p className="text-sm font-bold text-slate-200 mt-0.5">contact@rtiqa.com</p>
+                    <p className="text-sm font-bold text-slate-200 mt-0.5">
+                      <a href="mailto:info@rtiqa.com" className="hover:text-emerald-400 transition underline underline-offset-4">
+                        info@rtiqa.com
+                      </a>
+                    </p>
                   </div>
                 </div>
 
