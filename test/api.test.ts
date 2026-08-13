@@ -20,6 +20,9 @@ describe('Rtiqa API Suite', () => {
 
   after(async () => {
     if (server) {
+      if (typeof server.closeAllConnections === 'function') {
+        server.closeAllConnections();
+      }
       await new Promise<void>((resolve) => server.close(() => resolve()));
     }
   });

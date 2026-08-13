@@ -306,7 +306,11 @@ export async function startServer() {
   return server;
 }
 
-if (process.env.NODE_ENV !== 'test') {
+const isMainModule = Boolean(
+  process.argv[1] && (process.argv[1].endsWith('server.ts') || process.argv[1].endsWith('server.cjs'))
+);
+
+if (isMainModule && process.env.NODE_ENV !== 'test') {
   startServer().catch((err) => {
     console.error('Failed to start server:', err);
     process.exit(1);
