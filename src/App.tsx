@@ -4,11 +4,9 @@ import { PageId } from './types';
 import { updateSeoMetadata } from './services/seoService';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
-import { SearchModal } from './components/SearchModal';
-import { DemoModal } from './components/DemoModal';
-import { HomePage } from './pages/HomePage';
 
-// Route-based code splitting for secondary pages
+// Route-based code splitting for all pages and modals
+const HomePage = React.lazy(() => import('./pages/HomePage').then(m => ({ default: m.HomePage })));
 const ProductsPage = React.lazy(() => import('./pages/ProductsPage').then(m => ({ default: m.ProductsPage })));
 const SolutionsPage = React.lazy(() => import('./pages/SolutionsPage').then(m => ({ default: m.SolutionsPage })));
 const AiPage = React.lazy(() => import('./pages/AiPage').then(m => ({ default: m.AiPage })));
@@ -19,6 +17,8 @@ const LegalPage = React.lazy(() => import('./pages/LegalPage').then(m => ({ defa
 const FaqPage = React.lazy(() => import('./pages/FaqPage').then(m => ({ default: m.FaqPage })));
 const CaseStudiesPage = React.lazy(() => import('./pages/CaseStudiesPage').then(m => ({ default: m.CaseStudiesPage })));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+const SearchModal = React.lazy(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
+const DemoModal = React.lazy(() => import('./components/DemoModal').then(m => ({ default: m.DemoModal })));
 
 const PageLoadingFallback: React.FC = () => (
   <div className="min-h-[60vh] flex items-center justify-center">

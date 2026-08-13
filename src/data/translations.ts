@@ -635,11 +635,11 @@ export const valuesData: ValueItem[] = [
 ];
 
 export const partnerOrgsData: PartnerOrg[] = [
-  { name: 'Global Education Council', typeEn: 'International Authority', typeAr: 'هيئة دولية', logoText: 'GEC', regionEn: 'Global', regionAr: 'عالمي' },
-  { name: 'National K-12 Federation', typeEn: 'School Network', typeAr: 'شبكة مدارس', logoText: 'NK12', regionEn: 'Middle East & North Africa', regionAr: 'الشرق الأوسط وشمال أفريقيا' },
-  { name: 'Apex Higher Ed System', typeEn: 'University Alliance', typeAr: 'تحالف جامعي', logoText: 'AHES', regionEn: 'Europe', regionAr: 'أوروبا' },
-  { name: 'Future Education Lab', typeEn: 'R&D Partner', typeAr: 'شريك أبحاث', logoText: 'FEL', regionEn: 'North America', regionAr: 'أمريكا الشمالية' },
-  { name: 'Sovereign EdTech Cloud', typeEn: 'Cloud Infrastructure', typeAr: 'بنية سحابية', logoText: 'SEC', regionEn: 'Asia-Pacific', regionAr: 'آسيا والمحيط الهادئ' }
+  { name: 'K-12 School Networks', typeEn: 'Institutional Segment', typeAr: 'مجمعات ومدارس K-12', logoText: 'K-12', regionEn: 'Global', regionAr: 'عالمي' },
+  { name: 'Colleges & Universities', typeEn: 'Higher Education', typeAr: 'الجامعات والكليات', logoText: 'UNIV', regionEn: 'Global', regionAr: 'عالمي' },
+  { name: 'Education Authorities', typeEn: 'Ministries & Councils', typeAr: 'الوزارات والهيئات التعليمية', logoText: 'GOV', regionEn: 'Regional & National', regionAr: 'إقليمي ووطني' },
+  { name: 'EdTech R&D Ecosystem', typeEn: 'Research & Innovation', typeAr: 'مختبرات الأبحاث والابتكار', logoText: 'R&D', regionEn: 'Global', regionAr: 'عالمي' },
+  { name: 'Enterprise Training Hubs', typeEn: 'Corporate Academies', typeAr: 'المؤسسات والأكاديميات المهنية', logoText: 'ACAD', regionEn: 'Enterprise', regionAr: 'مؤسسي' }
 ];
 
 export const UI_TEXT = {
@@ -680,8 +680,8 @@ export const UI_TEXT = {
     aiPoweredIntelligenceSub: 'A sovereign intelligence layer engineered to understand educational contexts, curriculum guidelines, and administrative workflows.',
     whyRtiqa: 'Why Global Leaders Choose Rtiqa',
     globalVision: 'Global Vision, Local Sovereignty',
-    globalVisionSub: 'Designed for global scalability with localized cultural, linguistic, and regulatory flexibility.',
-    partnersHeader: 'Trusted by Forward-Thinking Institutions Worldwide',
+    globalVisionSub: 'Engineered to adapt to national educational standards, curricula, and sovereign compliance requirements across diverse jurisdictions.',
+    partnersHeader: 'Architected for Global Educational Ecosystems',
     finalCtaTitle: 'Ready to Transform Your Educational Infrastructure?',
     finalCtaSub: 'Join leading schools, ministries, and educational networks partnering with Rtiqa to build the future of intelligent education.',
     
@@ -776,8 +776,8 @@ export const UI_TEXT = {
     aiPoweredIntelligenceSub: 'طبقة ذكاء سيادية صُممت لتدبر السياق التعليمي، المناهج الدراسية، والعمليات الإدارية.',
     whyRtiqa: 'لماذا تختار المؤسسات العالمية رتقاء؟',
     globalVision: 'رؤية عالمية وسيادة رقمية محلياً',
-    globalVisionSub: 'صُممت للنمو والتوسع العالمي مع المرونة التامة للتوافق مع الأنظمة واللغات والثقافات المحلية.',
-    partnersHeader: 'تحظى بثقة شبكات المدارس والمؤسسات القيادية عالمياً',
+    globalVisionSub: 'صُممت لتتوافق مع المعايير التعليمية الوطنية، المناهج المعتمدة، ومتطلبات السيادة الرقمية في مختلف الدول.',
+    partnersHeader: 'مصممة لخدمة المنظومات التعليمية والمؤسسات العالمية',
     finalCtaTitle: 'هل أنت جاهز لتحديث البنية الرقمية لمؤسستك التعليمية؟',
     finalCtaSub: 'انضم إلى المدارس الرائدة، الوزارات، والمؤسسات التي تبني مستقبل التعليم الذكي مع رتقاء.',
     
