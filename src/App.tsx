@@ -17,6 +17,7 @@ const LegalPage = React.lazy(() => import('./pages/LegalPage').then(m => ({ defa
 const FaqPage = React.lazy(() => import('./pages/FaqPage').then(m => ({ default: m.FaqPage })));
 const CaseStudiesPage = React.lazy(() => import('./pages/CaseStudiesPage').then(m => ({ default: m.CaseStudiesPage })));
 const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
+const AppPlatform = React.lazy(() => import('./platform/AppPlatform').then(m => ({ default: m.AppPlatform })));
 const SearchModal = React.lazy(() => import('./components/SearchModal').then(m => ({ default: m.SearchModal })));
 const DemoModal = React.lazy(() => import('./components/DemoModal').then(m => ({ default: m.DemoModal })));
 
@@ -59,6 +60,9 @@ const MainAppContent: React.FC = () => {
         } else if (page === 'ai-governance') {
           setCurrentPage('legal');
           setDetailId('governance');
+        } else if (page === 'platform' || page === 'app') {
+          setCurrentPage('platform');
+          setDetailId(undefined);
         } else if (['home', 'products', 'solutions', 'ai', 'about', 'blog', 'contact', 'legal', 'faq', 'case-studies'].includes(page)) {
           setCurrentPage(page);
           setDetailId(parts[1]);
@@ -85,6 +89,14 @@ const MainAppContent: React.FC = () => {
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  if (currentPage === 'platform' || currentPage === 'app') {
+    return (
+      <React.Suspense fallback={<PageLoadingFallback />}>
+        <AppPlatform onExitPlatform={() => handleNavigate('home')} />
+      </React.Suspense>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#030712] text-slate-100 font-sans selection:bg-emerald-500/30 selection:text-emerald-200">

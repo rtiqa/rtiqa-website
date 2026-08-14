@@ -1,6 +1,8 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
+import { platformApiRouter } from './api/platform';
+import { assertProductionPostgres } from './src/db/postgres';
 
 export async function createApp() {
   const app = express();
@@ -57,8 +59,8 @@ export async function createApp() {
       res.setHeader('Access-Control-Allow-Origin', origin || '*');
     }
 
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Tenant-Id, X-Tenant-Slug');
 
     if (req.method === 'OPTIONS') {
       return res.sendStatus(204);
@@ -109,9 +111,23 @@ export async function createApp() {
   };
 
   // API Route: Health Check
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok' });
+  app.get('/api/health', async (req, res) => {
+    try {
+      const { checkPostgresConnection } = await import('./src/db/postgres');
+      const dbStatus = await checkPostgresConnection();
+      res.json({
+        status: 'ok',
+        service: 'rtiqa-api-gateway',
+        database: dbStatus,
+        timestamp: new Date().toISOString(),
+      });
+    } catch {
+      res.json({ status: 'ok', service: 'rtiqa-api-gateway', timestamp: new Date().toISOString() });
+    }
   });
+
+  // Rtiqa Education Platform API (v1)
+  app.use('/api/v1', platformApiRouter);
 
   // API Route: Contact Form
   app.post('/api/contact', formRateLimiter, async (req, res) => {
@@ -280,6 +296,7 @@ export async function createApp() {
 }
 
 export async function startServer() {
+  await assertProductionPostgres();
   const app = await createApp();
   const PORT = 3000;
 

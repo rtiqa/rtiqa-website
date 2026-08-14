@@ -1,7 +1,7 @@
 export type Language = 'en' | 'ar';
 export type Direction = 'ltr' | 'rtl';
 
-export type PageId = 'home' | 'products' | 'solutions' | 'ai' | 'about' | 'blog' | 'contact' | 'legal' | 'security' | 'privacy' | 'terms' | 'ai-governance' | 'faq' | 'case-studies';
+export type PageId = 'home' | 'products' | 'solutions' | 'ai' | 'about' | 'blog' | 'contact' | 'legal' | 'security' | 'privacy' | 'terms' | 'ai-governance' | 'faq' | 'case-studies' | 'platform' | 'app';
 
 export interface ProductItem {
   id: string;
