@@ -1,12 +1,12 @@
 import { describe, it, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { createApp } from '../server';
-import { db } from '../api/platform/db';
+import { db } from '../server/platform/db';
 import { closePostgresPool } from '../src/db/postgres';
-import { AISafetyService } from '../api/platform/ai/safety/sanitizer';
-import { AIRateLimiterService } from '../api/platform/ai/limits/rateLimiter';
-import { RAGService } from '../api/platform/ai/rag/ragService';
-import { providerRegistry } from '../api/platform/ai/gateway/registry';
+import { AISafetyService } from '../server/platform/ai/safety/sanitizer';
+import { AIRateLimiterService } from '../server/platform/ai/limits/rateLimiter';
+import { RAGService } from '../server/platform/ai/rag/ragService';
+import { providerRegistry } from '../server/platform/ai/gateway/registry';
 
 describe('Rtiqa AI Engine - Comprehensive Suite (Multi-Tenant, Security, Safety & RAG)', () => {
   let server: any;

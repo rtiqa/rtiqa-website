@@ -1,7 +1,7 @@
 import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert';
 import { createApp } from '../server';
-import { db } from '../api/platform/db';
+import { db } from '../server/platform/db';
 import { checkPostgresConnection, closePostgresPool } from '../src/db/postgres';
 
 describe('Rtiqa Platform - E2E Production Integration & Database Lifecycle Suite', () => {

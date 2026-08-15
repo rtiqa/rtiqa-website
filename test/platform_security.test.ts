@@ -1,7 +1,7 @@
 import { describe, it, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert';
 import { createApp } from '../server';
-import { db } from '../api/platform/db';
+import { db } from '../server/platform/db';
 import { closePostgresPool } from '../src/db/postgres';
 
 describe('Rtiqa Platform - QA, Security & RBAC Verification Suite', () => {
@@ -642,7 +642,7 @@ describe('Rtiqa Platform - QA, Security & RBAC Verification Suite', () => {
       delete process.env.AUTH_SECRET;
       delete process.env.JWT_SECRET;
 
-      const { assertProductionAuthSecret, getAuthSecret } = await import('../api/platform/auth');
+      const { assertProductionAuthSecret, getAuthSecret } = await import('../server/platform/auth');
 
       assert.throws(
         () => {
@@ -673,7 +673,7 @@ describe('Rtiqa Platform - QA, Security & RBAC Verification Suite', () => {
       process.env.NODE_ENV = 'production';
       process.env.AUTH_SECRET = 'temporary-test-secret-for-production-suite-only-256bit';
 
-      const { assertProductionAuthSecret, getAuthSecret, generateToken, decodeAndVerifyToken } = await import('../api/platform/auth');
+      const { assertProductionAuthSecret, getAuthSecret, generateToken, decodeAndVerifyToken } = await import('../server/platform/auth');
 
       assert.doesNotThrow(() => {
         assertProductionAuthSecret();
@@ -710,7 +710,7 @@ describe('Rtiqa Platform - QA, Security & RBAC Verification Suite', () => {
     it('5. Source code verification: No static or hardcoded fallback secrets in codebase', async () => {
       const fs = await import('fs');
       const path = await import('path');
-      const authFilePath = path.join(process.cwd(), 'api', 'platform', 'auth.ts');
+      const authFilePath = path.join(process.cwd(), 'server', 'platform', 'auth.ts');
       const authFileContent = fs.readFileSync(authFilePath, 'utf8');
 
       // Assert that old fallback string is absent

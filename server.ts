@@ -1,9 +1,9 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { platformApiRouter } from './api/platform';
+import { platformApiRouter } from './server/platform';
 import { assertProductionPostgres } from './src/db/postgres';
-import { assertProductionAuthSecret } from './api/platform/auth';
+import { assertProductionAuthSecret } from './server/platform/auth';
 
 export async function createApp() {
   assertProductionAuthSecret();
