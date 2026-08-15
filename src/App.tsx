@@ -45,12 +45,23 @@ const MainAppContent: React.FC = () => {
     updateSeoMetadata(key, language, detailId);
   }, [currentPage, detailId, language]);
 
-  // Sync hash routing if user manually navigates or uses back button
+  // Sync path and hash routing on load and upon back/forward navigation
   useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash) {
-        const parts = hash.split('/');
+    const handleLocationChange = () => {
+      const rawPath = window.location.pathname.replace(/^\/+|\/+$/g, '');
+      const rawHash = window.location.hash.replace(/^#\/?/, '').replace(/^\/+|\/+$/g, '');
+
+      // 1. Direct clean path matching for platform (/platform or /app)
+      if (rawPath === 'platform' || rawPath === 'app' || rawPath.startsWith('platform/') || rawPath.startsWith('app/')) {
+        setCurrentPage('platform');
+        setDetailId(undefined);
+        return;
+      }
+
+      // 2. Hash routing matching (#platform, #app, #products, etc.)
+      const routeToken = rawHash || rawPath;
+      if (routeToken) {
+        const parts = routeToken.split('/');
         const page = parts[0] as PageId;
 
         // Alias routing for security/privacy/terms/ai-governance
@@ -71,21 +82,47 @@ const MainAppContent: React.FC = () => {
         }
       } else {
         setCurrentPage('home');
+        setDetailId(undefined);
       }
     };
 
-    handleHashChange();
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    handleLocationChange();
+    window.addEventListener('hashchange', handleLocationChange);
+    window.addEventListener('popstate', handleLocationChange);
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange);
+      window.removeEventListener('popstate', handleLocationChange);
+    };
   }, []);
 
   const handleNavigate = (page: PageId, newDetailId?: string) => {
     setCurrentPage(page);
     setDetailId(newDetailId);
-    if (newDetailId) {
-      window.location.hash = `${page}/${newDetailId}`;
+
+    if (page === 'platform' || page === 'app') {
+      try {
+        window.history.pushState(null, '', '/platform');
+      } catch {
+        // Fallback for isolated contexts
+      }
+      window.location.hash = 'platform';
     } else {
-      window.location.hash = page;
+      const isCurrentlyOnSubpath = window.location.pathname.startsWith('/platform') || window.location.pathname.startsWith('/app');
+      if (isCurrentlyOnSubpath) {
+        try {
+          window.history.pushState(null, '', '/');
+        } catch {
+          // Fallback for isolated contexts
+        }
+      }
+
+      if (newDetailId) {
+        window.location.hash = `${page}/${newDetailId}`;
+      } else if (page === 'home') {
+        window.location.hash = '';
+      } else {
+        window.location.hash = page;
+      }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };

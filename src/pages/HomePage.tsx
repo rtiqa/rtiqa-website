@@ -15,7 +15,8 @@ import {
   Brain,
   Zap,
   BarChart3,
-  Layers
+  Layers,
+  LogIn
 } from 'lucide-react';
 import { productsData, solutionsData, partnerOrgsData } from '../data/translations';
 import { DynamicIcon } from '../components/DynamicIcon';
@@ -65,13 +66,21 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigate, onOpenDemo }) =>
           </p>
 
           {/* Hero Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16 flex-wrap">
             <button
-              onClick={() => onNavigate('about')}
+              onClick={() => onNavigate('platform')}
               className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-slate-950 font-extrabold text-sm sm:text-base transition-all duration-300 shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2.5 group"
             >
-              <span>{t.exploreRtiqa}</span>
+              <LogIn className="w-5 h-5 text-slate-950" />
+              <span>{t.launchPlatform}</span>
               <ArrowRight className={`w-5 h-5 group-hover:translate-x-1 transition-transform ${isRtl ? 'rotate-180 group-hover:-translate-x-1' : ''}`} />
+            </button>
+
+            <button
+              onClick={() => onNavigate('about')}
+              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-slate-700 font-bold text-sm sm:text-base transition-all duration-300 backdrop-blur-md flex items-center justify-center gap-2"
+            >
+              <span>{t.exploreRtiqa}</span>
             </button>
 
             <button

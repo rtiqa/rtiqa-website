@@ -137,6 +137,12 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate, onOpenDemo }) => {
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
+                <button onClick={() => onNavigate('platform')} className="text-emerald-400 hover:text-emerald-300 font-semibold transition flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{t.educationalPlatform}</span>
+                </button>
+              </li>
+              <li>
                 <button onClick={() => onNavigate('home')} className="hover:text-emerald-400 transition">
                   {t.navHome}
                 </button>

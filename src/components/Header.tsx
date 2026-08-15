@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { PageId } from '../types';
-import { Search, Globe, Menu, X, Sparkles, ChevronRight, ArrowUpRight } from 'lucide-react';
+import { Search, Globe, Menu, X, Sparkles, ChevronRight, ArrowUpRight, LogIn } from 'lucide-react';
 
 interface HeaderProps {
   currentPage: PageId;
@@ -130,6 +130,15 @@ export const Header: React.FC<HeaderProps> = ({
               <span>{language === 'en' ? 'العربية' : 'English'}</span>
             </button>
 
+            {/* Launch Platform Button (Desktop) */}
+            <button
+              onClick={() => onNavigate('platform')}
+              className="px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 hover:text-emerald-200 font-bold text-xs transition shadow-md shadow-emerald-950/40 flex items-center gap-1.5"
+            >
+              <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{t.launchPlatform}</span>
+            </button>
+
             {/* Get Started CTA */}
             <button
               onClick={onOpenDemo}
@@ -142,6 +151,13 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Mobile Menu Button */}
           <div className="flex items-center gap-2 lg:hidden">
+            <button
+              onClick={() => onNavigate('platform')}
+              className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1"
+            >
+              <LogIn className="w-3.5 h-3.5 text-emerald-400" />
+              <span>{language === 'en' ? 'Platform' : 'المنصة'}</span>
+            </button>
             <button
               onClick={toggleLanguage}
               className="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-emerald-400 text-xs font-bold"
@@ -217,6 +233,15 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="pt-4 border-t border-slate-800 flex flex-col gap-3">
+            {/* Launch Platform Button (Mobile Menu) */}
+            <button
+              onClick={() => handleNavClick('platform')}
+              className="w-full py-3 rounded-xl bg-slate-900 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 font-bold text-sm shadow-md flex items-center justify-center gap-2"
+            >
+              <LogIn className="w-4 h-4 text-emerald-400" />
+              <span>{t.launchPlatform}</span>
+            </button>
+
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
