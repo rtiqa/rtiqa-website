@@ -493,6 +493,68 @@ class PlatformDatabase {
       updatedAt: '2026-01-01T00:00:00Z',
     };
     this.users.set(studentB.id, studentB);
+
+    // School B: Academic Structure & Courses
+    const yearBId = 'year_elite_1448';
+    this.academicYears.set(yearBId, {
+      id: yearBId,
+      organizationId: schoolBId,
+      name: 'Academic Year 2026-2027 (1448H)',
+      startDate: '2026-09-01',
+      endDate: '2027-06-30',
+      isCurrent: true,
+    });
+
+    const termBId = 'term_elite_t1';
+    this.terms.set(termBId, {
+      id: termBId,
+      organizationId: schoolBId,
+      academicYearId: yearBId,
+      name: 'Trimester 1',
+      startDate: '2026-09-01',
+      endDate: '2026-11-30',
+      isCurrent: true,
+    });
+
+    const gradeBId = 'grd_elite_10';
+    this.gradeLevels.set(gradeBId, {
+      id: gradeBId,
+      organizationId: schoolBId,
+      name: 'Grade 10 (Advanced)',
+      sequenceOrder: 10,
+    });
+
+    const classBId = 'cls_elite_10a';
+    this.classrooms.set(classBId, {
+      id: classBId,
+      organizationId: schoolBId,
+      gradeLevelId: gradeBId,
+      name: 'Section 10-Alpha',
+      capacity: 25,
+    });
+
+    const physSubId = 'sbj_elite_phys';
+    this.subjects.set(physSubId, {
+      id: physSubId,
+      organizationId: schoolBId,
+      name: 'Advanced Physics',
+      code: 'PHY-101',
+    });
+
+    const coursePhys10AId = 'crs_elite_phys_10a';
+    this.courses.set(coursePhys10AId, {
+      id: coursePhys10AId,
+      organizationId: schoolBId,
+      subjectId: physSubId,
+      termId: termBId,
+      teacherId: teacherB.id,
+      classroomId: classBId,
+      title: 'Advanced Physics - Grade 10',
+      description: 'Quantum mechanics and classical kinematics',
+      subjectName: 'Advanced Physics',
+      teacherName: teacherB.fullName,
+      classroomName: 'Section 10-Alpha',
+    });
   }
 
   // --- Multi-Tenant Query Helpers (Row-Level Security Enforcement) ---

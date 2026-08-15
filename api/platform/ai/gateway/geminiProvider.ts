@@ -40,8 +40,8 @@ export class GeminiProvider implements AIProvider {
     const systemInstruction = options.systemInstruction;
     const modelName = this.defaultModel;
 
-    // Check if live API client is available
-    if (this.aiClient) {
+    // Check if live API client is available (bypassed in test environment to prevent external quota exhaustion)
+    if (this.aiClient && process.env.NODE_ENV !== 'test') {
       try {
         const config: Record<string, unknown> = {};
         if (systemInstruction) config.systemInstruction = systemInstruction;
@@ -108,7 +108,7 @@ export class GeminiProvider implements AIProvider {
   }
 
   async embedText(text: string): Promise<number[]> {
-    if (this.aiClient) {
+    if (this.aiClient && process.env.NODE_ENV !== 'test') {
       try {
         const res: any = await this.aiClient.models.embedContent({
           model: 'text-embedding-004',

@@ -12,6 +12,14 @@ export interface SearchResult {
   score: number;
 }
 
+export interface SearchParams {
+  organizationId: string;
+  query: string;
+  topK?: number;
+  documentId?: string;
+  minScore?: number;
+}
+
 export class RAGService {
   /**
    * Split document text into overlapping chunks
@@ -105,13 +113,8 @@ export class RAGService {
   /**
    * Vector similarity search constrained strictly by tenant (organizationId)
    */
-  public static async searchSimilarChunks(params: {
-    organizationId: string;
-    query: string;
-    topK?: number;
-    documentId?: string;
-  }): Promise<SearchResult[]> {
-    const { organizationId, query, topK = 3, documentId } = params;
+  public static async searchSimilarChunks(params: SearchParams): Promise<SearchResult[]> {
+    const { organizationId, query, topK = 3, documentId, minScore = 0.35 } = params;
     const provider = providerRegistry.getProvider('gemini');
     const queryEmbedding = provider.embedText ? await provider.embedText(query) : [];
 
@@ -120,14 +123,17 @@ export class RAGService {
 
     const scored: SearchResult[] = [];
     for (const chunk of chunks) {
+      const keywordScore = this.keywordSimilarity(query, chunk.content);
       let score = 0;
       if (chunk.embedding && queryEmbedding.length === chunk.embedding.length && queryEmbedding.length > 0) {
-        score = this.cosineSimilarity(queryEmbedding, chunk.embedding);
+        const cosine = this.cosineSimilarity(queryEmbedding, chunk.embedding);
+        score = keywordScore > 0 ? (cosine * 0.4 + keywordScore * 0.6) : (cosine * 0.5);
       } else {
-        // Fallback text keyword overlap score
-        score = this.keywordSimilarity(query, chunk.content);
+        score = keywordScore;
       }
-      scored.push({ chunk, score });
+      if (score >= minScore) {
+        scored.push({ chunk, score });
+      }
     }
 
     scored.sort((a, b) => b.score - a.score);

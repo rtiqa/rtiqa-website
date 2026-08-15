@@ -69,7 +69,7 @@ export async function createApp() {
     next();
   });
 
-  app.use(express.json({ limit: '10kb' }));
+  app.use(express.json({ limit: '1mb' }));
 
   // SEC-02: API Rate Limiting for Form Endpoints
   const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
