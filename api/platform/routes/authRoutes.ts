@@ -97,8 +97,17 @@ authRouter.post('/login', loginLimiter, (req: PlatformRequest, res: express.Resp
   }
 });
 
-// 2. POST /api/v1/auth/demo-switch (Persona switcher for instant testing & evaluation)
+// 2. POST /api/v1/auth/demo-switch (Persona switcher for instant testing & evaluation - Disabled in Production)
 authRouter.post('/demo-switch', (req: PlatformRequest, res: express.Response) => {
+  // Production security guard: Demo persona switching is forbidden in production environments
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({
+      success: false,
+      error: 'DEMO_DISABLED',
+      message: 'Demo persona switching is disabled in production environment.',
+    });
+  }
+
   try {
     const { persona, tenantSlug } = req.body; // 'admin' | 'teacher' | 'student' | 'student2'
     const targetSlug = tenantSlug || 'horizon';

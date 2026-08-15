@@ -3,8 +3,10 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { platformApiRouter } from './api/platform';
 import { assertProductionPostgres } from './src/db/postgres';
+import { assertProductionAuthSecret } from './api/platform/auth';
 
 export async function createApp() {
+  assertProductionAuthSecret();
   const app = express();
 
   // SEC-01: HTTP Security Headers

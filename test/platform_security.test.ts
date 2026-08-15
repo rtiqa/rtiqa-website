@@ -587,4 +587,144 @@ describe('Rtiqa Platform - QA, Security & RBAC Verification Suite', () => {
       assert.ok(data.csv.includes('عمر خالد السعيد'));
     });
   });
+
+  // ==========================================
+  // SECTION 6: PRODUCTION SECURITY & SECRET VERIFICATION
+  // ==========================================
+  describe('6. Production Security & Secret Verification', () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    const originalAuthSecret = process.env.AUTH_SECRET;
+
+    after(() => {
+      process.env.NODE_ENV = originalNodeEnv;
+      if (originalAuthSecret !== undefined) {
+        process.env.AUTH_SECRET = originalAuthSecret;
+      } else {
+        delete process.env.AUTH_SECRET;
+      }
+    });
+
+    it('1. /api/v1/auth/demo-switch works in development/test environment', async () => {
+      process.env.NODE_ENV = 'test';
+      const res = await fetch(`${baseUrl}/api/v1/auth/demo-switch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ persona: 'admin', tenantSlug: 'horizon' }),
+      });
+      assert.strictEqual(res.status, 200);
+      const data = await res.json();
+      assert.strictEqual(data.success, true);
+      assert.ok(data.token, 'Token generated in non-production mode');
+      assert.strictEqual(data.user.email, 'admin@horizon.edu.sa');
+    });
+
+    it('2. /api/v1/auth/demo-switch returns HTTP 403 in Production environment', async () => {
+      process.env.NODE_ENV = 'production';
+      const res = await fetch(`${baseUrl}/api/v1/auth/demo-switch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ persona: 'admin', tenantSlug: 'horizon' }),
+      });
+      assert.strictEqual(res.status, 403);
+      const data = await res.json();
+      assert.strictEqual(data.success, false);
+      assert.strictEqual(data.error, 'DEMO_DISABLED');
+      // Reset back for remaining tests
+      process.env.NODE_ENV = 'test';
+    });
+
+    it('3. Production rejects startup when AUTH_SECRET is missing (Fail-Fast)', async () => {
+      const prevEnv = process.env.NODE_ENV;
+      const prevSecret = process.env.AUTH_SECRET;
+      const prevJwtSecret = process.env.JWT_SECRET;
+
+      process.env.NODE_ENV = 'production';
+      delete process.env.AUTH_SECRET;
+      delete process.env.JWT_SECRET;
+
+      const { assertProductionAuthSecret, getAuthSecret } = await import('../api/platform/auth');
+
+      assert.throws(
+        () => {
+          assertProductionAuthSecret();
+        },
+        /FATAL SECURITY ERROR/,
+        'Should throw fatal error when AUTH_SECRET is missing in production'
+      );
+
+      assert.throws(
+        () => {
+          getAuthSecret();
+        },
+        /FATAL SECURITY ERROR/,
+        'getAuthSecret should throw fatal error when AUTH_SECRET is missing in production'
+      );
+
+      // Restore environment
+      process.env.NODE_ENV = prevEnv;
+      if (prevSecret) process.env.AUTH_SECRET = prevSecret;
+      if (prevJwtSecret) process.env.JWT_SECRET = prevJwtSecret;
+    });
+
+    it('4. Production runs normally when AUTH_SECRET is provided via Environment Variables', async () => {
+      const prevEnv = process.env.NODE_ENV;
+      const prevSecret = process.env.AUTH_SECRET;
+
+      process.env.NODE_ENV = 'production';
+      process.env.AUTH_SECRET = 'temporary-test-secret-for-production-suite-only-256bit';
+
+      const { assertProductionAuthSecret, getAuthSecret, generateToken, decodeAndVerifyToken } = await import('../api/platform/auth');
+
+      assert.doesNotThrow(() => {
+        assertProductionAuthSecret();
+      });
+
+      const secret = getAuthSecret();
+      assert.strictEqual(secret, 'temporary-test-secret-for-production-suite-only-256bit');
+
+      // Test token generation and verification with production secret
+      const sampleUser = {
+        id: 'usr_prod_test_1',
+        organizationId: 'org_prod_1',
+        email: 'prod@test.sa',
+        role: 'ORG_ADMIN' as const,
+        fullName: 'Admin Prod',
+        isActive: true,
+        createdAt: '2026-08-15T00:00:00Z',
+        updatedAt: '2026-08-15T00:00:00Z',
+      };
+
+      const token = generateToken(sampleUser);
+      assert.ok(token.includes('.'));
+      const decoded = decodeAndVerifyToken(token);
+      assert.ok(decoded);
+      assert.strictEqual(decoded.uid, sampleUser.id);
+      assert.strictEqual(decoded.email, sampleUser.email);
+
+      // Restore environment
+      process.env.NODE_ENV = prevEnv;
+      if (prevSecret) process.env.AUTH_SECRET = prevSecret;
+      else delete process.env.AUTH_SECRET;
+    });
+
+    it('5. Source code verification: No static or hardcoded fallback secrets in codebase', async () => {
+      const fs = await import('fs');
+      const path = await import('path');
+      const authFilePath = path.join(process.cwd(), 'api', 'platform', 'auth.ts');
+      const authFileContent = fs.readFileSync(authFilePath, 'utf8');
+
+      // Assert that old fallback string is absent
+      assert.strictEqual(
+        authFileContent.includes('rtiqa-platform-secure-key'),
+        false,
+        'Should not contain any hardcoded secret string'
+      );
+
+      // Assert that only process.env.AUTH_SECRET is referenced
+      assert.ok(
+        authFileContent.includes('process.env.AUTH_SECRET'),
+        'Must reference process.env.AUTH_SECRET'
+      );
+    });
+  });
 });

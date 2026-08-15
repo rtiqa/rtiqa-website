@@ -9,8 +9,37 @@ export interface PlatformRequest extends express.Request {
   organization?: Organization;
 }
 
-// Secret key for HMAC token signing (server-authoritative)
-const AUTH_SECRET = process.env.AUTH_SECRET || process.env.JWT_SECRET || 'rtiqa-platform-secure-key-2026-saudi-lms';
+// In-memory runtime ephemeral secret generated on the fly for non-production environments when AUTH_SECRET is not set
+let devRuntimeSecret: string | null = null;
+
+// Validate that AUTH_SECRET is configured in production environment (Fail-Fast)
+export function assertProductionAuthSecret(): void {
+  if (process.env.NODE_ENV === 'production' && (!process.env.AUTH_SECRET || process.env.AUTH_SECRET.trim() === '')) {
+    throw new Error(
+      '[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. A strong cryptographic secret must be provided via environment variables.'
+    );
+  }
+}
+
+// Retrieve the active signing secret from environment or ephemeral in-memory generator
+export function getAuthSecret(): string {
+  const envSecret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
+  if (envSecret && envSecret.trim() !== '') {
+    return envSecret.trim();
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      '[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. A strong cryptographic secret must be provided via environment variables.'
+    );
+  }
+
+  // In development/test mode without an explicit env variable, generate an ephemeral non-static random secret in RAM
+  if (!devRuntimeSecret) {
+    devRuntimeSecret = crypto.randomBytes(32).toString('hex');
+  }
+  return devRuntimeSecret;
+}
 
 interface TokenPayload {
   uid: string;
@@ -30,9 +59,10 @@ export function generateToken(user: User): string {
     exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days expiration
   };
 
+  const secret = getAuthSecret();
   const payloadEncoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signature = crypto
-    .createHmac('sha256', AUTH_SECRET)
+    .createHmac('sha256', secret)
     .update(payloadEncoded)
     .digest('base64url');
 
@@ -47,8 +77,9 @@ export function decodeAndVerifyToken(token: string): TokenPayload | null {
     if (parts.length !== 2) return null;
 
     const [payloadEncoded, providedSignature] = parts;
+    const secret = getAuthSecret();
     const expectedSignature = crypto
-      .createHmac('sha256', AUTH_SECRET)
+      .createHmac('sha256', secret)
       .update(payloadEncoded)
       .digest('base64url');
 

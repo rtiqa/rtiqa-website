@@ -57,7 +57,7 @@ setInterval(() => {
       rateLimitStore.delete(key);
     }
   }
-}, 5 * 60 * 1000);
+}, 5 * 60 * 1000).unref();
 
 export function createRateLimiter(options: {
   windowMs: number;
