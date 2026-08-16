@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { createServer as createViteServer } from 'vite';
 import { platformApiRouter } from './server/platform/index.ts';
 import { assertProductionPostgres } from './src/db/postgres.ts';
 import { assertProductionAuthSecret } from './server/platform/auth.ts';
@@ -287,6 +286,7 @@ export async function createApp() {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else if (process.env.NODE_ENV !== 'test') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
