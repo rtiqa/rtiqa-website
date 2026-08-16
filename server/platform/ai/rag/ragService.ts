@@ -1,6 +1,6 @@
-import { db } from '../../db';
-import { AIDocumentChunk } from '../../types';
-import { providerRegistry } from '../gateway/registry';
+import { db } from '../../db.ts';
+import type { AIDocumentChunk } from '../../types.ts';
+import { providerRegistry } from '../gateway/registry.ts';
 
 export interface ChunkingOptions {
   chunkSize?: number;

@@ -1,4 +1,4 @@
-import { AIFeatureType, AIMessageRole, User, Organization, Course, Lesson } from '../types';
+import type { AIFeatureType, AIMessageRole, User, Organization, Course, Lesson } from '../types.ts';
 
 export interface AIProviderGenerateOptions {
   prompt: string;

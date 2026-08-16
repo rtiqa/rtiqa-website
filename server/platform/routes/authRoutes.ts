@@ -1,6 +1,7 @@
 import express from 'express';
-import { db } from '../db';
-import { generateToken, PlatformRequest, requireAuth, requireRoles } from '../auth';
+import { db } from '../db.ts';
+import type { PlatformRequest } from '../auth.ts';
+import { generateToken, requireAuth, requireRoles } from '../auth.ts';
 import {
   createRateLimiter,
   hashPassword,
@@ -8,8 +9,8 @@ import {
   generateInviteCode,
   isValidEmail,
   sanitizeString,
-} from '../security';
-import { UserRole } from '../types';
+} from '../security.ts';
+import type { UserRole } from '../types.ts';
 
 export const authRouter = express.Router();
 

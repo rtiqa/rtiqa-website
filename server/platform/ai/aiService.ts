@@ -1,10 +1,10 @@
-import { db } from '../db';
-import { User, Organization, AIFeatureType, AIConversation, AIMessage, AIMessageRole } from '../types';
-import { providerRegistry } from './gateway/registry';
-import { AISafetyService } from './safety/sanitizer';
-import { AIContextBuilder } from './context/contextBuilder';
-import { AIRateLimiterService } from './limits/rateLimiter';
-import { RAGService } from './rag/ragService';
+import { db } from '../db.ts';
+import type { User, Organization, AIFeatureType, AIConversation, AIMessage, AIMessageRole } from '../types.ts';
+import { providerRegistry } from './gateway/registry.ts';
+import { AISafetyService } from './safety/sanitizer.ts';
+import { AIContextBuilder } from './context/contextBuilder.ts';
+import { AIRateLimiterService } from './limits/rateLimiter.ts';
+import { RAGService } from './rag/ragService.ts';
 
 export interface ExecuteAIOptions {
   user: User;

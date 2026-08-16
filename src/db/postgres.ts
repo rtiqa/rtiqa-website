@@ -1,6 +1,8 @@
-import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
+import pg from 'pg';
+import type { Pool as PoolType, PoolClient, QueryResult, QueryResultRow } from 'pg';
 
-let pool: Pool | null = null;
+const { Pool } = pg;
+let pool: PoolType | null = null;
 let isInitialized = false;
 
 export interface PostgresStatus {
@@ -18,7 +20,7 @@ export interface PostgresStatus {
  * Uses DATABASE_URL or individual PG* environment variables.
  * In production mode, PostgreSQL is mandatory and must not silently fall back.
  */
-export function getPostgresPool(): Pool | null {
+export function getPostgresPool(): PoolType | null {
   if (pool) return pool;
   if (isInitialized) return null;
 

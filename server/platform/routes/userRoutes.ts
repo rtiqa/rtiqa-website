@@ -1,8 +1,9 @@
 import express from 'express';
-import { db } from '../db';
-import { PlatformRequest, requireAuth, requireRoles } from '../auth';
-import { UserRole } from '../types';
-import { isValidEmail, sanitizeString } from '../security';
+import { db } from '../db.ts';
+import type { PlatformRequest } from '../auth.ts';
+import { requireAuth, requireRoles } from '../auth.ts';
+import type { UserRole } from '../types.ts';
+import { isValidEmail, sanitizeString } from '../security.ts';
 
 export const userRouter = express.Router();
 

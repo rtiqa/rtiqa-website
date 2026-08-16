@@ -1,6 +1,7 @@
-import { db } from '../../db';
-import { User, Organization, Course, Lesson, AIFeatureType } from '../../types';
-import { AIPromptTemplates, PromptTemplateOptions } from '../prompts/templates';
+import { db } from '../../db.ts';
+import type { User, Organization, Course, Lesson, AIFeatureType } from '../../types.ts';
+import { AIPromptTemplates } from '../prompts/templates.ts';
+import type { PromptTemplateOptions } from '../prompts/templates.ts';
 
 export interface BuiltAIContext {
   systemInstruction: string;

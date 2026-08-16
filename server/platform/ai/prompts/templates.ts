@@ -1,4 +1,4 @@
-import { AIFeatureType, UserRole } from '../../types';
+import type { AIFeatureType, UserRole } from '../../types.ts';
 
 export interface PromptTemplateOptions {
   userRole: UserRole;

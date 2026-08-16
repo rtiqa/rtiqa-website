@@ -1,4 +1,4 @@
-import { SafetyCheckResult } from '../types';
+import type { SafetyCheckResult } from '../types.ts';
 
 export class AISafetyService {
   public static readonly MAX_PROMPT_LENGTH = 32000;

@@ -1,8 +1,9 @@
 import express from 'express';
-import { PlatformRequest, requireAuth, requireRoles } from '../auth';
-import { db } from '../db';
-import { AIService } from '../ai/aiService';
-import { RAGService } from '../ai/rag/ragService';
+import type { PlatformRequest } from '../auth.ts';
+import { requireAuth, requireRoles } from '../auth.ts';
+import { db } from '../db.ts';
+import { AIService } from '../ai/aiService.ts';
+import { RAGService } from '../ai/rag/ragService.ts';
 
 export const aiRouter = express.Router();
 

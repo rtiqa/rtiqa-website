@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
-import { db } from './db';
-import { User, UserRole, Organization } from './types';
+import { db } from './db.ts';
+import type { User, UserRole, Organization } from './types.ts';
 
 // Extended Express Request with Tenant and Auth Context
 export interface PlatformRequest extends express.Request {

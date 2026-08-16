@@ -1,5 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
-import { AIProvider, AIProviderGenerateOptions, AIProviderResult } from '../types';
+import type { AIProvider, AIProviderGenerateOptions, AIProviderResult } from '../types.ts';
 
 export class GeminiProvider implements AIProvider {
   public name = 'gemini';

@@ -1,16 +1,16 @@
 import express from 'express';
-import { platformAuthMiddleware } from './auth';
-import { db } from './db';
-import { authRouter } from './routes/authRoutes';
-import { academicRouter } from './routes/academicRoutes';
-import { userRouter } from './routes/userRoutes';
-import { courseRouter } from './routes/courseRoutes';
-import { lessonRouter } from './routes/lessonRoutes';
-import { assignmentRouter } from './routes/assignmentRoutes';
-import { attendanceRouter } from './routes/attendanceRoutes';
-import { gradebookRouter } from './routes/gradebookRoutes';
-import { dashboardRouter } from './routes/dashboardRoutes';
-import { aiRouter } from './routes/aiRoutes';
+import { platformAuthMiddleware } from './auth.ts';
+import { db } from './db.ts';
+import { authRouter } from './routes/authRoutes.ts';
+import { academicRouter } from './routes/academicRoutes.ts';
+import { userRouter } from './routes/userRoutes.ts';
+import { courseRouter } from './routes/courseRoutes.ts';
+import { lessonRouter } from './routes/lessonRoutes.ts';
+import { assignmentRouter } from './routes/assignmentRoutes.ts';
+import { attendanceRouter } from './routes/attendanceRoutes.ts';
+import { gradebookRouter } from './routes/gradebookRoutes.ts';
+import { dashboardRouter } from './routes/dashboardRoutes.ts';
+import { aiRouter } from './routes/aiRoutes.ts';
 
 export const platformApiRouter = express.Router();
 

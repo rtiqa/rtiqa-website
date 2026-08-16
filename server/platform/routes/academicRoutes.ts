@@ -1,6 +1,7 @@
 import express from 'express';
-import { db } from '../db';
-import { PlatformRequest, requireAuth, requireRoles } from '../auth';
+import { db } from '../db.ts';
+import type { PlatformRequest } from '../auth.ts';
+import { requireAuth, requireRoles } from '../auth.ts';
 
 export const academicRouter = express.Router();
 

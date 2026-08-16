@@ -1,4 +1,4 @@
-import {
+import type {
   Organization,
   User,
   AcademicYear,
@@ -18,9 +18,10 @@ import {
   AIUsageRecord,
   AIDocumentChunk,
   AIUsageSummary,
-} from './types';
-import { checkPostgresConnection, getPostgresPool, withTenantClient, PostgresStatus } from '../../src/db/postgres';
-import { hashPassword } from './security';
+} from './types.ts';
+import { checkPostgresConnection, getPostgresPool, withTenantClient } from '../../src/db/postgres.ts';
+import type { PostgresStatus } from '../../src/db/postgres.ts';
+import { hashPassword } from './security.ts';
 
 // In-Memory & PostgreSQL Dual Storage Engine
 class PlatformDatabase {

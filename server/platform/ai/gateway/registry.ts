@@ -1,5 +1,5 @@
-import { AIProvider } from '../types';
-import { GeminiProvider } from './geminiProvider';
+import type { AIProvider } from '../types.ts';
+import { GeminiProvider } from './geminiProvider.ts';
 
 export class AIProviderRegistry {
   private static instance: AIProviderRegistry;

@@ -1,5 +1,5 @@
-import { db } from '../../db';
-import { AIUsageRecord, AIFeatureType } from '../../types';
+import { db } from '../../db.ts';
+import type { AIUsageRecord, AIFeatureType } from '../../types.ts';
 
 interface RateBucket {
   count: number;
