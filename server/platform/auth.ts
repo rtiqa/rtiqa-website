@@ -43,7 +43,7 @@ export function getAuthSecret(): string {
 
 interface TokenPayload {
   uid: string;
-  oid: string;
+  oid?: string;
   role: UserRole;
   email: string;
   exp: number;
@@ -51,12 +51,12 @@ interface TokenPayload {
 
 // Generate cryptographically signed HMAC-SHA256 Token
 export function generateToken(user: User, overrideOrgId?: string, overrideRole?: UserRole): string {
-  const effectiveOrgId = overrideOrgId || user.organizationId;
+  const effectiveOrgId = overrideOrgId !== undefined ? overrideOrgId : user.organizationId;
   const effectiveRole = overrideRole || user.role;
 
   const payload: TokenPayload = {
     uid: user.id,
-    oid: effectiveOrgId,
+    oid: effectiveOrgId || undefined,
     role: effectiveRole,
     email: user.email,
     exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days expiration
@@ -97,8 +97,8 @@ export function decodeAndVerifyToken(token: string): TokenPayload | null {
     const jsonStr = Buffer.from(payloadEncoded, 'base64url').toString('utf-8');
     const parsed: TokenPayload = JSON.parse(jsonStr);
 
-    // Validate payload fields and expiry
-    if (!parsed.uid || !parsed.oid || !parsed.role || !parsed.exp) {
+    // Validate payload fields and expiry (oid is optional for unassigned/pending users)
+    if (!parsed.uid || !parsed.role || !parsed.exp) {
       return null;
     }
 
@@ -131,9 +131,10 @@ export const platformAuthMiddleware = (
       const user = db.getUserById(verified.uid, verified.oid);
       if (user && user.isActive) {
         req.user = user;
-        // Tenant context is strictly bound to the authenticated user's organization!
-        // Prevents header-spoofing across tenants.
-        req.organization = db.getOrganizationById(user.organizationId);
+        // If user has organizationId, tenant context is strictly bound to that organization
+        if (user.organizationId) {
+          req.organization = db.getOrganizationById(user.organizationId);
+        }
         return next();
       }
     }
@@ -155,17 +156,40 @@ export const platformAuthMiddleware = (
   next();
 };
 
-// Guard: Require authenticated user
+// Guard: Require authenticated user (Identity check)
 export const requireAuth = (
   req: PlatformRequest,
   res: express.Response,
   next: express.NextFunction
 ) => {
-  if (!req.user || !req.organization) {
+  if (!req.user) {
     return res.status(401).json({
       success: false,
       error: 'UNAUTHORIZED',
       message: 'Authentication required. Please sign in.',
+    });
+  }
+  next();
+};
+
+// Guard: Require active organization membership (Tenant boundary check)
+export const requireOrg = (
+  req: PlatformRequest,
+  res: express.Response,
+  next: express.NextFunction
+) => {
+  if (!req.user) {
+    return res.status(401).json({
+      success: false,
+      error: 'UNAUTHORIZED',
+      message: 'Authentication required. Please sign in.',
+    });
+  }
+  if (!req.organization || !req.user.organizationId || req.user.role === 'PENDING' || req.user.role === 'GUEST') {
+    return res.status(403).json({
+      success: false,
+      error: 'NO_ORGANIZATION_MEMBERSHIP',
+      message: 'يتطلب هذا الإجراء الانضمام إلى مدرسة أو مؤسسة تعليمية أولاً.',
     });
   }
   next();

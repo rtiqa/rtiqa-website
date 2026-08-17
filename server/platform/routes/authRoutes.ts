@@ -79,6 +79,7 @@ function formatUserResponse(user: User) {
     emailVerified: user.emailVerified ?? false,
     phoneVerified: user.phoneVerified ?? false,
     authProviders: user.authProviders || ['email'],
+    googleId: user.googleId,
     classroomId: user.classroomId,
     studentIdNumber: user.studentIdNumber,
     teacherSpecialization: user.teacherSpecialization,
@@ -467,8 +468,8 @@ authRouter.post('/phone/otp/verify', loginLimiter, (req: express.Request, res: e
 // GET /api/v1/auth/google/url (Get Google OAuth Authorization URL)
 authRouter.get('/google/url', (req: express.Request, res: express.Response) => {
   try {
-    const tenantSlug = (req.query.tenantSlug as string) || 'horizon';
-    const state = generateOAuthState(tenantSlug);
+    const tenantSlug = req.query.tenantSlug as string | undefined;
+    const state = generateOAuthState(tenantSlug ? sanitizeString(tenantSlug) : undefined);
 
     // Compute redirect URI based on request host or APP_URL
     const host = req.get('host') || 'localhost:3000';
@@ -512,7 +513,7 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
     }
 
     const stateParsed = parseOAuthState(state);
-    const tenantSlug = stateParsed.tenantSlug || 'horizon';
+    const tenantSlug = stateParsed.tenantSlug;
 
     const host = req.get('host') || 'localhost:3000';
     const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
@@ -535,7 +536,7 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
     const { profile } = exchange;
     const emailNorm = profile.email.toLowerCase().trim();
 
-    // 1. Look up existing user by googleId or verified email
+    // 1. Look up existing user by googleId or email
     let user = db.findUserByGoogleId(profile.sub) || db.findUserByEmail(emailNorm);
 
     if (user) {
@@ -549,28 +550,55 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
       }
       user = db.getUserById(user.id)!;
     } else {
-      // Create new user with Google identity
-      const org = db.getOrganizationBySlug(tenantSlug) || db.getAllOrganizations()[0];
-      const orgId = org ? org.id : 'org_horizon_001';
+      // 2. Check for pending invitations for this email
+      const pendingInvitations = db.getPendingInvitationsByEmail(emailNorm);
 
-      user = db.createUser({
-        organizationId: orgId,
-        email: emailNorm,
-        fullName: profile.name || emailNorm.split('@')[0],
-        avatarUrl: profile.picture,
-        role: 'STUDENT',
-        emailVerified: profile.email_verified,
-        phoneVerified: false,
-        authProviders: ['google'],
-        googleId: profile.sub,
-        isActive: true,
-      });
+      if (pendingInvitations.length > 0) {
+        // Automatically claim the valid invitation
+        const invitation = pendingInvitations[0];
+        user = db.createUser({
+          organizationId: invitation.organizationId,
+          email: emailNorm,
+          fullName: invitation.fullName || profile.name || emailNorm.split('@')[0],
+          avatarUrl: profile.picture,
+          role: invitation.role,
+          classroomId: invitation.classroomId,
+          teacherSpecialization: invitation.teacherSpecialization,
+          studentIdNumber: invitation.studentIdNumber || (invitation.role === 'STUDENT' ? `STD-${Date.now().toString().slice(-5)}` : undefined),
+          emailVerified: profile.email_verified,
+          phoneVerified: false,
+          authProviders: ['google'],
+          googleId: profile.sub,
+          isActive: true,
+        });
+
+        db.markInvitationUsed(invitation.id, invitation.organizationId);
+      } else {
+        // 3. New User WITHOUT organization membership (Pending Onboarding / Guest state)
+        user = db.createUser({
+          email: emailNorm,
+          fullName: profile.name || emailNorm.split('@')[0],
+          avatarUrl: profile.picture,
+          role: 'PENDING',
+          emailVerified: profile.email_verified,
+          phoneVerified: false,
+          authProviders: ['google'],
+          googleId: profile.sub,
+          isActive: true,
+        });
+      }
     }
 
+    const memberships = db.getMembershipsByUserId(user.id);
+    const isNewUserPendingOnboarding = memberships.length === 0;
+    const org = user.organizationId ? db.getOrganizationById(user.organizationId) : undefined;
     const token = generateToken(user);
-    const org = db.getOrganizationById(user.organizationId);
 
-    db.logAction(user.organizationId, user.id, user.email, 'LOGIN_GOOGLE', 'User', user.id, { googleSub: profile.sub }, req.ip);
+    const logOrgId = user.organizationId || 'platform';
+    db.logAction(logOrgId, user.id, user.email, 'LOGIN_GOOGLE', 'User', user.id, {
+      googleSub: profile.sub,
+      isPendingOnboarding: isNewUserPendingOnboarding,
+    }, req.ip);
 
     if (isPopup) {
       return res.send(`
@@ -583,18 +611,20 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
               type: 'GOOGLE_AUTH_SUCCESS',
               token: ${JSON.stringify(token)},
               user: ${JSON.stringify(formatUserResponse(user))},
-              organization: ${JSON.stringify(org)}
+              organization: ${JSON.stringify(org || null)},
+              status: ${JSON.stringify(isNewUserPendingOnboarding ? 'PENDING_ONBOARDING' : 'AUTHENTICATED')},
+              requiresOnboarding: ${isNewUserPendingOnboarding}
             };
             if (window.opener) {
               window.opener.postMessage(authPayload, '*');
               window.close();
             } else {
-              window.location.href = '/platform/dashboard';
+              window.location.href = ${isNewUserPendingOnboarding ? "'/platform/onboarding'" : "'/platform/dashboard'"};
             }
           </script>
           <div style="font-family: sans-serif; text-align: center; padding: 40px;">
             <h2>تم تسجيل الدخول بنجاح</h2>
-            <p>جارٍ تحويلك إلى لوحة التحكم...</p>
+            <p>${isNewUserPendingOnboarding ? 'جارٍ تحويلك لإكمال الانضمام أو تسجيل مدرسة...' : 'جارٍ تحويلك إلى لوحة التحكم...'}</p>
           </div>
         </body>
         </html>
@@ -605,8 +635,12 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
       success: true,
       token,
       user: formatUserResponse(user),
-      organization: org,
-      message: 'تم تسجيل الدخول بواسطة Google بنجاح',
+      organization: org || null,
+      status: isNewUserPendingOnboarding ? 'PENDING_ONBOARDING' : 'AUTHENTICATED',
+      requiresOnboarding: isNewUserPendingOnboarding,
+      message: isNewUserPendingOnboarding
+        ? 'تم التحقق من حساب Google بنجاح. يرجى اختيار الانضمام لمدرسة أو تسجيل مدرسة جديدة.'
+        : 'تم تسجيل الدخول بواسطة Google بنجاح',
     });
   } catch {
     return res.status(500).json({ success: false, error: 'SERVER_ERROR' });
@@ -619,7 +653,7 @@ authRouter.post('/google/callback', handleGoogleCallback);
 // POST /api/v1/auth/google/verify-credential (Google One Tap / Google Button Credential)
 authRouter.post('/google/verify-credential', loginLimiter, async (req: express.Request, res: express.Response) => {
   try {
-    const { credential, tenantSlug } = req.body;
+    const { credential } = req.body;
     if (!credential) {
       return res.status(400).json({ success: false, error: 'CREDENTIAL_REQUIRED', message: 'رمز Google Credential مطلوب' });
     }
@@ -648,33 +682,62 @@ authRouter.post('/google/verify-credential', loginLimiter, async (req: express.R
       }
       user = db.getUserById(user.id)!;
     } else {
-      const org = db.getOrganizationBySlug(sanitizeString(tenantSlug) || 'horizon') || db.getAllOrganizations()[0];
-      const orgId = org ? org.id : 'org_horizon_001';
+      const pendingInvitations = db.getPendingInvitationsByEmail(emailNorm);
 
-      user = db.createUser({
-        organizationId: orgId,
-        email: emailNorm,
-        fullName: profile.name || emailNorm.split('@')[0],
-        avatarUrl: profile.picture,
-        role: 'STUDENT',
-        emailVerified: profile.email_verified,
-        authProviders: ['google'],
-        googleId: profile.sub,
-        isActive: true,
-      });
+      if (pendingInvitations.length > 0) {
+        const invitation = pendingInvitations[0];
+        user = db.createUser({
+          organizationId: invitation.organizationId,
+          email: emailNorm,
+          fullName: invitation.fullName || profile.name || emailNorm.split('@')[0],
+          avatarUrl: profile.picture,
+          role: invitation.role,
+          classroomId: invitation.classroomId,
+          teacherSpecialization: invitation.teacherSpecialization,
+          studentIdNumber: invitation.studentIdNumber || (invitation.role === 'STUDENT' ? `STD-${Date.now().toString().slice(-5)}` : undefined),
+          emailVerified: profile.email_verified,
+          phoneVerified: false,
+          authProviders: ['google'],
+          googleId: profile.sub,
+          isActive: true,
+        });
+
+        db.markInvitationUsed(invitation.id, invitation.organizationId);
+      } else {
+        user = db.createUser({
+          email: emailNorm,
+          fullName: profile.name || emailNorm.split('@')[0],
+          avatarUrl: profile.picture,
+          role: 'PENDING',
+          emailVerified: profile.email_verified,
+          phoneVerified: false,
+          authProviders: ['google'],
+          googleId: profile.sub,
+          isActive: true,
+        });
+      }
     }
 
+    const memberships = db.getMembershipsByUserId(user.id);
+    const isNewUserPendingOnboarding = memberships.length === 0;
+    const org = user.organizationId ? db.getOrganizationById(user.organizationId) : undefined;
     const token = generateToken(user);
-    const org = db.getOrganizationById(user.organizationId);
 
-    db.logAction(user.organizationId, user.id, user.email, 'LOGIN_GOOGLE_CREDENTIAL', 'User', user.id, {}, req.ip);
+    const logOrgId = user.organizationId || 'platform';
+    db.logAction(logOrgId, user.id, user.email, 'LOGIN_GOOGLE_CREDENTIAL', 'User', user.id, {
+      isPendingOnboarding: isNewUserPendingOnboarding,
+    }, req.ip);
 
     return res.json({
       success: true,
       token,
       user: formatUserResponse(user),
-      organization: org,
-      message: 'تم تسجيل الدخول بواسطة حساب Google بنجاح',
+      organization: org || null,
+      status: isNewUserPendingOnboarding ? 'PENDING_ONBOARDING' : 'AUTHENTICATED',
+      requiresOnboarding: isNewUserPendingOnboarding,
+      message: isNewUserPendingOnboarding
+        ? 'تم التحقق من حساب Google بنجاح. يرجى اختيار الانضمام لمدرسة أو تسجيل مدرسة جديدة.'
+        : 'تم تسجيل الدخول بواسطة حساب Google بنجاح',
     });
   } catch {
     return res.status(500).json({ success: false, error: 'SERVER_ERROR' });
@@ -1187,7 +1250,13 @@ authRouter.post('/demo-switch', (req: PlatformRequest, res: express.Response) =>
 authRouter.post('/register-school', (req: PlatformRequest, res: express.Response) => {
   try {
     const { schoolName, slug, legalName, adminName, adminEmail, password, countryCode } = req.body;
-    if (!schoolName || !slug || !adminName || !adminEmail) {
+    
+    // Support either unauthenticated admin or authenticated user (e.g. Google user)
+    const authenticatedUser = req.user;
+    const resolvedAdminEmail = authenticatedUser?.email || (adminEmail ? sanitizeString(adminEmail).toLowerCase() : '');
+    const resolvedAdminName = adminName ? sanitizeString(adminName) : (authenticatedUser?.fullName || resolvedAdminEmail.split('@')[0]);
+
+    if (!schoolName || !slug || !resolvedAdminName || !resolvedAdminEmail) {
       return res.status(400).json({ success: false, error: 'MISSING_FIELDS', message: 'جميع الحقول الأساسية مطلوبة' });
     }
 
@@ -1196,8 +1265,7 @@ authRouter.post('/register-school', (req: PlatformRequest, res: express.Response
       return res.status(400).json({ success: false, error: 'INVALID_SLUG', message: 'معرف المدرسة يجب أن يتكون من حرفين على الأقل' });
     }
 
-    const cleanAdminEmail = sanitizeString(adminEmail).toLowerCase();
-    if (!isValidEmail(cleanAdminEmail)) {
+    if (!isValidEmail(resolvedAdminEmail)) {
       return res.status(400).json({ success: false, error: 'INVALID_EMAIL', message: 'صيغة البريد الإلكتروني للمدير غير صحيحة' });
     }
 
@@ -1217,18 +1285,38 @@ authRouter.post('/register-school', (req: PlatformRequest, res: express.Response
       isActive: true,
     });
 
-    const passwordHash = password ? hashPassword(password) : hashPassword('RtiqaAdmin2026!');
+    let admin: User;
+    if (authenticatedUser) {
+      // Existing user registered a new school: update active organization & role, add membership
+      db.updateUser(authenticatedUser.id, undefined, {
+        organizationId: org.id,
+        role: 'ORG_ADMIN',
+        fullName: resolvedAdminName,
+      });
 
-    const admin = db.createUser({
-      organizationId: org.id,
-      fullName: sanitizeString(adminName),
-      email: cleanAdminEmail,
-      passwordHash,
-      role: 'ORG_ADMIN',
-      emailVerified: true,
-      authProviders: ['email'],
-      isActive: true,
-    });
+      db.addMembership({
+        userId: authenticatedUser.id,
+        organizationId: org.id,
+        role: 'ORG_ADMIN',
+        isDefault: true,
+        status: 'ACTIVE',
+      });
+
+      admin = db.getUserById(authenticatedUser.id)!;
+    } else {
+      const passwordHash = password ? hashPassword(password) : hashPassword('RtiqaAdmin2026!');
+
+      admin = db.createUser({
+        organizationId: org.id,
+        fullName: resolvedAdminName,
+        email: resolvedAdminEmail,
+        passwordHash,
+        role: 'ORG_ADMIN',
+        emailVerified: true,
+        authProviders: ['email'],
+        isActive: true,
+      });
+    }
 
     // Initialize Default Academic Year & Grade Level
     const year = db.createAcademicYear({
@@ -1532,6 +1620,91 @@ authRouter.post('/invitations/accept', acceptInviteLimiter, (req: express.Reques
       token,
       user: formatUserResponse(newUser),
       organization: org,
+    });
+  } catch {
+    return res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+// POST /api/v1/auth/join-school (Authenticated user joins school using invite code)
+authRouter.post('/join-school', acceptInviteLimiter, (req: PlatformRequest, res: express.Response) => {
+  try {
+    const { inviteCode } = req.body;
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'UNAUTHORIZED', message: 'يرجى تسجيل الدخول أولاً' });
+    }
+
+    if (!inviteCode) {
+      return res.status(400).json({ success: false, error: 'CODE_REQUIRED', message: 'رمز الدعوة مطلوب' });
+    }
+
+    const invitation = db.getInvitationByCode(inviteCode);
+    if (!invitation) {
+      return res.status(404).json({ success: false, error: 'INVALID_CODE', message: 'رمز الدعوة غير صحيح' });
+    }
+
+    if (invitation.isUsed) {
+      return res.status(400).json({ success: false, error: 'ALREADY_USED', message: 'تم استخدام رمز الدعوة هذا مسبقاً' });
+    }
+
+    if (new Date(invitation.expiresAt).getTime() < Date.now()) {
+      return res.status(400).json({ success: false, error: 'EXPIRED', message: 'انتهت صلاحية رمز الدعوة' });
+    }
+
+    // Check if user already has active membership in this org
+    const existingMembership = db.getMembership(user.id, invitation.organizationId);
+    if (existingMembership) {
+      return res.status(400).json({ success: false, error: 'ALREADY_MEMBER', message: 'لديك عضوية بالفعل في هذه المدرسة' });
+    }
+
+    // Add membership
+    db.addMembership({
+      userId: user.id,
+      organizationId: invitation.organizationId,
+      role: invitation.role,
+      isDefault: !user.organizationId,
+      status: 'ACTIVE',
+      classroomId: invitation.classroomId,
+      teacherSpecialization: invitation.teacherSpecialization,
+      studentIdNumber: invitation.studentIdNumber,
+    });
+
+    // Update user active role/org if user was pending
+    const updates: Partial<User> = {};
+    if (!user.organizationId || user.role === 'PENDING' || user.role === 'GUEST') {
+      updates.organizationId = invitation.organizationId;
+      updates.role = invitation.role;
+      if (invitation.classroomId) updates.classroomId = invitation.classroomId;
+      if (invitation.teacherSpecialization) updates.teacherSpecialization = invitation.teacherSpecialization;
+      if (invitation.studentIdNumber) updates.studentIdNumber = invitation.studentIdNumber;
+    }
+
+    db.updateUser(user.id, undefined, updates);
+    db.markInvitationUsed(invitation.id, invitation.organizationId);
+
+    const updatedUser = db.getUserById(user.id)!;
+    const org = db.getOrganizationById(invitation.organizationId);
+    const token = generateToken(updatedUser, invitation.organizationId, invitation.role);
+
+    db.logAction(
+      invitation.organizationId,
+      user.id,
+      user.email,
+      'JOIN_SCHOOL_INVITATION',
+      'User',
+      user.id,
+      { inviteCode: invitation.inviteCode, role: invitation.role },
+      req.ip
+    );
+
+    return res.json({
+      success: true,
+      token,
+      user: formatUserResponse(updatedUser),
+      organization: org,
+      message: `تم الانضمام بنجاح إلى مدرسة: ${org?.name}`,
     });
   } catch {
     return res.status(500).json({ success: false, error: 'SERVER_ERROR' });

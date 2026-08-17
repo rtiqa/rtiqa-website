@@ -1,4 +1,4 @@
-export type UserRole = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
+export type UserRole = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT' | 'GUEST' | 'PENDING';
 
 export type AuthProviderType = 'email' | 'phone' | 'google';
 
@@ -70,7 +70,7 @@ export interface PhoneVerificationOtp {
 
 export interface User {
   id: string;
-  organizationId: string;
+  organizationId?: string;
   email: string;
   passwordHash?: string;
   fullName: string;

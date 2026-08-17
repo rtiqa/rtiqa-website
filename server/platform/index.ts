@@ -1,5 +1,5 @@
 import express from 'express';
-import { platformAuthMiddleware } from './auth.ts';
+import { platformAuthMiddleware, requireOrg } from './auth.ts';
 import { db } from './db.ts';
 import { authRouter } from './routes/authRoutes.ts';
 import { academicRouter } from './routes/academicRoutes.ts';
@@ -33,15 +33,18 @@ platformApiRouter.get('/health', async (req, res) => {
 // Apply platform authentication and multi-tenant context extraction
 platformApiRouter.use(platformAuthMiddleware);
 
-// Mount modular sub-routers
+// Auth router handles identity, login, onboarding, invitations, school creation
 platformApiRouter.use('/auth', authRouter);
-platformApiRouter.use('/academic', academicRouter);
-platformApiRouter.use('/users', userRouter);
-platformApiRouter.use('/courses', courseRouter);
-platformApiRouter.use('/lessons', lessonRouter);
-platformApiRouter.use('/assignments', assignmentRouter);
-platformApiRouter.use('/attendance', attendanceRouter);
-platformApiRouter.use('/gradebook', gradebookRouter);
-platformApiRouter.use('/dashboard', dashboardRouter);
-platformApiRouter.use('/ai', aiRouter);
+
+// Tenant-scoped sub-routers strictly require verified organization membership
+platformApiRouter.use('/academic', requireOrg, academicRouter);
+platformApiRouter.use('/users', requireOrg, userRouter);
+platformApiRouter.use('/courses', requireOrg, courseRouter);
+platformApiRouter.use('/lessons', requireOrg, lessonRouter);
+platformApiRouter.use('/assignments', requireOrg, assignmentRouter);
+platformApiRouter.use('/attendance', requireOrg, attendanceRouter);
+platformApiRouter.use('/gradebook', requireOrg, gradebookRouter);
+platformApiRouter.use('/dashboard', requireOrg, dashboardRouter);
+platformApiRouter.use('/ai', requireOrg, aiRouter);
+
 

@@ -1245,6 +1245,14 @@ class PlatformDatabase {
     return undefined;
   }
 
+  getPendingInvitationsByEmail(email: string): Invitation[] {
+    const normalized = email.toLowerCase().trim();
+    const now = Date.now();
+    return Array.from(this.invitations.values())
+      .filter((inv) => inv.email.toLowerCase().trim() === normalized && !inv.isUsed && new Date(inv.expiresAt).getTime() > now)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
   getInvitationsByOrg(organizationId: string): Invitation[] {
     return Array.from(this.invitations.values())
       .filter((inv) => inv.organizationId === organizationId)
