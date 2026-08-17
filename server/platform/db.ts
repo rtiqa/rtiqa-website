@@ -13,6 +13,11 @@ import type {
   AttendanceRecord,
   AuditLog,
   Invitation,
+  OrganizationMembership,
+  PasswordResetToken,
+  EmailVerificationToken,
+  PhoneVerificationOtp,
+  AuthProviderType,
   AIConversation,
   AIMessage,
   AIUsageRecord,
@@ -39,6 +44,10 @@ class PlatformDatabase {
   private attendanceRecords: Map<string, AttendanceRecord> = new Map();
   private auditLogs: Map<string, AuditLog> = new Map();
   private invitations: Map<string, Invitation> = new Map();
+  private organizationMemberships: Map<string, OrganizationMembership> = new Map();
+  private passwordResetTokens: Map<string, PasswordResetToken> = new Map();
+  private emailVerificationTokens: Map<string, EmailVerificationToken> = new Map();
+  private phoneVerificationOtps: Map<string, PhoneVerificationOtp> = new Map();
   private aiConversations: Map<string, AIConversation> = new Map();
   private aiMessages: Map<string, AIMessage> = new Map();
   private aiUsageRecords: Map<string, AIUsageRecord> = new Map();
@@ -556,6 +565,26 @@ class PlatformDatabase {
       teacherName: teacherB.fullName,
       classroomName: 'Section 10-Alpha',
     });
+
+    // Populate Organization Memberships & default auth providers for all seeded users
+    for (const user of Array.from(this.users.values())) {
+      user.emailVerified = true;
+      user.phoneVerified = true;
+      user.authProviders = ['email'];
+      if (!user.passwordHash) {
+        user.passwordHash = hashPassword('Password@2026');
+      }
+      this.addMembership({
+        userId: user.id,
+        organizationId: user.organizationId,
+        role: user.role,
+        isDefault: true,
+        status: 'ACTIVE',
+        classroomId: user.classroomId,
+        studentIdNumber: user.studentIdNumber,
+        teacherSpecialization: user.teacherSpecialization,
+      });
+    }
   }
 
   // --- Multi-Tenant Query Helpers (Row-Level Security Enforcement) ---
@@ -591,6 +620,20 @@ class PlatformDatabase {
     return all.find((u) => u.email.toLowerCase() === normalized);
   }
 
+  findUserByPhone(phone: string, organizationId?: string): User | undefined {
+    const normalized = phone.trim();
+    const all = Array.from(this.users.values());
+    if (organizationId) {
+      return all.find((u) => u.phone && u.phone.trim() === normalized && u.organizationId === organizationId);
+    }
+    return all.find((u) => u.phone && u.phone.trim() === normalized);
+  }
+
+  findUserByGoogleId(googleId: string): User | undefined {
+    const trimmed = googleId.trim();
+    return Array.from(this.users.values()).find((u) => u.googleId === trimmed);
+  }
+
   getUserById(userId: string, organizationId?: string): User | undefined {
     const user = this.users.get(userId);
     if (!user) return undefined;
@@ -606,16 +649,42 @@ class PlatformDatabase {
     });
   }
 
-  createUser(data: Omit<User, 'id' | 'createdAt' | 'updatedAt'>): User {
-    const id = `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+  createUser(data: Omit<User, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): User {
+    const id = data.id || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const now = new Date().toISOString();
-    const user: User = { ...data, id, createdAt: now, updatedAt: now };
+    const user: User = {
+      ...data,
+      id,
+      emailVerified: data.emailVerified ?? false,
+      phoneVerified: data.phoneVerified ?? false,
+      authProviders: data.authProviders || (data.email ? ['email'] : []),
+      createdAt: now,
+      updatedAt: now,
+    };
     this.users.set(id, user);
+
+    // Auto-create default OrganizationMembership if organizationId is present
+    if (user.organizationId) {
+      const existingMembership = this.getMembership(user.id, user.organizationId);
+      if (!existingMembership) {
+        this.addMembership({
+          userId: user.id,
+          organizationId: user.organizationId,
+          role: user.role,
+          isDefault: true,
+          status: 'ACTIVE',
+          classroomId: user.classroomId,
+          studentIdNumber: user.studentIdNumber,
+          teacherSpecialization: user.teacherSpecialization,
+        });
+      }
+    }
+
     return user;
   }
 
-  updateUser(id: string, organizationId: string, updates: Partial<User>): User | undefined {
-    const user = this.getUserById(id, organizationId);
+  updateUser(id: string, organizationId?: string, updates: Partial<User> = {}): User | undefined {
+    const user = organizationId ? this.getUserById(id, organizationId) : this.users.get(id);
     if (!user) return undefined;
     const updated: User = { ...user, ...updates, updatedAt: new Date().toISOString() };
     this.users.set(id, updated);
@@ -626,7 +695,234 @@ class PlatformDatabase {
     const user = this.getUserById(id, organizationId);
     if (!user) return false;
     this.users.delete(id);
+    // Delete memberships
+    for (const [mId, mem] of this.organizationMemberships.entries()) {
+      if (mem.userId === id) {
+        this.organizationMemberships.delete(mId);
+      }
+    }
     return true;
+  }
+
+  // --- Account Linking & Identity Management ---
+  linkAccountProvider(
+    userId: string,
+    provider: AuthProviderType,
+    details?: { googleId?: string; phone?: string; email?: string }
+  ): User | undefined {
+    const user = this.users.get(userId);
+    if (!user) return undefined;
+
+    const currentProviders = new Set<AuthProviderType>(user.authProviders || []);
+    currentProviders.add(provider);
+
+    const updates: Partial<User> = {
+      authProviders: Array.from(currentProviders),
+    };
+
+    if (provider === 'google' && details?.googleId) {
+      updates.googleId = details.googleId;
+    }
+    if (provider === 'phone' && details?.phone) {
+      updates.phone = details.phone;
+      updates.phoneVerified = true;
+    }
+    if (provider === 'email' && details?.email) {
+      updates.email = details.email.toLowerCase().trim();
+      updates.emailVerified = true;
+    }
+
+    return this.updateUser(userId, undefined, updates);
+  }
+
+  unlinkAccountProvider(userId: string, provider: AuthProviderType): { success: boolean; user?: User; error?: string } {
+    const user = this.users.get(userId);
+    if (!user) return { success: false, error: 'USER_NOT_FOUND' };
+
+    const currentProviders = user.authProviders || ['email'];
+    if (currentProviders.length <= 1) {
+      return { success: false, error: 'CANNOT_UNLINK_LAST_PROVIDER', user };
+    }
+
+    const updatedProviders = currentProviders.filter((p) => p !== provider);
+    const updates: Partial<User> = {
+      authProviders: updatedProviders,
+    };
+
+    if (provider === 'google') {
+      updates.googleId = undefined;
+    }
+
+    const updatedUser = this.updateUser(userId, undefined, updates);
+    return { success: true, user: updatedUser };
+  }
+
+  // --- Organization Memberships (Multi-Tenant User Roles) ---
+  getMembershipsByUserId(userId: string): OrganizationMembership[] {
+    return Array.from(this.organizationMemberships.values())
+      .filter((m) => m.userId === userId && m.status !== 'REVOKED')
+      .map((m) => {
+        const org = this.getOrganizationById(m.organizationId);
+        return {
+          ...m,
+          organizationName: org?.name,
+          organizationSlug: org?.slug,
+        };
+      });
+  }
+
+  getMembership(userId: string, organizationId: string): OrganizationMembership | undefined {
+    return Array.from(this.organizationMemberships.values()).find(
+      (m) => m.userId === userId && m.organizationId === organizationId && m.status !== 'REVOKED'
+    );
+  }
+
+  addMembership(data: Omit<OrganizationMembership, 'id' | 'joinedAt'>): OrganizationMembership {
+    const id = `mem_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const membership: OrganizationMembership = {
+      ...data,
+      id,
+      joinedAt: new Date().toISOString(),
+    };
+    this.organizationMemberships.set(id, membership);
+    return membership;
+  }
+
+  createMembership(data: Omit<OrganizationMembership, 'id' | 'joinedAt'>): OrganizationMembership {
+    return this.addMembership(data);
+  }
+
+  updateMembership(id: string, updates: Partial<OrganizationMembership>): OrganizationMembership | undefined {
+    const mem = this.organizationMemberships.get(id);
+    if (!mem) return undefined;
+    const updated = { ...mem, ...updates };
+    this.organizationMemberships.set(id, updated);
+    return updated;
+  }
+
+  removeMembership(id: string): boolean {
+    return this.organizationMemberships.delete(id);
+  }
+
+  // --- Password Reset Tokens ---
+  createPasswordResetToken(userId: string, email: string, tokenHash: string, expiresInMinutes = 60): PasswordResetToken {
+    this.invalidatePasswordResetTokensForUser(userId);
+    const id = `prt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString();
+    const token: PasswordResetToken = {
+      id,
+      userId,
+      email: email.toLowerCase().trim(),
+      tokenHash,
+      expiresAt,
+      isUsed: false,
+      createdAt: new Date().toISOString(),
+    };
+    this.passwordResetTokens.set(id, token);
+    return token;
+  }
+
+  getPasswordResetTokenByHash(tokenHash: string): PasswordResetToken | undefined {
+    return Array.from(this.passwordResetTokens.values()).find(
+      (t) => t.tokenHash === tokenHash && !t.isUsed && new Date(t.expiresAt).getTime() > Date.now()
+    );
+  }
+
+  markPasswordResetTokenUsed(id: string): void {
+    const token = this.passwordResetTokens.get(id);
+    if (token) {
+      token.isUsed = true;
+      token.usedAt = new Date().toISOString();
+      this.passwordResetTokens.set(id, token);
+    }
+  }
+
+  invalidatePasswordResetTokensForUser(userId: string): void {
+    for (const [id, token] of this.passwordResetTokens.entries()) {
+      if (token.userId === userId && !token.isUsed) {
+        token.isUsed = true;
+        this.passwordResetTokens.set(id, token);
+      }
+    }
+  }
+
+  // --- Email Verification Tokens ---
+  createEmailVerificationToken(userId: string, email: string, tokenHash: string, expiresInMinutes = 24 * 60): EmailVerificationToken {
+    const id = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString();
+    const token: EmailVerificationToken = {
+      id,
+      userId,
+      email: email.toLowerCase().trim(),
+      tokenHash,
+      expiresAt,
+      isUsed: false,
+      createdAt: new Date().toISOString(),
+    };
+    this.emailVerificationTokens.set(id, token);
+    return token;
+  }
+
+  getEmailVerificationTokenByHash(tokenHash: string): EmailVerificationToken | undefined {
+    return Array.from(this.emailVerificationTokens.values()).find(
+      (t) => t.tokenHash === tokenHash && !t.isUsed && new Date(t.expiresAt).getTime() > Date.now()
+    );
+  }
+
+  markEmailVerificationTokenUsed(id: string): void {
+    const token = this.emailVerificationTokens.get(id);
+    if (token) {
+      token.isUsed = true;
+      token.usedAt = new Date().toISOString();
+      this.emailVerificationTokens.set(id, token);
+    }
+  }
+
+  // --- Phone Verification OTPs ---
+  createPhoneOtp(phone: string, otpHash: string, userId?: string, expiresInMinutes = 10): PhoneVerificationOtp {
+    const id = `otp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString();
+    const record: PhoneVerificationOtp = {
+      id,
+      userId,
+      phone: phone.trim(),
+      otpHash,
+      attemptsCount: 0,
+      maxAttempts: 5,
+      expiresAt,
+      isUsed: false,
+      createdAt: new Date().toISOString(),
+    };
+    this.phoneVerificationOtps.set(id, record);
+    return record;
+  }
+
+  getLatestActivePhoneOtp(phone: string): PhoneVerificationOtp | undefined {
+    const normalized = phone.trim();
+    const matches = Array.from(this.phoneVerificationOtps.values())
+      .filter((o) => o.phone === normalized && !o.isUsed && new Date(o.expiresAt).getTime() > Date.now())
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return matches[0];
+  }
+
+  incrementPhoneOtpAttempts(id: string): number {
+    const record = this.phoneVerificationOtps.get(id);
+    if (!record) return 0;
+    record.attemptsCount += 1;
+    if (record.attemptsCount >= record.maxAttempts) {
+      record.isUsed = true; // Invalidate after exceeding max attempts to protect against brute force
+    }
+    this.phoneVerificationOtps.set(id, record);
+    return record.attemptsCount;
+  }
+
+  markPhoneOtpUsed(id: string): void {
+    const record = this.phoneVerificationOtps.get(id);
+    if (record) {
+      record.isUsed = true;
+      record.usedAt = new Date().toISOString();
+      this.phoneVerificationOtps.set(id, record);
+    }
   }
 
   // Academic Structure
@@ -1127,6 +1423,10 @@ class PlatformDatabase {
     this.attendanceRecords.clear();
     this.auditLogs.clear();
     this.invitations.clear();
+    this.organizationMemberships.clear();
+    this.passwordResetTokens.clear();
+    this.emailVerificationTokens.clear();
+    this.phoneVerificationOtps.clear();
     this.aiConversations.clear();
     this.aiMessages.clear();
     this.aiUsageRecords.clear();

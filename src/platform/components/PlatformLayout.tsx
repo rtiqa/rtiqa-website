@@ -20,8 +20,10 @@ import {
   Globe,
   ExternalLink,
   Sparkles,
+  User as UserIcon,
 } from 'lucide-react';
 import { Badge } from './Badge';
+import { UserProfileModal } from './auth/UserProfileModal';
 
 interface PlatformLayoutProps {
   currentPage: PlatformPage;
@@ -40,6 +42,7 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [personaDropdownOpen, setPersonaDropdownOpen] = useState(false);
   const [schoolDropdownOpen, setSchoolDropdownOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
 
   if (!user || !organization) return <>{children}</>;
 
@@ -222,9 +225,17 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
 
           {/* Current User Info */}
           <div className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-900/60 border border-slate-800">
-            <div className="flex items-center gap-2.5 truncate">
-              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0">
-                {user.fullName.charAt(0)}
+            <button
+              type="button"
+              onClick={() => setProfileModalOpen(true)}
+              className="flex items-center gap-2.5 truncate text-start hover:opacity-80 transition flex-1"
+            >
+              <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-bold text-emerald-400 shrink-0 overflow-hidden">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  user.fullName.charAt(0)
+                )}
               </div>
               <div className="truncate">
                 <span className="block text-xs font-bold text-slate-200 truncate">{user.fullName}</span>
@@ -232,11 +243,11 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
                   {currentRole.ar}
                 </Badge>
               </div>
-            </div>
+            </button>
             <button
               onClick={logout}
               title="تسجيل الخروج"
-              className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
+              className="p-1.5 rounded-xl text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition shrink-0"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -389,6 +400,9 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
         {/* Page Main View Container */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">{children}</main>
       </div>
+
+      {/* User Profile & Security Modal */}
+      <UserProfileModal isOpen={profileModalOpen} onClose={() => setProfileModalOpen(false)} />
     </div>
   );
 };

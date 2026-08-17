@@ -72,15 +72,184 @@ class PlatformApiClient {
   }
 
   // --- Auth APIs ---
-  async login(email: string, password?: string, tenantSlug?: string) {
+  async login(emailOrIdentifier: string, password?: string, tenantSlug?: string) {
     const slug = tenantSlug || this.tenantSlug;
     const res = await this.request<{ success: boolean; token: string; user: User; organization: Organization }>(
       '/auth/login',
       {
         method: 'POST',
-        body: JSON.stringify({ email, password, tenantSlug: slug }),
+        body: JSON.stringify({ identifier: emailOrIdentifier, email: emailOrIdentifier, password, tenantSlug: slug }),
       }
     );
+    this.setToken(res.token);
+    this.setTenantSlug(res.organization.slug);
+    return res;
+  }
+
+  async register(data: {
+    fullName: string;
+    email?: string;
+    phone?: string;
+    password?: string;
+    role?: string;
+    tenantSlug?: string;
+  }) {
+    const slug = data.tenantSlug || this.tenantSlug;
+    const res = await this.request<{
+      success: boolean;
+      token: string;
+      user: User;
+      organization: Organization;
+      verificationSent?: boolean;
+      message: string;
+    }>('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, tenantSlug: slug }),
+    });
+    this.setToken(res.token);
+    this.setTenantSlug(res.organization.slug);
+    return res;
+  }
+
+  async sendPhoneOtp(phone: string, purpose: string = 'login') {
+    return this.request<{
+      success: boolean;
+      phone: string;
+      provider: string;
+      isSimulated?: boolean;
+      expiresInSeconds: number;
+      cooldownSeconds: number;
+      message: string;
+      devOtpCode?: string;
+    }>('/auth/phone/otp/send', {
+      method: 'POST',
+      body: JSON.stringify({ phone, purpose }),
+    });
+  }
+
+  async verifyPhoneOtp(phone: string, code: string, fullName?: string, tenantSlug?: string) {
+    const slug = tenantSlug || this.tenantSlug;
+    const res = await this.request<{
+      success: boolean;
+      token: string;
+      user: User;
+      organization: Organization;
+      message: string;
+    }>('/auth/phone/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ phone, code, fullName, tenantSlug: slug }),
+    });
+    this.setToken(res.token);
+    this.setTenantSlug(res.organization.slug);
+    return res;
+  }
+
+  async getGoogleAuthUrl(tenantSlug?: string) {
+    const slug = tenantSlug || this.tenantSlug;
+    return this.request<{
+      success: boolean;
+      url: string;
+      clientId?: string;
+      state: string;
+      isConfigured: boolean;
+      redirectUri: string;
+    }>(`/auth/google/url?tenantSlug=${encodeURIComponent(slug)}`);
+  }
+
+  async verifyGoogleCredential(credential: string, tenantSlug?: string) {
+    const slug = tenantSlug || this.tenantSlug;
+    const res = await this.request<{
+      success: boolean;
+      token: string;
+      user: User;
+      organization: Organization;
+      message: string;
+    }>('/auth/google/verify-credential', {
+      method: 'POST',
+      body: JSON.stringify({ credential, tenantSlug: slug }),
+    });
+    this.setToken(res.token);
+    this.setTenantSlug(res.organization.slug);
+    return res;
+  }
+
+  async forgotPassword(email: string) {
+    return this.request<{ success: boolean; message: string; devResetToken?: string }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    return this.request<{ success: boolean; message: string }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, newPassword }),
+    });
+  }
+
+  async changePassword(currentPassword: string, newPassword: string) {
+    return this.request<{ success: boolean; message: string; user?: User }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
+  async sendEmailVerification() {
+    return this.request<{ success: boolean; message: string; alreadyVerified?: boolean; devVerificationToken?: string }>(
+      '/auth/verify-email/send',
+      { method: 'POST' }
+    );
+  }
+
+  async confirmEmailVerification(token: string) {
+    return this.request<{ success: boolean; message: string; user?: User }>('/auth/verify-email/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  async linkGoogle(data: { credential?: string; code?: string }) {
+    return this.request<{ success: boolean; message: string; user?: User }>('/auth/link/google', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async linkPhone(phone: string, code: string) {
+    return this.request<{ success: boolean; message: string; user?: User }>('/auth/link/phone', {
+      method: 'POST',
+      body: JSON.stringify({ phone, code }),
+    });
+  }
+
+  async unlinkProvider(provider: string) {
+    return this.request<{ success: boolean; message: string; user?: User }>(`/auth/unlink/${encodeURIComponent(provider)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getProfile() {
+    return this.request<{ success: boolean; user: User; organization: Organization }>('/auth/profile');
+  }
+
+  async updateProfile(data: { fullName?: string; avatarUrl?: string; phone?: string }) {
+    return this.request<{ success: boolean; message: string; user?: User }>('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async switchOrganization(organizationId?: string, organizationSlug?: string) {
+    const res = await this.request<{
+      success: boolean;
+      token: string;
+      organization: Organization;
+      activeRole: string;
+      message: string;
+    }>('/auth/switch-organization', {
+      method: 'POST',
+      body: JSON.stringify({ organizationId, organizationSlug }),
+    });
     this.setToken(res.token);
     this.setTenantSlug(res.organization.slug);
     return res;

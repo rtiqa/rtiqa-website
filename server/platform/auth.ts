@@ -50,11 +50,14 @@ interface TokenPayload {
 }
 
 // Generate cryptographically signed HMAC-SHA256 Token
-export function generateToken(user: User): string {
+export function generateToken(user: User, overrideOrgId?: string, overrideRole?: UserRole): string {
+  const effectiveOrgId = overrideOrgId || user.organizationId;
+  const effectiveRole = overrideRole || user.role;
+
   const payload: TokenPayload = {
     uid: user.id,
-    oid: user.organizationId,
-    role: user.role,
+    oid: effectiveOrgId,
+    role: effectiveRole,
     email: user.email,
     exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days expiration
   };

@@ -88,6 +88,10 @@ CREATE TABLE IF NOT EXISTS users (
     student_id_number VARCHAR(64),
     teacher_specialization VARCHAR(128),
     classroom_id VARCHAR(64) REFERENCES classrooms(id) ON DELETE SET NULL,
+    email_verified BOOLEAN DEFAULT FALSE NOT NULL,
+    phone_verified BOOLEAN DEFAULT FALSE NOT NULL,
+    auth_providers JSONB DEFAULT '["email"]'::jsonb NOT NULL,
+    google_id VARCHAR(128),
     is_active BOOLEAN DEFAULT TRUE NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -96,6 +100,72 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_org_role ON users(organization_id, role);
 CREATE INDEX IF NOT EXISTS idx_users_org_classroom ON users(organization_id, classroom_id);
+CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone);
+CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id);
+
+-- 6.1 Organization Memberships (Multi-Tenant User Roles)
+CREATE TABLE IF NOT EXISTS organization_memberships (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    role VARCHAR(32) NOT NULL CHECK (role IN ('SUPER_ADMIN', 'ORG_ADMIN', 'TEACHER', 'STUDENT', 'PARENT')),
+    is_default BOOLEAN DEFAULT FALSE NOT NULL,
+    status VARCHAR(32) DEFAULT 'ACTIVE' NOT NULL CHECK (status IN ('ACTIVE', 'PENDING', 'REVOKED')),
+    classroom_id VARCHAR(64) REFERENCES classrooms(id) ON DELETE SET NULL,
+    student_id_number VARCHAR(64),
+    teacher_specialization VARCHAR(128),
+    joined_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_memberships_user_org UNIQUE (user_id, organization_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_memberships_user ON organization_memberships(user_id);
+CREATE INDEX IF NOT EXISTS idx_memberships_org ON organization_memberships(organization_id);
+
+-- 6.2 Password Reset Tokens
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    is_used BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_reset_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_password_resets_hash ON password_reset_tokens(token_hash);
+
+-- 6.3 Email Verification Tokens
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    email VARCHAR(255) NOT NULL,
+    token_hash VARCHAR(255) NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    is_used BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_email_verify_user ON email_verification_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_email_verify_hash ON email_verification_tokens(token_hash);
+
+-- 6.4 Phone Verification OTPs
+CREATE TABLE IF NOT EXISTS phone_verification_otps (
+    id VARCHAR(64) PRIMARY KEY,
+    user_id VARCHAR(64) REFERENCES users(id) ON DELETE SET NULL,
+    phone VARCHAR(64) NOT NULL,
+    otp_hash VARCHAR(255) NOT NULL,
+    attempts_count INT DEFAULT 0 NOT NULL,
+    max_attempts INT DEFAULT 5 NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    is_used BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_phone_otps_phone ON phone_verification_otps(phone);
 
 -- 7. Subjects (Curriculum Master)
 CREATE TABLE IF NOT EXISTS subjects (
@@ -440,4 +510,18 @@ DROP POLICY IF EXISTS tenant_isolation_ai_document_chunks ON ai_document_chunks;
 CREATE POLICY tenant_isolation_ai_document_chunks ON ai_document_chunks
     USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 19. Organization Memberships Policy
+ALTER TABLE organization_memberships ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_org_memberships ON organization_memberships;
+CREATE POLICY tenant_isolation_org_memberships ON organization_memberships
+    USING (
+        organization_id = NULLIF(current_setting('app.current_tenant_id', true), '')
+        OR user_id = NULLIF(current_setting('app.current_user_id', true), '')
+        OR NULLIF(current_setting('app.current_tenant_id', true), '') IS NULL
+    )
+    WITH CHECK (
+        organization_id = NULLIF(current_setting('app.current_tenant_id', true), '')
+        OR NULLIF(current_setting('app.current_tenant_id', true), '') IS NULL
+    );
 

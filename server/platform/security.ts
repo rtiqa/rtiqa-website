@@ -29,15 +29,52 @@ export function verifyPassword(password: string, storedHash: string): boolean {
   }
 }
 
-// --- Secure Token & Code Generators ---
+// --- Secure Token, OTP & Code Generators ---
 export function generateSecureToken(bytes = 32): string {
   return crypto.randomBytes(bytes).toString('hex');
+}
+
+export function generateOtp(length = 6): string {
+  // Cryptographically random 6-digit numeric OTP
+  const min = Math.pow(10, length - 1);
+  const max = Math.pow(10, length) - 1;
+  return crypto.randomInt(min, max + 1).toString();
+}
+
+export function hashOtp(otp: string): string {
+  const salt = crypto.randomBytes(8).toString('hex');
+  const hash = crypto.createHmac('sha256', salt).update(otp.trim()).digest('hex');
+  return `${salt}:${hash}`;
+}
+
+export function verifyOtp(otp: string, storedHash: string): boolean {
+  try {
+    if (!storedHash || !storedHash.includes(':')) return false;
+    const [salt, expectedHash] = storedHash.split(':');
+    const actualHash = crypto.createHmac('sha256', salt).update(otp.trim()).digest('hex');
+    const bufA = Buffer.from(actualHash);
+    const bufB = Buffer.from(expectedHash);
+    if (bufA.length !== bufB.length) return false;
+    return crypto.timingSafeEqual(bufA, bufB);
+  } catch {
+    return false;
+  }
 }
 
 export function generateInviteCode(): string {
   const segment1 = crypto.randomBytes(2).toString('hex').toUpperCase();
   const segment2 = crypto.randomBytes(2).toString('hex').toUpperCase();
   return `RTIQA-${segment1}-${segment2}`;
+}
+
+export function validatePasswordStrength(password: unknown): { isValid: boolean; message?: string } {
+  if (typeof password !== 'string') {
+    return { isValid: false, message: 'كلمة المرور مطلوبة' };
+  }
+  if (password.length < 8) {
+    return { isValid: false, message: 'كلمة المرور يجب أن لا تقل عن 8 أحرف وأرقام' };
+  }
+  return { isValid: true };
 }
 
 // --- Rate Limiter (In-Memory Sliding Window Bucket) ---

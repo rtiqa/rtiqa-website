@@ -1,5 +1,7 @@
 export type UserRole = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT';
 
+export type AuthProviderType = 'email' | 'phone' | 'google';
+
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
 export interface Organization {
@@ -16,6 +18,56 @@ export interface Organization {
   updatedAt: string;
 }
 
+export interface OrganizationMembership {
+  id: string;
+  userId: string;
+  organizationId: string;
+  role: UserRole;
+  isDefault: boolean;
+  status: 'ACTIVE' | 'PENDING' | 'REVOKED';
+  classroomId?: string;
+  studentIdNumber?: string;
+  teacherSpecialization?: string;
+  organizationName?: string;
+  organizationSlug?: string;
+  joinedAt: string;
+}
+
+export interface PasswordResetToken {
+  id: string;
+  userId: string;
+  email: string;
+  tokenHash: string;
+  expiresAt: string;
+  usedAt?: string;
+  isUsed: boolean;
+  createdAt: string;
+}
+
+export interface EmailVerificationToken {
+  id: string;
+  userId: string;
+  email: string;
+  tokenHash: string;
+  expiresAt: string;
+  usedAt?: string;
+  isUsed: boolean;
+  createdAt: string;
+}
+
+export interface PhoneVerificationOtp {
+  id: string;
+  userId?: string;
+  phone: string;
+  otpHash: string;
+  attemptsCount: number;
+  maxAttempts: number;
+  expiresAt: string;
+  usedAt?: string;
+  isUsed: boolean;
+  createdAt: string;
+}
+
 export interface User {
   id: string;
   organizationId: string;
@@ -28,6 +80,10 @@ export interface User {
   studentIdNumber?: string;
   teacherSpecialization?: string;
   classroomId?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  authProviders?: AuthProviderType[];
+  googleId?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
