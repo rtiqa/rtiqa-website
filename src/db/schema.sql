@@ -198,6 +198,59 @@ CREATE INDEX IF NOT EXISTS idx_courses_org ON courses(organization_id);
 CREATE INDEX IF NOT EXISTS idx_courses_teacher ON courses(organization_id, teacher_id);
 CREATE INDEX IF NOT EXISTS idx_courses_classroom ON courses(organization_id, classroom_id);
 
+-- 8.1 Teacher Assignments (Allocations of Teachers to Subjects & Classrooms)
+CREATE TABLE IF NOT EXISTS teacher_assignments (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    teacher_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    course_id VARCHAR(64) REFERENCES courses(id) ON DELETE CASCADE,
+    subject_id VARCHAR(64) NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+    classroom_id VARCHAR(64) NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+    academic_year_id VARCHAR(64) REFERENCES academic_years(id) ON DELETE SET NULL,
+    role VARCHAR(32) DEFAULT 'PRIMARY_TEACHER' NOT NULL CHECK (role IN ('PRIMARY_TEACHER', 'ASSISTANT_TEACHER', 'SUBSTITUTE')),
+    weekly_hours INT DEFAULT 4 NOT NULL,
+    status VARCHAR(32) DEFAULT 'ACTIVE' NOT NULL CHECK (status IN ('ACTIVE', 'INACTIVE')),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_teacher_assignments_org ON teacher_assignments(organization_id);
+CREATE INDEX IF NOT EXISTS idx_teacher_assignments_teacher ON teacher_assignments(organization_id, teacher_id);
+CREATE INDEX IF NOT EXISTS idx_teacher_assignments_classroom ON teacher_assignments(organization_id, classroom_id);
+
+-- 8.2 Student Enrollments (Active Classroom & Academic Year Rosters)
+CREATE TABLE IF NOT EXISTS student_enrollments (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    student_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    classroom_id VARCHAR(64) NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+    academic_year_id VARCHAR(64) NOT NULL REFERENCES academic_years(id) ON DELETE CASCADE,
+    roll_number VARCHAR(64),
+    status VARCHAR(32) DEFAULT 'ACTIVE' NOT NULL CHECK (status IN ('ACTIVE', 'TRANSFERRED', 'SUSPENDED', 'GRADUATED')),
+    enrolled_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_enrollments_student_year UNIQUE (organization_id, student_id, academic_year_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_enrollments_org ON student_enrollments(organization_id);
+CREATE INDEX IF NOT EXISTS idx_student_enrollments_student ON student_enrollments(organization_id, student_id);
+CREATE INDEX IF NOT EXISTS idx_student_enrollments_classroom ON student_enrollments(organization_id, classroom_id);
+
+-- 8.3 Parent Student Links (Parent-Child Associations)
+CREATE TABLE IF NOT EXISTS parent_student_links (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    parent_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    student_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    relationship VARCHAR(32) DEFAULT 'FATHER' NOT NULL CHECK (relationship IN ('FATHER', 'MOTHER', 'GUARDIAN')),
+    is_emergency_contact BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_parent_student_link UNIQUE (organization_id, parent_id, student_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_parent_student_parent ON parent_student_links(organization_id, parent_id);
+CREATE INDEX IF NOT EXISTS idx_parent_student_student ON parent_student_links(organization_id, student_id);
+
 -- 9. Lessons (Course Units & Content)
 CREATE TABLE IF NOT EXISTS lessons (
     id VARCHAR(64) PRIMARY KEY,
@@ -524,4 +577,26 @@ CREATE POLICY tenant_isolation_org_memberships ON organization_memberships
         organization_id = NULLIF(current_setting('app.current_tenant_id', true), '')
         OR NULLIF(current_setting('app.current_tenant_id', true), '') IS NULL
     );
+
+-- 20. Teacher Assignments Policy
+ALTER TABLE teacher_assignments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_teacher_assignments ON teacher_assignments;
+CREATE POLICY tenant_isolation_teacher_assignments ON teacher_assignments
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 21. Student Enrollments Policy
+ALTER TABLE student_enrollments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_student_enrollments ON student_enrollments;
+CREATE POLICY tenant_isolation_student_enrollments ON student_enrollments
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 22. Parent Student Links Policy
+ALTER TABLE parent_student_links ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_parent_student_links ON parent_student_links;
+CREATE POLICY tenant_isolation_parent_student_links ON parent_student_links
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
 

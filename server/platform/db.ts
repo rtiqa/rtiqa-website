@@ -23,6 +23,11 @@ import type {
   AIUsageRecord,
   AIDocumentChunk,
   AIUsageSummary,
+  TeacherAssignment,
+  StudentEnrollment,
+  ParentStudentLink,
+  TeacherAssignmentRole,
+  StudentEnrollmentStatus,
 } from './types.ts';
 import { checkPostgresConnection, getPostgresPool, withTenantClient } from '../../src/db/postgres.ts';
 import type { PostgresStatus } from '../../src/db/postgres.ts';
@@ -52,6 +57,9 @@ class PlatformDatabase {
   private aiMessages: Map<string, AIMessage> = new Map();
   private aiUsageRecords: Map<string, AIUsageRecord> = new Map();
   private aiDocumentChunks: Map<string, AIDocumentChunk> = new Map();
+  private teacherAssignments: Map<string, TeacherAssignment> = new Map();
+  private studentEnrollments: Map<string, StudentEnrollment> = new Map();
+  private parentStudentLinks: Map<string, ParentStudentLink> = new Map();
 
   constructor() {
     this.seedInitialData();
@@ -292,6 +300,18 @@ class PlatformDatabase {
     };
     this.users.set(student4.id, student4);
 
+    const parent1: User = {
+      id: 'usr_horizon_p_khalid',
+      organizationId: schoolAId,
+      email: 'parent@horizon.edu.sa',
+      fullName: 'خالد السعيد (ولي أمر)',
+      role: 'PARENT',
+      isActive: true,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    this.users.set(parent1.id, parent1);
+
     // School A: Courses
     const courseMath10AId = 'crs_horizon_math_10a';
     this.courses.set(courseMath10AId, {
@@ -320,6 +340,21 @@ class PlatformDatabase {
       description: 'مقرر الفيزياء التفاعلي والتجارب المعملية الرقمية',
       subjectName: 'الفيزياء التجريبية والميكانيكا',
       teacherName: teacherMath.fullName,
+      classroomName: 'شعبة 10-أ (علمي)',
+    });
+
+    const courseArabic10AId = 'crs_horizon_arab_10a';
+    this.courses.set(courseArabic10AId, {
+      id: courseArabic10AId,
+      organizationId: schoolAId,
+      subjectId: arabicSubId,
+      termId: termAId,
+      teacherId: teacherArabic.id,
+      classroomId: class10AId,
+      title: 'اللغة العربية والبلاغة - الصف العاشر (شعبة أ)',
+      description: 'مقرر اللغة العربية والأدب والبلاغة والنقد',
+      subjectName: 'اللغة العربية والأدب',
+      teacherName: teacherArabic.fullName,
       classroomName: 'شعبة 10-أ (علمي)',
     });
 
@@ -564,6 +599,123 @@ class PlatformDatabase {
       subjectName: 'Advanced Physics',
       teacherName: teacherB.fullName,
       classroomName: 'Section 10-Alpha',
+    });
+
+    // School A: Teacher Assignments
+    const taMathAId = 'ta_horizon_math_10a';
+    this.teacherAssignments.set(taMathAId, {
+      id: taMathAId,
+      organizationId: schoolAId,
+      teacherId: teacherMath.id,
+      teacherName: teacherMath.fullName,
+      teacherEmail: teacherMath.email,
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات المتقدمة - الصف العاشر',
+      subjectId: mathSubId,
+      subjectName: 'الرياضيات العامة والتحليل',
+      classroomId: class10AId,
+      classroomName: 'شعبة 10-أ (علمي)',
+      academicYearId: yearAId,
+      academicYearName: 'العام الدراسي 2026-2027',
+      role: 'PRIMARY_TEACHER',
+      weeklyHours: 5,
+      status: 'ACTIVE',
+      createdAt: '2026-08-20T00:00:00Z',
+      updatedAt: '2026-08-20T00:00:00Z',
+    });
+
+    const taArabAId = 'ta_horizon_arab_10a';
+    this.teacherAssignments.set(taArabAId, {
+      id: taArabAId,
+      organizationId: schoolAId,
+      teacherId: teacherArabic.id,
+      teacherName: teacherArabic.fullName,
+      teacherEmail: teacherArabic.email,
+      courseId: courseArabic10AId,
+      courseTitle: 'اللغة العربية والبلاغة - الصف العاشر',
+      subjectId: arabicSubId,
+      subjectName: 'اللغة العربية والأدب',
+      classroomId: class10AId,
+      classroomName: 'شعبة 10-أ (علمي)',
+      academicYearId: yearAId,
+      academicYearName: 'العام الدراسي 2026-2027',
+      role: 'PRIMARY_TEACHER',
+      weeklyHours: 4,
+      status: 'ACTIVE',
+      createdAt: '2026-08-20T00:00:00Z',
+      updatedAt: '2026-08-20T00:00:00Z',
+    });
+
+    // School A: Student Enrollments
+    const studentsListA = [
+      { user: student1, roll: '10A-01' },
+      { user: student2, roll: '10A-02' },
+      { user: student3, roll: '10A-03' },
+      { user: student4, roll: '10A-04' },
+    ];
+    for (const item of studentsListA) {
+      const enrId = `enr_horizon_${item.user.id}`;
+      this.studentEnrollments.set(enrId, {
+        id: enrId,
+        organizationId: schoolAId,
+        studentId: item.user.id,
+        studentName: item.user.fullName,
+        studentEmail: item.user.email,
+        studentIdNumber: item.user.studentIdNumber,
+        classroomId: class10AId,
+        classroomName: 'شعبة 10-أ (علمي)',
+        gradeLevelId: grade10Id,
+        gradeLevelName: 'الصف العاشر (الأول الثانوي)',
+        academicYearId: yearAId,
+        academicYearName: 'العام الدراسي 2026-2027',
+        rollNumber: item.roll,
+        status: 'ACTIVE',
+        enrolledAt: '2026-08-20T00:00:00Z',
+        updatedAt: '2026-08-20T00:00:00Z',
+      });
+    }
+
+    // School B: Teacher Assignment & Student Enrollment
+    const taPhysBId = 'ta_elite_phys_10a';
+    this.teacherAssignments.set(taPhysBId, {
+      id: taPhysBId,
+      organizationId: schoolBId,
+      teacherId: teacherB.id,
+      teacherName: teacherB.fullName,
+      teacherEmail: teacherB.email,
+      courseId: coursePhys10AId,
+      courseTitle: 'Advanced Physics - Grade 10',
+      subjectId: physSubId,
+      subjectName: 'Advanced Physics',
+      classroomId: classBId,
+      classroomName: 'Section 10-Alpha',
+      academicYearId: yearBId,
+      academicYearName: 'Academic Year 2026-2027 (1448H)',
+      role: 'PRIMARY_TEACHER',
+      weeklyHours: 6,
+      status: 'ACTIVE',
+      createdAt: '2026-09-01T00:00:00Z',
+      updatedAt: '2026-09-01T00:00:00Z',
+    });
+
+    const enrBId = `enr_elite_${studentB.id}`;
+    this.studentEnrollments.set(enrBId, {
+      id: enrBId,
+      organizationId: schoolBId,
+      studentId: studentB.id,
+      studentName: studentB.fullName,
+      studentEmail: studentB.email,
+      studentIdNumber: studentB.studentIdNumber,
+      classroomId: classBId,
+      classroomName: 'Section 10-Alpha',
+      gradeLevelId: gradeBId,
+      gradeLevelName: 'Grade 10 (Advanced)',
+      academicYearId: yearBId,
+      academicYearName: 'Academic Year 2026-2027 (1448H)',
+      rollNumber: 'ELT-10A-01',
+      status: 'ACTIVE',
+      enrolledAt: '2026-09-01T00:00:00Z',
+      updatedAt: '2026-09-01T00:00:00Z',
     });
 
     // Populate Organization Memberships & default auth providers for all seeded users
@@ -930,11 +1082,47 @@ class PlatformDatabase {
     return Array.from(this.academicYears.values()).filter((y) => y.organizationId === organizationId);
   }
 
+  getAcademicYearById(id: string, organizationId: string): AcademicYear | undefined {
+    const item = this.academicYears.get(id);
+    if (!item || item.organizationId !== organizationId) return undefined;
+    return item;
+  }
+
   createAcademicYear(data: Omit<AcademicYear, 'id'>): AcademicYear {
     const id = `year_${Date.now()}`;
     const item: AcademicYear = { ...data, id };
+    if (item.isCurrent) {
+      // Set all other academic years in this org to isCurrent = false
+      for (const [yId, year] of this.academicYears.entries()) {
+        if (year.organizationId === data.organizationId && yId !== id) {
+          year.isCurrent = false;
+        }
+      }
+    }
     this.academicYears.set(id, item);
     return item;
+  }
+
+  updateAcademicYear(id: string, organizationId: string, updates: Partial<AcademicYear>): AcademicYear | undefined {
+    const item = this.getAcademicYearById(id, organizationId);
+    if (!item) return undefined;
+    if (updates.isCurrent) {
+      for (const [yId, year] of this.academicYears.entries()) {
+        if (year.organizationId === organizationId && yId !== id) {
+          year.isCurrent = false;
+        }
+      }
+    }
+    const updated: AcademicYear = { ...item, ...updates };
+    this.academicYears.set(id, updated);
+    return updated;
+  }
+
+  deleteAcademicYear(id: string, organizationId: string): boolean {
+    const item = this.getAcademicYearById(id, organizationId);
+    if (!item) return false;
+    this.academicYears.delete(id);
+    return true;
   }
 
   getTerms(organizationId: string, academicYearId?: string): Term[] {
@@ -945,11 +1133,46 @@ class PlatformDatabase {
     });
   }
 
+  getTermById(id: string, organizationId: string): Term | undefined {
+    const item = this.terms.get(id);
+    if (!item || item.organizationId !== organizationId) return undefined;
+    return item;
+  }
+
   createTerm(data: Omit<Term, 'id'>): Term {
     const id = `term_${Date.now()}`;
     const item: Term = { ...data, id };
+    if (item.isCurrent) {
+      for (const [tId, term] of this.terms.entries()) {
+        if (term.organizationId === data.organizationId && tId !== id) {
+          term.isCurrent = false;
+        }
+      }
+    }
     this.terms.set(id, item);
     return item;
+  }
+
+  updateTerm(id: string, organizationId: string, updates: Partial<Term>): Term | undefined {
+    const item = this.getTermById(id, organizationId);
+    if (!item) return undefined;
+    if (updates.isCurrent) {
+      for (const [tId, term] of this.terms.entries()) {
+        if (term.organizationId === organizationId && tId !== id) {
+          term.isCurrent = false;
+        }
+      }
+    }
+    const updated: Term = { ...item, ...updates };
+    this.terms.set(id, updated);
+    return updated;
+  }
+
+  deleteTerm(id: string, organizationId: string): boolean {
+    const item = this.getTermById(id, organizationId);
+    if (!item) return false;
+    this.terms.delete(id);
+    return true;
   }
 
   getGradeLevels(organizationId: string): GradeLevel[] {
@@ -969,6 +1192,21 @@ class PlatformDatabase {
     const item: GradeLevel = { ...data, id };
     this.gradeLevels.set(id, item);
     return item;
+  }
+
+  updateGradeLevel(id: string, organizationId: string, updates: Partial<GradeLevel>): GradeLevel | undefined {
+    const gl = this.getGradeLevelById(id, organizationId);
+    if (!gl) return undefined;
+    const updated: GradeLevel = { ...gl, ...updates };
+    this.gradeLevels.set(id, updated);
+    return updated;
+  }
+
+  deleteGradeLevel(id: string, organizationId: string): boolean {
+    const gl = this.getGradeLevelById(id, organizationId);
+    if (!gl) return false;
+    this.gradeLevels.delete(id);
+    return true;
   }
 
   getClassrooms(organizationId: string, gradeLevelId?: string): Classroom[] {
@@ -992,8 +1230,29 @@ class PlatformDatabase {
     return item;
   }
 
+  updateClassroom(id: string, organizationId: string, updates: Partial<Classroom>): Classroom | undefined {
+    const c = this.getClassroomById(id, organizationId);
+    if (!c) return undefined;
+    const updated: Classroom = { ...c, ...updates };
+    this.classrooms.set(id, updated);
+    return updated;
+  }
+
+  deleteClassroom(id: string, organizationId: string): boolean {
+    const c = this.getClassroomById(id, organizationId);
+    if (!c) return false;
+    this.classrooms.delete(id);
+    return true;
+  }
+
   getSubjects(organizationId: string): Subject[] {
     return Array.from(this.subjects.values()).filter((s) => s.organizationId === organizationId);
+  }
+
+  getSubjectById(id: string, organizationId: string): Subject | undefined {
+    const s = this.subjects.get(id);
+    if (!s || s.organizationId !== organizationId) return undefined;
+    return s;
   }
 
   createSubject(data: Omit<Subject, 'id'>): Subject {
@@ -1001,6 +1260,21 @@ class PlatformDatabase {
     const item: Subject = { ...data, id };
     this.subjects.set(id, item);
     return item;
+  }
+
+  updateSubject(id: string, organizationId: string, updates: Partial<Subject>): Subject | undefined {
+    const s = this.getSubjectById(id, organizationId);
+    if (!s) return undefined;
+    const updated: Subject = { ...s, ...updates };
+    this.subjects.set(id, updated);
+    return updated;
+  }
+
+  deleteSubject(id: string, organizationId: string): boolean {
+    const s = this.getSubjectById(id, organizationId);
+    if (!s) return false;
+    this.subjects.delete(id);
+    return true;
   }
 
   // Courses
@@ -1031,9 +1305,238 @@ class PlatformDatabase {
       subjectName: subject?.name,
       teacherName: teacher?.fullName,
       classroomName: classroom?.name,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
     this.courses.set(id, course);
     return course;
+  }
+
+  updateCourse(id: string, organizationId: string, updates: Partial<Course>): Course | undefined {
+    const course = this.getCourseById(id, organizationId);
+    if (!course) return undefined;
+    const subject = updates.subjectId ? this.subjects.get(updates.subjectId) : undefined;
+    const teacher = updates.teacherId ? this.users.get(updates.teacherId) : undefined;
+    const classroom = updates.classroomId ? this.classrooms.get(updates.classroomId) : undefined;
+
+    const updated: Course = {
+      ...course,
+      ...updates,
+      subjectName: subject ? subject.name : course.subjectName,
+      teacherName: teacher ? teacher.fullName : course.teacherName,
+      classroomName: classroom ? classroom.name : course.classroomName,
+      updatedAt: new Date().toISOString(),
+    };
+    this.courses.set(id, updated);
+    return updated;
+  }
+
+  deleteCourse(id: string, organizationId: string): boolean {
+    const course = this.getCourseById(id, organizationId);
+    if (!course) return false;
+    this.courses.delete(id);
+    return true;
+  }
+
+  // --- Teacher Assignments ---
+  getTeacherAssignments(
+    organizationId: string,
+    filters?: { teacherId?: string; courseId?: string; classroomId?: string; academicYearId?: string; subjectId?: string }
+  ): TeacherAssignment[] {
+    return Array.from(this.teacherAssignments.values()).filter((ta) => {
+      if (ta.organizationId !== organizationId) return false;
+      if (filters?.teacherId && ta.teacherId !== filters.teacherId) return false;
+      if (filters?.courseId && ta.courseId !== filters.courseId) return false;
+      if (filters?.classroomId && ta.classroomId !== filters.classroomId) return false;
+      if (filters?.academicYearId && ta.academicYearId !== filters.academicYearId) return false;
+      if (filters?.subjectId && ta.subjectId !== filters.subjectId) return false;
+      return true;
+    });
+  }
+
+  getTeacherAssignmentById(id: string, organizationId: string): TeacherAssignment | undefined {
+    const ta = this.teacherAssignments.get(id);
+    if (!ta || ta.organizationId !== organizationId) return undefined;
+    return ta;
+  }
+
+  createTeacherAssignment(
+    data: Omit<TeacherAssignment, 'id' | 'createdAt' | 'updatedAt'>
+  ): TeacherAssignment {
+    const id = `ta_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const teacher = this.getUserById(data.teacherId, data.organizationId);
+    const subject = this.getSubjectById(data.subjectId, data.organizationId);
+    const classroom = this.getClassroomById(data.classroomId, data.organizationId);
+    const course = data.courseId ? this.getCourseById(data.courseId, data.organizationId) : undefined;
+    const year = data.academicYearId ? this.getAcademicYearById(data.academicYearId, data.organizationId) : undefined;
+
+    const now = new Date().toISOString();
+    const assignment: TeacherAssignment = {
+      ...data,
+      id,
+      teacherName: teacher?.fullName,
+      teacherEmail: teacher?.email,
+      subjectName: subject?.name,
+      classroomName: classroom?.name,
+      courseTitle: course?.title,
+      academicYearName: year?.name,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.teacherAssignments.set(id, assignment);
+    return assignment;
+  }
+
+  updateTeacherAssignment(
+    id: string,
+    organizationId: string,
+    updates: Partial<TeacherAssignment>
+  ): TeacherAssignment | undefined {
+    const ta = this.getTeacherAssignmentById(id, organizationId);
+    if (!ta) return undefined;
+    const teacher = updates.teacherId ? this.getUserById(updates.teacherId, organizationId) : undefined;
+    const subject = updates.subjectId ? this.getSubjectById(updates.subjectId, organizationId) : undefined;
+    const classroom = updates.classroomId ? this.getClassroomById(updates.classroomId, organizationId) : undefined;
+
+    const updated: TeacherAssignment = {
+      ...ta,
+      ...updates,
+      teacherName: teacher ? teacher.fullName : ta.teacherName,
+      teacherEmail: teacher ? teacher.email : ta.teacherEmail,
+      subjectName: subject ? subject.name : ta.subjectName,
+      classroomName: classroom ? classroom.name : ta.classroomName,
+      updatedAt: new Date().toISOString(),
+    };
+    this.teacherAssignments.set(id, updated);
+    return updated;
+  }
+
+  deleteTeacherAssignment(id: string, organizationId: string): boolean {
+    const ta = this.getTeacherAssignmentById(id, organizationId);
+    if (!ta) return false;
+    this.teacherAssignments.delete(id);
+    return true;
+  }
+
+  // --- Student Enrollments ---
+  getStudentEnrollments(
+    organizationId: string,
+    filters?: { classroomId?: string; studentId?: string; academicYearId?: string; status?: StudentEnrollmentStatus }
+  ): StudentEnrollment[] {
+    return Array.from(this.studentEnrollments.values()).filter((enr) => {
+      if (enr.organizationId !== organizationId) return false;
+      if (filters?.classroomId && enr.classroomId !== filters.classroomId) return false;
+      if (filters?.studentId && enr.studentId !== filters.studentId) return false;
+      if (filters?.academicYearId && enr.academicYearId !== filters.academicYearId) return false;
+      if (filters?.status && enr.status !== filters.status) return false;
+      return true;
+    });
+  }
+
+  getStudentEnrollmentById(id: string, organizationId: string): StudentEnrollment | undefined {
+    const enr = this.studentEnrollments.get(id);
+    if (!enr || enr.organizationId !== organizationId) return undefined;
+    return enr;
+  }
+
+  createStudentEnrollment(
+    data: Omit<StudentEnrollment, 'id' | 'enrolledAt' | 'updatedAt'>
+  ): StudentEnrollment {
+    const id = `enr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const student = this.getUserById(data.studentId, data.organizationId);
+    const classroom = this.getClassroomById(data.classroomId, data.organizationId);
+    const gradeLevel = classroom ? this.getGradeLevelById(classroom.gradeLevelId, data.organizationId) : undefined;
+    const year = this.getAcademicYearById(data.academicYearId, data.organizationId);
+
+    const now = new Date().toISOString();
+    const enrollment: StudentEnrollment = {
+      ...data,
+      id,
+      studentName: student?.fullName,
+      studentEmail: student?.email,
+      studentIdNumber: student?.studentIdNumber,
+      classroomName: classroom?.name,
+      gradeLevelId: classroom?.gradeLevelId,
+      gradeLevelName: gradeLevel?.name,
+      academicYearName: year?.name,
+      enrolledAt: now,
+      updatedAt: now,
+    };
+    this.studentEnrollments.set(id, enrollment);
+
+    // Sync classroomId onto student user if active
+    if (student && data.classroomId) {
+      this.updateUser(student.id, data.organizationId, { classroomId: data.classroomId });
+    }
+
+    return enrollment;
+  }
+
+  updateStudentEnrollment(
+    id: string,
+    organizationId: string,
+    updates: Partial<StudentEnrollment>
+  ): StudentEnrollment | undefined {
+    const enr = this.getStudentEnrollmentById(id, organizationId);
+    if (!enr) return undefined;
+    const classroom = updates.classroomId ? this.getClassroomById(updates.classroomId, organizationId) : undefined;
+    const gradeLevel = classroom ? this.getGradeLevelById(classroom.gradeLevelId, organizationId) : undefined;
+
+    const updated: StudentEnrollment = {
+      ...enr,
+      ...updates,
+      classroomName: classroom ? classroom.name : enr.classroomName,
+      gradeLevelId: classroom ? classroom.gradeLevelId : enr.gradeLevelId,
+      gradeLevelName: gradeLevel ? gradeLevel.name : enr.gradeLevelName,
+      updatedAt: new Date().toISOString(),
+    };
+    this.studentEnrollments.set(id, updated);
+    return updated;
+  }
+
+  deleteStudentEnrollment(id: string, organizationId: string): boolean {
+    const enr = this.getStudentEnrollmentById(id, organizationId);
+    if (!enr) return false;
+    this.studentEnrollments.delete(id);
+    return true;
+  }
+
+  // --- Parent Student Links ---
+  getParentStudentLinks(
+    organizationId: string,
+    filters?: { parentId?: string; studentId?: string }
+  ): ParentStudentLink[] {
+    return Array.from(this.parentStudentLinks.values()).filter((link) => {
+      if (link.organizationId !== organizationId) return false;
+      if (filters?.parentId && link.parentId !== filters.parentId) return false;
+      if (filters?.studentId && link.studentId !== filters.studentId) return false;
+      return true;
+    });
+  }
+
+  createParentStudentLink(
+    data: Omit<ParentStudentLink, 'id' | 'createdAt'>
+  ): ParentStudentLink {
+    const id = `psl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const parent = this.getUserById(data.parentId, data.organizationId);
+    const student = this.getUserById(data.studentId, data.organizationId);
+
+    const link: ParentStudentLink = {
+      ...data,
+      id,
+      parentName: parent?.fullName,
+      studentName: student?.fullName,
+      createdAt: new Date().toISOString(),
+    };
+    this.parentStudentLinks.set(id, link);
+    return link;
+  }
+
+  deleteParentStudentLink(id: string, organizationId: string): boolean {
+    const link = this.parentStudentLinks.get(id);
+    if (!link || link.organizationId !== organizationId) return false;
+    this.parentStudentLinks.delete(id);
+    return true;
   }
 
   // Lessons
@@ -1439,6 +1942,9 @@ class PlatformDatabase {
     this.aiMessages.clear();
     this.aiUsageRecords.clear();
     this.aiDocumentChunks.clear();
+    this.teacherAssignments.clear();
+    this.studentEnrollments.clear();
+    this.parentStudentLinks.clear();
     this.seedInitialData();
   }
 

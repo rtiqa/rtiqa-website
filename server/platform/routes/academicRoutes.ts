@@ -7,7 +7,10 @@ export const academicRouter = express.Router();
 
 academicRouter.use(requireAuth);
 
-// Academic Years
+// ==========================================
+// 1. Academic Years
+// ==========================================
+
 academicRouter.get('/years', (req: PlatformRequest, res: express.Response) => {
   try {
     const years = db.getAcademicYears(req.organization!.id);
@@ -17,11 +20,27 @@ academicRouter.get('/years', (req: PlatformRequest, res: express.Response) => {
   }
 });
 
-academicRouter.post('/years', requireRoles(['ORG_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+academicRouter.get('/years/:id', (req: PlatformRequest, res: express.Response) => {
+  try {
+    const year = db.getAcademicYearById(req.params.id, req.organization!.id);
+    if (!year) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'السنة الأكاديمية غير موجودة' });
+    }
+    res.json({ success: true, data: year });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.post('/years', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
   try {
     const { name, startDate, endDate, isCurrent } = req.body;
     if (!name || !startDate || !endDate) {
-      return res.status(400).json({ success: false, error: 'MISSING_FIELDS', message: 'اسم السنة الأكاديمية وتواريخ البداية والنهاية مطلوبة' });
+      return res.status(400).json({
+        success: false,
+        error: 'MISSING_FIELDS',
+        message: 'اسم السنة الأكاديمية وتواريخ البداية والنهاية مطلوبة',
+      });
     }
     const year = db.createAcademicYear({
       organizationId: req.organization!.id,
@@ -30,13 +49,47 @@ academicRouter.post('/years', requireRoles(['ORG_ADMIN']), (req: PlatformRequest
       endDate,
       isCurrent: Boolean(isCurrent),
     });
-    res.json({ success: true, data: year });
+    res.status(201).json({ success: true, data: year });
   } catch {
     res.status(500).json({ success: false, error: 'SERVER_ERROR' });
   }
 });
 
-// Terms
+academicRouter.put('/years/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const existing = db.getAcademicYearById(req.params.id, req.organization!.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'السنة الأكاديمية غير موجودة' });
+    }
+    const { name, startDate, endDate, isCurrent } = req.body;
+    const updated = db.updateAcademicYear(req.params.id, req.organization!.id, {
+      name: name ? String(name).trim() : undefined,
+      startDate,
+      endDate,
+      isCurrent: isCurrent !== undefined ? Boolean(isCurrent) : undefined,
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.delete('/years/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const success = db.deleteAcademicYear(req.params.id, req.organization!.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'السنة الأكاديمية غير موجودة' });
+    }
+    res.json({ success: true, message: 'تم حذف السنة الأكاديمية بنجاح' });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+// ==========================================
+// 2. Terms
+// ==========================================
+
 academicRouter.get('/terms', (req: PlatformRequest, res: express.Response) => {
   try {
     const yearId = req.query.yearId as string | undefined;
@@ -47,14 +100,25 @@ academicRouter.get('/terms', (req: PlatformRequest, res: express.Response) => {
   }
 });
 
-academicRouter.post('/terms', requireRoles(['ORG_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+academicRouter.get('/terms/:id', (req: PlatformRequest, res: express.Response) => {
+  try {
+    const term = db.getTermById(req.params.id, req.organization!.id);
+    if (!term) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'الفصل الدراسي غير موجود' });
+    }
+    res.json({ success: true, data: term });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.post('/terms', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
   try {
     const { academicYearId, name, startDate, endDate, isCurrent } = req.body;
     if (!academicYearId || !name || !startDate || !endDate) {
       return res.status(400).json({ success: false, error: 'MISSING_FIELDS', message: 'جميع بيانات الفصل الدراسي مطلوبة' });
     }
 
-    // Verify academic year belongs to tenant
     if (!db.isAcademicYearInOrg(academicYearId, req.organization!.id)) {
       return res.status(400).json({ success: false, error: 'INVALID_YEAR', message: 'السنة الأكاديمية غير موجودة في المؤسسة' });
     }
@@ -67,13 +131,51 @@ academicRouter.post('/terms', requireRoles(['ORG_ADMIN']), (req: PlatformRequest
       endDate,
       isCurrent: Boolean(isCurrent),
     });
-    res.json({ success: true, data: term });
+    res.status(201).json({ success: true, data: term });
   } catch {
     res.status(500).json({ success: false, error: 'SERVER_ERROR' });
   }
 });
 
-// Grade Levels
+academicRouter.put('/terms/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const existing = db.getTermById(req.params.id, req.organization!.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'الفصل الدراسي غير موجود' });
+    }
+    const { name, startDate, endDate, isCurrent, academicYearId } = req.body;
+    if (academicYearId && !db.isAcademicYearInOrg(academicYearId, req.organization!.id)) {
+      return res.status(400).json({ success: false, error: 'INVALID_YEAR', message: 'السنة الأكاديمية غير صالحة' });
+    }
+    const updated = db.updateTerm(req.params.id, req.organization!.id, {
+      name: name ? String(name).trim() : undefined,
+      startDate,
+      endDate,
+      isCurrent: isCurrent !== undefined ? Boolean(isCurrent) : undefined,
+      academicYearId,
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.delete('/terms/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const success = db.deleteTerm(req.params.id, req.organization!.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'الفصل الدراسي غير موجود' });
+    }
+    res.json({ success: true, message: 'تم حذف الفصل الدراسي بنجاح' });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+// ==========================================
+// 3. Grade Levels
+// ==========================================
+
 academicRouter.get('/grades', (req: PlatformRequest, res: express.Response) => {
   try {
     const grades = db.getGradeLevels(req.organization!.id);
@@ -83,7 +185,19 @@ academicRouter.get('/grades', (req: PlatformRequest, res: express.Response) => {
   }
 });
 
-academicRouter.post('/grades', requireRoles(['ORG_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+academicRouter.get('/grades/:id', (req: PlatformRequest, res: express.Response) => {
+  try {
+    const grade = db.getGradeLevelById(req.params.id, req.organization!.id);
+    if (!grade) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'المرحلة الدراسية غير موجودة' });
+    }
+    res.json({ success: true, data: grade });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.post('/grades', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
   try {
     const { name, sequenceOrder } = req.body;
     if (!name) return res.status(400).json({ success: false, error: 'NAME_REQUIRED', message: 'اسم المرحلة/الصف مطلوب' });
@@ -92,13 +206,45 @@ academicRouter.post('/grades', requireRoles(['ORG_ADMIN']), (req: PlatformReques
       name: String(name).trim(),
       sequenceOrder: Number(sequenceOrder) || 1,
     });
-    res.json({ success: true, data: grade });
+    res.status(201).json({ success: true, data: grade });
   } catch {
     res.status(500).json({ success: false, error: 'SERVER_ERROR' });
   }
 });
 
-// Classrooms
+academicRouter.put('/grades/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const existing = db.getGradeLevelById(req.params.id, req.organization!.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'المرحلة الدراسية غير موجودة' });
+    }
+    const { name, sequenceOrder } = req.body;
+    const updated = db.updateGradeLevel(req.params.id, req.organization!.id, {
+      name: name ? String(name).trim() : undefined,
+      sequenceOrder: sequenceOrder !== undefined ? Number(sequenceOrder) : undefined,
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.delete('/grades/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const success = db.deleteGradeLevel(req.params.id, req.organization!.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'المرحلة الدراسية غير موجودة' });
+    }
+    res.json({ success: true, message: 'تم حذف المرحلة الدراسية بنجاح' });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+// ==========================================
+// 4. Classrooms / Sections
+// ==========================================
+
 academicRouter.get('/classrooms', (req: PlatformRequest, res: express.Response) => {
   try {
     const gradeLevelId = req.query.gradeLevelId as string | undefined;
@@ -109,12 +255,25 @@ academicRouter.get('/classrooms', (req: PlatformRequest, res: express.Response) 
   }
 });
 
-academicRouter.post('/classrooms', requireRoles(['ORG_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+academicRouter.get('/classrooms/:id', (req: PlatformRequest, res: express.Response) => {
+  try {
+    const classroom = db.getClassroomById(req.params.id, req.organization!.id);
+    if (!classroom) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'الشعبة غير موجودة' });
+    }
+    res.json({ success: true, data: classroom });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.post('/classrooms', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
   try {
     const { gradeLevelId, name, capacity } = req.body;
-    if (!gradeLevelId || !name) return res.status(400).json({ success: false, error: 'MISSING_FIELDS', message: 'الصف والمرحلة مطلوبة' });
+    if (!gradeLevelId || !name) {
+      return res.status(400).json({ success: false, error: 'MISSING_FIELDS', message: 'الصف والمرحلة مطلوبة' });
+    }
 
-    // Verify grade level belongs to tenant
     if (!db.isGradeLevelInOrg(gradeLevelId, req.organization!.id)) {
       return res.status(400).json({ success: false, error: 'INVALID_GRADE_LEVEL', message: 'المرحلة الدراسية غير صالحة' });
     }
@@ -125,13 +284,49 @@ academicRouter.post('/classrooms', requireRoles(['ORG_ADMIN']), (req: PlatformRe
       name: String(name).trim(),
       capacity: capacity ? Number(capacity) : undefined,
     });
-    res.json({ success: true, data: classroom });
+    res.status(201).json({ success: true, data: classroom });
   } catch {
     res.status(500).json({ success: false, error: 'SERVER_ERROR' });
   }
 });
 
-// Subjects
+academicRouter.put('/classrooms/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const existing = db.getClassroomById(req.params.id, req.organization!.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'الشعبة غير موجودة' });
+    }
+    const { name, gradeLevelId, capacity } = req.body;
+    if (gradeLevelId && !db.isGradeLevelInOrg(gradeLevelId, req.organization!.id)) {
+      return res.status(400).json({ success: false, error: 'INVALID_GRADE_LEVEL', message: 'المرحلة الدراسية غير صالحة' });
+    }
+    const updated = db.updateClassroom(req.params.id, req.organization!.id, {
+      name: name ? String(name).trim() : undefined,
+      gradeLevelId,
+      capacity: capacity !== undefined ? Number(capacity) : undefined,
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.delete('/classrooms/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const success = db.deleteClassroom(req.params.id, req.organization!.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'الشعبة غير موجودة' });
+    }
+    res.json({ success: true, message: 'تم حذف الشعبة بنجاح' });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+// ==========================================
+// 5. Subjects
+// ==========================================
+
 academicRouter.get('/subjects', (req: PlatformRequest, res: express.Response) => {
   try {
     const subjects = db.getSubjects(req.organization!.id);
@@ -141,10 +336,24 @@ academicRouter.get('/subjects', (req: PlatformRequest, res: express.Response) =>
   }
 });
 
-academicRouter.post('/subjects', requireRoles(['ORG_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+academicRouter.get('/subjects/:id', (req: PlatformRequest, res: express.Response) => {
+  try {
+    const subject = db.getSubjectById(req.params.id, req.organization!.id);
+    if (!subject) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'المادة غير موجودة' });
+    }
+    res.json({ success: true, data: subject });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.post('/subjects', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
   try {
     const { name, code, color, description } = req.body;
-    if (!name || !code) return res.status(400).json({ success: false, error: 'NAME_AND_CODE_REQUIRED', message: 'اسم المادة والرمز التعريفي مطلوبين' });
+    if (!name || !code) {
+      return res.status(400).json({ success: false, error: 'NAME_AND_CODE_REQUIRED', message: 'اسم المادة والرمز التعريفي مطلوبين' });
+    }
     const subject = db.createSubject({
       organizationId: req.organization!.id,
       name: String(name).trim(),
@@ -152,7 +361,346 @@ academicRouter.post('/subjects', requireRoles(['ORG_ADMIN']), (req: PlatformRequ
       color: color || '#10b981',
       description: description ? String(description).trim() : undefined,
     });
-    res.json({ success: true, data: subject });
+    res.status(201).json({ success: true, data: subject });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.put('/subjects/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const existing = db.getSubjectById(req.params.id, req.organization!.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'المادة غير موجودة' });
+    }
+    const { name, code, color, description } = req.body;
+    const updated = db.updateSubject(req.params.id, req.organization!.id, {
+      name: name ? String(name).trim() : undefined,
+      code: code ? String(code).trim().toUpperCase() : undefined,
+      color,
+      description: description !== undefined ? String(description).trim() : undefined,
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.delete('/subjects/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const success = db.deleteSubject(req.params.id, req.organization!.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'المادة غير موجودة' });
+    }
+    res.json({ success: true, message: 'تم حذف المادة بنجاح' });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+// ==========================================
+// 6. Teacher Assignments
+// ==========================================
+
+academicRouter.get('/teacher-assignments', (req: PlatformRequest, res: express.Response) => {
+  try {
+    const { role, id: userId } = req.user!;
+    const orgId = req.organization!.id;
+    const { teacherId, classroomId, courseId, academicYearId, subjectId } = req.query as Record<string, string>;
+
+    let filterTeacher = teacherId;
+    if (role === 'TEACHER') {
+      filterTeacher = userId; // Teacher can only see their own assignments
+    }
+
+    const assignments = db.getTeacherAssignments(orgId, {
+      teacherId: filterTeacher,
+      classroomId,
+      courseId,
+      academicYearId,
+      subjectId,
+    });
+    res.json({ success: true, data: assignments });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.post('/teacher-assignments', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const { teacherId, subjectId, classroomId, courseId, academicYearId, role, weeklyHours, status } = req.body;
+    if (!teacherId || !subjectId || !classroomId) {
+      return res.status(400).json({
+        success: false,
+        error: 'MISSING_FIELDS',
+        message: 'المعلم والمادة والشعبة الدراسية مطلوبة',
+      });
+    }
+
+    const orgId = req.organization!.id;
+    const teacher = db.getUserById(teacherId, orgId);
+    if (!teacher || (teacher.role !== 'TEACHER' && teacher.role !== 'ORG_ADMIN')) {
+      return res.status(400).json({ success: false, error: 'INVALID_TEACHER', message: 'المعلم المحدد غير موجود' });
+    }
+    if (!db.isSubjectInOrg(subjectId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_SUBJECT', message: 'المادة غير صالحة' });
+    }
+    if (!db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_CLASSROOM', message: 'الشعبة غير صالحة' });
+    }
+
+    const assignment = db.createTeacherAssignment({
+      organizationId: orgId,
+      teacherId,
+      subjectId,
+      classroomId,
+      courseId: courseId || undefined,
+      academicYearId: academicYearId || undefined,
+      role: role || 'PRIMARY_TEACHER',
+      weeklyHours: weeklyHours ? Number(weeklyHours) : 4,
+      status: status || 'ACTIVE',
+    });
+
+    res.status(201).json({ success: true, data: assignment });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.put('/teacher-assignments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const existing = db.getTeacherAssignmentById(req.params.id, req.organization!.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'تكليف المعلم غير موجود' });
+    }
+    const { teacherId, subjectId, classroomId, role, weeklyHours, status, courseId, academicYearId } = req.body;
+    const orgId = req.organization!.id;
+
+    if (teacherId) {
+      const teacher = db.getUserById(teacherId, orgId);
+      if (!teacher) return res.status(400).json({ success: false, error: 'INVALID_TEACHER', message: 'المعلم غير صالح' });
+    }
+    if (subjectId && !db.isSubjectInOrg(subjectId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_SUBJECT', message: 'المادة غير صالحة' });
+    }
+    if (classroomId && !db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_CLASSROOM', message: 'الشعبة غير صالحة' });
+    }
+
+    const updated = db.updateTeacherAssignment(req.params.id, orgId, {
+      teacherId,
+      subjectId,
+      classroomId,
+      courseId,
+      academicYearId,
+      role,
+      weeklyHours: weeklyHours !== undefined ? Number(weeklyHours) : undefined,
+      status,
+    });
+
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.delete('/teacher-assignments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const success = db.deleteTeacherAssignment(req.params.id, req.organization!.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'التكليف غير موجود' });
+    }
+    res.json({ success: true, message: 'تم حذف تكليف المعلم بنجاح' });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+// ==========================================
+// 7. Student Enrollments
+// ==========================================
+
+academicRouter.get('/enrollments', (req: PlatformRequest, res: express.Response) => {
+  try {
+    const { role, id: userId, classroomId: userClassroomId } = req.user!;
+    const orgId = req.organization!.id;
+    const { classroomId, studentId, academicYearId, status } = req.query as Record<string, string>;
+
+    let filterStudent = studentId;
+    let filterClassroom = classroomId;
+
+    if (role === 'STUDENT') {
+      filterStudent = userId; // Students can only view their own enrollment
+    } else if (role === 'PARENT') {
+      // Parents can only view enrollments of their linked children
+      const links = db.getParentStudentLinks(orgId, { parentId: userId });
+      const childIds = new Set(links.map((l) => l.studentId));
+      if (studentId && !childIds.has(studentId)) {
+        return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'لا تملك صلاحية الوصول لهذا الطالب' });
+      }
+    }
+
+    const enrollments = db.getStudentEnrollments(orgId, {
+      classroomId: filterClassroom,
+      studentId: filterStudent,
+      academicYearId,
+      status: status as any,
+    });
+
+    res.json({ success: true, data: enrollments });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.post('/enrollments', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const { studentId, classroomId, academicYearId, rollNumber, status } = req.body;
+    if (!studentId || !classroomId || !academicYearId) {
+      return res.status(400).json({
+        success: false,
+        error: 'MISSING_FIELDS',
+        message: 'الطالب والشعبة والسنة الأكاديمية مطلوبة لتسجيل الطالب',
+      });
+    }
+
+    const orgId = req.organization!.id;
+    const student = db.getUserById(studentId, orgId);
+    if (!student || student.role !== 'STUDENT') {
+      return res.status(400).json({ success: false, error: 'INVALID_STUDENT', message: 'الطالب غير موجود أو نوع الحساب غير صحيح' });
+    }
+    if (!db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_CLASSROOM', message: 'الشعبة الدراسية غير صالحة' });
+    }
+    if (!db.isAcademicYearInOrg(academicYearId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_YEAR', message: 'السنة الأكاديمية غير صالحة' });
+    }
+
+    // Check duplicate active enrollment for this student in the same year
+    const existing = db.getStudentEnrollments(orgId, { studentId, academicYearId });
+    if (existing.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: 'DUPLICATE_ENROLLMENT',
+        message: 'الطالب مسجل بالفعل في هذه السنة الأكاديمية',
+        data: existing[0],
+      });
+    }
+
+    const enrollment = db.createStudentEnrollment({
+      organizationId: orgId,
+      studentId,
+      classroomId,
+      academicYearId,
+      rollNumber: rollNumber ? String(rollNumber).trim() : undefined,
+      status: status || 'ACTIVE',
+    });
+
+    res.status(201).json({ success: true, data: enrollment });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.put('/enrollments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const existing = db.getStudentEnrollmentById(req.params.id, req.organization!.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'تسجيل الطالب غير موجود' });
+    }
+
+    const { classroomId, rollNumber, status } = req.body;
+    const orgId = req.organization!.id;
+
+    if (classroomId && !db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_CLASSROOM', message: 'الشعبة غير صالحة' });
+    }
+
+    const updated = db.updateStudentEnrollment(req.params.id, orgId, {
+      classroomId,
+      rollNumber: rollNumber !== undefined ? String(rollNumber).trim() : undefined,
+      status,
+    });
+
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.delete('/enrollments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const success = db.deleteStudentEnrollment(req.params.id, req.organization!.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'تسجيل الطالب غير موجود' });
+    }
+    res.json({ success: true, message: 'تم إلغاء قيد الطالب بنجاح' });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+// ==========================================
+// 8. Parent-Student Links
+// ==========================================
+
+academicRouter.get('/parent-links', (req: PlatformRequest, res: express.Response) => {
+  try {
+    const { role, id: userId } = req.user!;
+    const orgId = req.organization!.id;
+    const { parentId, studentId } = req.query as Record<string, string>;
+
+    let filterParent = parentId;
+    if (role === 'PARENT') {
+      filterParent = userId;
+    }
+
+    const links = db.getParentStudentLinks(orgId, { parentId: filterParent, studentId });
+    res.json({ success: true, data: links });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.post('/parent-links', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const { parentId, studentId, relationship, isEmergencyContact } = req.body;
+    if (!parentId || !studentId) {
+      return res.status(400).json({ success: false, error: 'MISSING_FIELDS', message: 'ولي الأمر والطالب مطلوبين' });
+    }
+
+    const orgId = req.organization!.id;
+    const parent = db.getUserById(parentId, orgId);
+    const student = db.getUserById(studentId, orgId);
+
+    if (!parent || parent.role !== 'PARENT') {
+      return res.status(400).json({ success: false, error: 'INVALID_PARENT', message: 'ولي الأمر غير موجود أو الدور غير صحيح' });
+    }
+    if (!student || student.role !== 'STUDENT') {
+      return res.status(400).json({ success: false, error: 'INVALID_STUDENT', message: 'الطالب غير موجود أو الدور غير صحيح' });
+    }
+
+    const link = db.createParentStudentLink({
+      organizationId: orgId,
+      parentId,
+      studentId,
+      relationship: relationship || 'FATHER',
+      isEmergencyContact: isEmergencyContact !== undefined ? Boolean(isEmergencyContact) : true,
+    });
+
+    res.status(201).json({ success: true, data: link });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+academicRouter.delete('/parent-links/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const success = db.deleteParentStudentLink(req.params.id, req.organization!.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'الرابط غير موجود' });
+    }
+    res.json({ success: true, message: 'تم فك ارتباط ولي الأمر بالطالب' });
   } catch {
     res.status(500).json({ success: false, error: 'SERVER_ERROR' });
   }

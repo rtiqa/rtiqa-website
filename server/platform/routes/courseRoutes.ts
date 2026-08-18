@@ -106,3 +106,73 @@ courseRouter.post('/', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (r
     res.status(500).json({ success: false, error: 'SERVER_ERROR' });
   }
 });
+
+// PUT /api/v1/courses/:id (Admins or assigned teacher)
+courseRouter.put('/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const orgId = req.organization!.id;
+    const course = db.getCourseById(req.params.id, orgId);
+    if (!course) {
+      return res.status(404).json({ success: false, error: 'COURSE_NOT_FOUND', message: 'المقرر غير موجود' });
+    }
+
+    if (req.user!.role === 'TEACHER' && course.teacherId !== req.user!.id) {
+      return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'لا تملك صلاحية تعديل هذا المقرر' });
+    }
+
+    const { title, description, subjectId, classroomId, termId, teacherId } = req.body;
+
+    if (subjectId && !db.isSubjectInOrg(subjectId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_SUBJECT', message: 'المادة غير صالحة' });
+    }
+    if (termId && !db.isTermInOrg(termId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_TERM', message: 'الفصل الدراسي غير صالح' });
+    }
+    if (classroomId && !db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: 'INVALID_CLASSROOM', message: 'الشعبة الدراسية غير صالحة' });
+    }
+
+    let finalTeacherId = course.teacherId;
+    if ((req.user!.role === 'ORG_ADMIN' || req.user!.role === 'SUPER_ADMIN') && teacherId) {
+      const t = db.getUserById(teacherId, orgId);
+      if (!t) {
+        return res.status(400).json({ success: false, error: 'INVALID_TEACHER', message: 'المعلم المحدد غير صالح' });
+      }
+      finalTeacherId = t.id;
+    }
+
+    const updated = db.updateCourse(req.params.id, orgId, {
+      title: title ? String(title).trim() : undefined,
+      description: description !== undefined ? String(description).trim() : undefined,
+      subjectId,
+      classroomId,
+      termId,
+      teacherId: finalTeacherId,
+    });
+
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+
+// DELETE /api/v1/courses/:id (Admins only)
+courseRouter.delete('/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (req: PlatformRequest, res: express.Response) => {
+  try {
+    const orgId = req.organization!.id;
+    const course = db.getCourseById(req.params.id, orgId);
+    if (!course) {
+      return res.status(404).json({ success: false, error: 'COURSE_NOT_FOUND', message: 'المقرر غير موجود' });
+    }
+
+    const success = db.deleteCourse(req.params.id, orgId);
+    if (!success) {
+      return res.status(404).json({ success: false, error: 'NOT_FOUND', message: 'فشل حذف المقرر' });
+    }
+
+    res.json({ success: true, message: 'تم حذف المقرر بنجاح' });
+  } catch {
+    res.status(500).json({ success: false, error: 'SERVER_ERROR' });
+  }
+});
+

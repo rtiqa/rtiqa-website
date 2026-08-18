@@ -144,6 +144,66 @@ export interface Course {
   subjectName?: string;
   teacherName?: string;
   classroomName?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type TeacherAssignmentRole = 'PRIMARY_TEACHER' | 'ASSISTANT_TEACHER' | 'ASSISTANT' | 'CO_TEACHER' | 'SUBSTITUTE';
+
+export interface TeacherAssignment {
+  id: string;
+  organizationId: string;
+  teacherId: string;
+  teacherName?: string;
+  teacherEmail?: string;
+  courseId?: string;
+  courseTitle?: string;
+  subjectId: string;
+  subjectName?: string;
+  classroomId: string;
+  classroomName?: string;
+  academicYearId?: string;
+  academicYearName?: string;
+  role: TeacherAssignmentRole;
+  weeklyHours: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type StudentEnrollmentStatus = 'ACTIVE' | 'TRANSFERRED' | 'SUSPENDED' | 'GRADUATED';
+
+export interface StudentEnrollment {
+  id: string;
+  organizationId: string;
+  studentId: string;
+  studentName?: string;
+  studentEmail?: string;
+  studentIdNumber?: string;
+  classroomId: string;
+  classroomName?: string;
+  gradeLevelId?: string;
+  gradeLevelName?: string;
+  academicYearId: string;
+  academicYearName?: string;
+  rollNumber?: string;
+  status: StudentEnrollmentStatus;
+  enrolledAt: string;
+  updatedAt: string;
+}
+
+export type ParentRelationshipType = 'FATHER' | 'MOTHER' | 'GUARDIAN' | 'OTHER';
+
+export interface ParentStudentLink {
+  id: string;
+  organizationId: string;
+  parentId: string;
+  parentName?: string;
+  studentId: string;
+  studentName?: string;
+  relationship: ParentRelationshipType;
+  isEmergencyContact: boolean;
+  createdAt: string;
 }
 
 export interface Lesson {

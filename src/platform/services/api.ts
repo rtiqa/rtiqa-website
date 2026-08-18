@@ -17,6 +17,11 @@ import {
   AIMessage,
   AIUsageSummary,
   AIFeatureType,
+  TeacherAssignment,
+  StudentEnrollment,
+  ParentStudentLink,
+  TeacherAssignmentRole,
+  StudentEnrollmentStatus,
 } from '../types';
 
 class PlatformApiClient {
@@ -383,6 +388,19 @@ class PlatformApiClient {
     });
   }
 
+  async updateAcademicYear(id: string, data: Partial<AcademicYear>) {
+    return this.request<{ success: boolean; data: AcademicYear }>(`/academic/years/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAcademicYear(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/academic/years/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getTerms(yearId?: string) {
     const q = yearId ? `?yearId=${yearId}` : '';
     return this.request<{ success: boolean; data: Term[] }>(`/academic/terms${q}`);
@@ -395,6 +413,19 @@ class PlatformApiClient {
     });
   }
 
+  async updateTerm(id: string, data: Partial<Term>) {
+    return this.request<{ success: boolean; data: Term }>(`/academic/terms/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTerm(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/academic/terms/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getGradeLevels() {
     return this.request<{ success: boolean; data: GradeLevel[] }>('/academic/grades');
   }
@@ -403,6 +434,19 @@ class PlatformApiClient {
     return this.request<{ success: boolean; data: GradeLevel }>('/academic/grades', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async updateGradeLevel(id: string, data: Partial<GradeLevel>) {
+    return this.request<{ success: boolean; data: GradeLevel }>(`/academic/grades/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteGradeLevel(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/academic/grades/${id}`, {
+      method: 'DELETE',
     });
   }
 
@@ -418,6 +462,19 @@ class PlatformApiClient {
     });
   }
 
+  async updateClassroom(id: string, data: Partial<Classroom>) {
+    return this.request<{ success: boolean; data: Classroom }>(`/academic/classrooms/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteClassroom(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/academic/classrooms/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getSubjects() {
     return this.request<{ success: boolean; data: Subject[] }>('/academic/subjects');
   }
@@ -426,6 +483,101 @@ class PlatformApiClient {
     return this.request<{ success: boolean; data: Subject }>('/academic/subjects', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async updateSubject(id: string, data: Partial<Subject>) {
+    return this.request<{ success: boolean; data: Subject }>(`/academic/subjects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteSubject(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/academic/subjects/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // --- Teacher Assignments ---
+  async getTeacherAssignments(filters: { teacherId?: string; classroomId?: string; courseId?: string; academicYearId?: string; subjectId?: string } = {}) {
+    const query = new URLSearchParams();
+    if (filters.teacherId) query.set('teacherId', filters.teacherId);
+    if (filters.classroomId) query.set('classroomId', filters.classroomId);
+    if (filters.courseId) query.set('courseId', filters.courseId);
+    if (filters.academicYearId) query.set('academicYearId', filters.academicYearId);
+    if (filters.subjectId) query.set('subjectId', filters.subjectId);
+    return this.request<{ success: boolean; data: TeacherAssignment[] }>(`/academic/teacher-assignments?${query.toString()}`);
+  }
+
+  async createTeacherAssignment(data: Partial<TeacherAssignment>) {
+    return this.request<{ success: boolean; data: TeacherAssignment }>('/academic/teacher-assignments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateTeacherAssignment(id: string, data: Partial<TeacherAssignment>) {
+    return this.request<{ success: boolean; data: TeacherAssignment }>(`/academic/teacher-assignments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteTeacherAssignment(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/academic/teacher-assignments/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // --- Student Enrollments ---
+  async getStudentEnrollments(filters: { classroomId?: string; studentId?: string; academicYearId?: string; status?: StudentEnrollmentStatus } = {}) {
+    const query = new URLSearchParams();
+    if (filters.classroomId) query.set('classroomId', filters.classroomId);
+    if (filters.studentId) query.set('studentId', filters.studentId);
+    if (filters.academicYearId) query.set('academicYearId', filters.academicYearId);
+    if (filters.status) query.set('status', filters.status);
+    return this.request<{ success: boolean; data: StudentEnrollment[] }>(`/academic/enrollments?${query.toString()}`);
+  }
+
+  async createStudentEnrollment(data: Partial<StudentEnrollment>) {
+    return this.request<{ success: boolean; data: StudentEnrollment }>('/academic/enrollments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateStudentEnrollment(id: string, data: Partial<StudentEnrollment>) {
+    return this.request<{ success: boolean; data: StudentEnrollment }>(`/academic/enrollments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteStudentEnrollment(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/academic/enrollments/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // --- Parent-Student Links ---
+  async getParentStudentLinks(filters: { parentId?: string; studentId?: string } = {}) {
+    const query = new URLSearchParams();
+    if (filters.parentId) query.set('parentId', filters.parentId);
+    if (filters.studentId) query.set('studentId', filters.studentId);
+    return this.request<{ success: boolean; data: ParentStudentLink[] }>(`/academic/parent-links?${query.toString()}`);
+  }
+
+  async createParentStudentLink(data: Partial<ParentStudentLink>) {
+    return this.request<{ success: boolean; data: ParentStudentLink }>('/academic/parent-links', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteParentStudentLink(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/academic/parent-links/${id}`, {
+      method: 'DELETE',
     });
   }
 
@@ -501,6 +653,19 @@ class PlatformApiClient {
     return this.request<{ success: boolean; data: Course }>('/courses', {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  async updateCourse(id: string, data: Partial<Course>) {
+    return this.request<{ success: boolean; data: Course }>(`/courses/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteCourse(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/courses/${id}`, {
+      method: 'DELETE',
     });
   }
 
