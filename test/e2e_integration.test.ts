@@ -113,7 +113,7 @@ describe('Rtiqa Platform - E2E Production Integration & Database Lifecycle Suite
           isCurrent: true,
         }),
       });
-      assert.strictEqual(yearRes.status, 200);
+      assert.strictEqual(yearRes.status, 201);
       const yearData = await yearRes.json();
       onboardedYearId = yearData.data.id;
 
@@ -132,7 +132,7 @@ describe('Rtiqa Platform - E2E Production Integration & Database Lifecycle Suite
           isCurrent: true,
         }),
       });
-      assert.strictEqual(termRes.status, 200);
+      assert.strictEqual(termRes.status, 201);
       const termData = await termRes.json();
       const termId = termData.data.id;
 
@@ -148,7 +148,7 @@ describe('Rtiqa Platform - E2E Production Integration & Database Lifecycle Suite
           sequenceOrder: 10,
         }),
       });
-      assert.strictEqual(gradeRes.status, 200);
+      assert.strictEqual(gradeRes.status, 201);
       const gradeData = await gradeRes.json();
       onboardedGradeId = gradeData.data.id;
 
@@ -165,7 +165,7 @@ describe('Rtiqa Platform - E2E Production Integration & Database Lifecycle Suite
           capacity: 30,
         }),
       });
-      assert.strictEqual(classRes.status, 200);
+      assert.strictEqual(classRes.status, 201);
       const classData = await classRes.json();
       onboardedClassroomId = classData.data.id;
 
@@ -183,7 +183,7 @@ describe('Rtiqa Platform - E2E Production Integration & Database Lifecycle Suite
           description: 'مقدمة في خوارزميات الذكاء الاصطناعي ومعالجة البيانات',
         }),
       });
-      assert.strictEqual(subjRes.status, 200);
+      assert.strictEqual(subjRes.status, 201);
       const subjData = await subjRes.json();
       onboardedSubjectId = subjData.data.id;
     });

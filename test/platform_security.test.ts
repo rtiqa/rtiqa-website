@@ -638,73 +638,79 @@ describe('Rtiqa Platform - QA, Security & RBAC Verification Suite', () => {
       const prevSecret = process.env.AUTH_SECRET;
       const prevJwtSecret = process.env.JWT_SECRET;
 
-      process.env.NODE_ENV = 'production';
-      delete process.env.AUTH_SECRET;
-      delete process.env.JWT_SECRET;
+      try {
+        process.env.NODE_ENV = 'production';
+        delete process.env.AUTH_SECRET;
+        delete process.env.JWT_SECRET;
 
-      const { assertProductionAuthSecret, getAuthSecret } = await import('../server/platform/auth');
+        const { assertProductionAuthSecret, getAuthSecret } = await import('../server/platform/auth');
 
-      assert.throws(
-        () => {
-          assertProductionAuthSecret();
-        },
-        /FATAL SECURITY ERROR/,
-        'Should throw fatal error when AUTH_SECRET is missing in production'
-      );
+        assert.throws(
+          () => {
+            assertProductionAuthSecret();
+          },
+          /FATAL SECURITY ERROR/,
+          'Should throw fatal error when AUTH_SECRET is missing in production'
+        );
 
-      assert.throws(
-        () => {
-          getAuthSecret();
-        },
-        /FATAL SECURITY ERROR/,
-        'getAuthSecret should throw fatal error when AUTH_SECRET is missing in production'
-      );
-
-      // Restore environment
-      process.env.NODE_ENV = prevEnv;
-      if (prevSecret) process.env.AUTH_SECRET = prevSecret;
-      if (prevJwtSecret) process.env.JWT_SECRET = prevJwtSecret;
+        assert.throws(
+          () => {
+            getAuthSecret();
+          },
+          /FATAL SECURITY ERROR/,
+          'getAuthSecret should throw fatal error when AUTH_SECRET is missing in production'
+        );
+      } finally {
+        // Restore environment
+        process.env.NODE_ENV = prevEnv;
+        if (prevSecret !== undefined) process.env.AUTH_SECRET = prevSecret;
+        else delete process.env.AUTH_SECRET;
+        if (prevJwtSecret !== undefined) process.env.JWT_SECRET = prevJwtSecret;
+        else delete process.env.JWT_SECRET;
+      }
     });
 
     it('4. Production runs normally when AUTH_SECRET is provided via Environment Variables', async () => {
       const prevEnv = process.env.NODE_ENV;
       const prevSecret = process.env.AUTH_SECRET;
 
-      process.env.NODE_ENV = 'production';
-      process.env.AUTH_SECRET = 'temporary-test-secret-for-production-suite-only-256bit';
+      try {
+        process.env.NODE_ENV = 'production';
+        process.env.AUTH_SECRET = 'temporary-test-secret-for-production-suite-only-256bit';
 
-      const { assertProductionAuthSecret, getAuthSecret, generateToken, decodeAndVerifyToken } = await import('../server/platform/auth');
+        const { assertProductionAuthSecret, getAuthSecret, generateToken, decodeAndVerifyToken } = await import('../server/platform/auth');
 
-      assert.doesNotThrow(() => {
-        assertProductionAuthSecret();
-      });
+        assert.doesNotThrow(() => {
+          assertProductionAuthSecret();
+        });
 
-      const secret = getAuthSecret();
-      assert.strictEqual(secret, 'temporary-test-secret-for-production-suite-only-256bit');
+        const secret = getAuthSecret();
+        assert.strictEqual(secret, 'temporary-test-secret-for-production-suite-only-256bit');
 
-      // Test token generation and verification with production secret
-      const sampleUser = {
-        id: 'usr_prod_test_1',
-        organizationId: 'org_prod_1',
-        email: 'prod@test.sa',
-        role: 'ORG_ADMIN' as const,
-        fullName: 'Admin Prod',
-        isActive: true,
-        createdAt: '2026-08-15T00:00:00Z',
-        updatedAt: '2026-08-15T00:00:00Z',
-      };
+        // Test token generation and verification with production secret
+        const sampleUser = {
+          id: 'usr_prod_test_1',
+          organizationId: 'org_prod_1',
+          email: 'prod@test.sa',
+          role: 'ORG_ADMIN' as const,
+          fullName: 'Admin Prod',
+          isActive: true,
+          createdAt: '2026-08-15T00:00:00Z',
+          updatedAt: '2026-08-15T00:00:00Z',
+        };
 
-      const token = generateToken(sampleUser);
-      assert.ok(token.includes('.'));
-      const decoded = decodeAndVerifyToken(token);
-      assert.ok(decoded);
-      assert.strictEqual(decoded.uid, sampleUser.id);
-      assert.strictEqual(decoded.email, sampleUser.email);
-
-      // Restore environment
-      process.env.NODE_ENV = prevEnv;
-      if (prevSecret) process.env.AUTH_SECRET = prevSecret;
-      else delete process.env.AUTH_SECRET;
+        const token = generateToken(sampleUser);
+        assert.ok(token.includes('.'));
+        const decoded = decodeAndVerifyToken(token);
+        assert.ok(decoded);
+        assert.strictEqual(decoded.uid, sampleUser.id);
+        assert.strictEqual(decoded.email, sampleUser.email);
+      } finally {
+        // Restore environment
+        process.env.NODE_ENV = prevEnv;
+        if (prevSecret !== undefined) process.env.AUTH_SECRET = prevSecret;
+        else delete process.env.AUTH_SECRET;
+      }
     });
 
     it('5. Source code verification: No static or hardcoded fallback secrets in codebase', async () => {

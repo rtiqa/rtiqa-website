@@ -14,7 +14,9 @@ let devRuntimeSecret: string | null = null;
 
 // Validate that AUTH_SECRET is configured in production environment (Fail-Fast)
 export function assertProductionAuthSecret(): void {
-  if (process.env.NODE_ENV === 'production' && (!process.env.AUTH_SECRET || process.env.AUTH_SECRET.trim() === '')) {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const secret = process.env.AUTH_SECRET;
+  if (isProduction && (!secret || secret.trim() === '')) {
     throw new Error(
       '[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. A strong cryptographic secret must be provided via environment variables.'
     );
@@ -23,15 +25,21 @@ export function assertProductionAuthSecret(): void {
 
 // Retrieve the active signing secret from environment or ephemeral in-memory generator
 export function getAuthSecret(): string {
-  const envSecret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
-  if (envSecret && envSecret.trim() !== '') {
-    return envSecret.trim();
+  const isProduction = process.env.NODE_ENV === 'production';
+  const secret = process.env.AUTH_SECRET;
+
+  if (isProduction) {
+    if (!secret || secret.trim() === '') {
+      throw new Error(
+        '[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. A strong cryptographic secret must be provided via environment variables.'
+      );
+    }
+    return secret.trim();
   }
 
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(
-      '[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. A strong cryptographic secret must be provided via environment variables.'
-    );
+  const envSecret = secret || process.env.JWT_SECRET;
+  if (envSecret && envSecret.trim() !== '') {
+    return envSecret.trim();
   }
 
   // In development/test mode without an explicit env variable, generate an ephemeral non-static random secret in RAM
