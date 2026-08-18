@@ -16,6 +16,7 @@ import { AttendancePage } from './pages/AttendancePage';
 import { SchoolSettingsPage } from './pages/SchoolSettingsPage';
 import { OnboardingWizardPage } from './pages/OnboardingWizardPage';
 import { AIAssistantPage } from './pages/AIAssistantPage';
+import { StudentsPage } from './pages/StudentsPage';
 
 interface AppPlatformProps {
   onExitPlatform: () => void;
@@ -56,6 +57,9 @@ const PlatformRoot: React.FC<AppPlatformProps> = ({ onExitPlatform }) => {
 
       case 'users':
         return <UsersManagementPage />;
+
+      case 'students':
+        return <StudentsPage />;
 
       case 'academic':
         return <AcademicStructurePage />;

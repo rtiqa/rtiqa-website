@@ -11,6 +11,7 @@ import { attendanceRouter } from './routes/attendanceRoutes.ts';
 import { gradebookRouter } from './routes/gradebookRoutes.ts';
 import { dashboardRouter } from './routes/dashboardRoutes.ts';
 import { aiRouter } from './routes/aiRoutes.ts';
+import { studentRouter } from './routes/studentRoutes.ts';
 
 export const platformApiRouter = express.Router();
 
@@ -46,5 +47,6 @@ platformApiRouter.use('/attendance', requireOrg, attendanceRouter);
 platformApiRouter.use('/gradebook', requireOrg, gradebookRouter);
 platformApiRouter.use('/dashboard', requireOrg, dashboardRouter);
 platformApiRouter.use('/ai', requireOrg, aiRouter);
+platformApiRouter.use('/students', requireOrg, studentRouter);
 
 

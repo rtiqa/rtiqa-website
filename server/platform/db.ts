@@ -28,6 +28,14 @@ import type {
   ParentStudentLink,
   TeacherAssignmentRole,
   StudentEnrollmentStatus,
+  StudentRecord,
+  StudentBehaviorRecord,
+  StudentLifecycleEvent,
+  StudentDossier,
+  StudentLifecycleStatus,
+  StudentBehaviorType,
+  StudentGender,
+  StudentBloodType,
 } from './types.ts';
 import { checkPostgresConnection, getPostgresPool, withTenantClient } from '../../src/db/postgres.ts';
 import type { PostgresStatus } from '../../src/db/postgres.ts';
@@ -60,6 +68,9 @@ class PlatformDatabase {
   private teacherAssignments: Map<string, TeacherAssignment> = new Map();
   private studentEnrollments: Map<string, StudentEnrollment> = new Map();
   private parentStudentLinks: Map<string, ParentStudentLink> = new Map();
+  private studentRecords: Map<string, StudentRecord> = new Map();
+  private studentBehaviorRecords: Map<string, StudentBehaviorRecord> = new Map();
+  private studentLifecycleEvents: Map<string, StudentLifecycleEvent> = new Map();
 
   constructor() {
     this.seedInitialData();
@@ -718,6 +729,200 @@ class PlatformDatabase {
       updatedAt: '2026-09-01T00:00:00Z',
     });
 
+    // School A: Student Records (Comprehensive SIS Profiles)
+    const stdRec1: StudentRecord = {
+      id: `std_rec_${student1.id}`,
+      organizationId: schoolAId,
+      studentId: student1.id,
+      nationalId: '1098765432',
+      dateOfBirth: '2010-04-15',
+      gender: 'MALE',
+      bloodType: 'O+',
+      nationality: 'سعودي',
+      admissionDate: '2024-09-01',
+      status: 'ACTIVE',
+      medicalConditions: 'لا توجد حالات مزمنة',
+      allergies: 'حساسية خفيفة من الفول السوداني',
+      specialDietaryNeeds: 'وجبات خالية من المكسرات',
+      emergencyContactName: 'خالد السعيد (الأب)',
+      emergencyContactPhone: '+966501234567',
+      emergencyContactRelationship: 'FATHER',
+      previousSchool: 'مدارس الرواد النموذجية',
+      giftedProgram: true,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    this.studentRecords.set(stdRec1.id, stdRec1);
+
+    const stdRec2: StudentRecord = {
+      id: `std_rec_${student2.id}`,
+      organizationId: schoolAId,
+      studentId: student2.id,
+      nationalId: '1087654321',
+      dateOfBirth: '2010-08-22',
+      gender: 'FEMALE',
+      bloodType: 'A+',
+      nationality: 'سعودية',
+      admissionDate: '2024-09-01',
+      status: 'ACTIVE',
+      emergencyContactName: 'فاطمة العتيبي (الأم)',
+      emergencyContactPhone: '+966507654321',
+      emergencyContactRelationship: 'MOTHER',
+      previousSchool: 'مدارس المستقبل الأهلية',
+      giftedProgram: false,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    this.studentRecords.set(stdRec2.id, stdRec2);
+
+    const stdRec3: StudentRecord = {
+      id: `std_rec_${student3.id}`,
+      organizationId: schoolAId,
+      studentId: student3.id,
+      nationalId: '1076543210',
+      dateOfBirth: '2010-11-03',
+      gender: 'MALE',
+      bloodType: 'B+',
+      nationality: 'سعودي',
+      admissionDate: '2024-09-01',
+      status: 'ACTIVE',
+      medicalConditions: 'ربو تحسسي خفيف عند ممارسة المجهود الشديد',
+      allergies: 'غبار الطلع والأتربة',
+      emergencyContactName: 'محمد المطيري (الأب)',
+      emergencyContactPhone: '+966509988776',
+      emergencyContactRelationship: 'FATHER',
+      giftedProgram: false,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    this.studentRecords.set(stdRec3.id, stdRec3);
+
+    const stdRec4: StudentRecord = {
+      id: `std_rec_${student4.id}`,
+      organizationId: schoolAId,
+      studentId: student4.id,
+      nationalId: '1065432109',
+      dateOfBirth: '2010-02-18',
+      gender: 'FEMALE',
+      bloodType: 'AB+',
+      nationality: 'سعودية',
+      admissionDate: '2024-09-01',
+      status: 'ACTIVE',
+      emergencyContactName: 'سلطان القحطاني (الأب)',
+      emergencyContactPhone: '+966505544332',
+      emergencyContactRelationship: 'FATHER',
+      giftedProgram: true,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    this.studentRecords.set(stdRec4.id, stdRec4);
+
+    // School B Student Record (Elite)
+    const stdRecB: StudentRecord = {
+      id: `std_rec_${studentB.id}`,
+      organizationId: schoolBId,
+      studentId: studentB.id,
+      nationalId: '2098765432',
+      dateOfBirth: '2010-06-10',
+      gender: 'MALE',
+      bloodType: 'O+',
+      nationality: 'سعودي',
+      admissionDate: '2024-09-01',
+      status: 'ACTIVE',
+      emergencyContactName: 'James Hayes (Father)',
+      emergencyContactPhone: '+966551122334',
+      emergencyContactRelationship: 'FATHER',
+      giftedProgram: true,
+      createdAt: '2026-01-01T00:00:00Z',
+      updatedAt: '2026-01-01T00:00:00Z',
+    };
+    this.studentRecords.set(stdRecB.id, stdRecB);
+
+    // School A: Student Behavior & Merit Records
+    const beh1: StudentBehaviorRecord = {
+      id: `beh_horizon_001`,
+      organizationId: schoolAId,
+      studentId: student1.id,
+      studentName: student1.fullName,
+      type: 'MERIT',
+      title: 'التفوق في أولمبياد الرياضيات المدرسي',
+      description: 'حقق المركز الأول على مستوى المدرسة في مسابقة حل المسائل المتقدمة',
+      points: 10,
+      actionTaken: 'منح شهادة تفوق مع إشعار ولي الأمر',
+      incidentDate: '2026-09-15',
+      recordedBy: teacherMath.id,
+      recordedByName: teacherMath.fullName,
+      status: 'RESOLVED',
+      createdAt: '2026-09-15T10:00:00Z',
+    };
+    this.studentBehaviorRecords.set(beh1.id, beh1);
+
+    const beh2: StudentBehaviorRecord = {
+      id: `beh_horizon_002`,
+      organizationId: schoolAId,
+      studentId: student2.id,
+      studentName: student2.fullName,
+      type: 'POSITIVE_PRAISE',
+      title: 'مشاركة متميزة في الإذاعة المدرسية',
+      description: 'إلقاء مميز وإعداد محتوى ثقافي هادف للإذاعة المدرسية الصباحية',
+      points: 5,
+      actionTaken: 'تسجيل بطاقة تميز سلوكي',
+      incidentDate: '2026-09-20',
+      recordedBy: teacherArabic.id,
+      recordedByName: teacherArabic.fullName,
+      status: 'RESOLVED',
+      createdAt: '2026-09-20T08:30:00Z',
+    };
+    this.studentBehaviorRecords.set(beh2.id, beh2);
+
+    const beh3: StudentBehaviorRecord = {
+      id: `beh_horizon_003`,
+      organizationId: schoolAId,
+      studentId: student3.id,
+      studentName: student3.fullName,
+      type: 'MINOR_INFRACTION',
+      title: 'تأخر متكرر عن الحصة الأولى',
+      description: 'تأخر 3 مرات خلال الأسبوع دون إحضار عذر مسبق',
+      points: -2,
+      actionTaken: 'تنبيه شفهي والتواصل مع ولي الأمر',
+      incidentDate: '2026-09-28',
+      recordedBy: teacherMath.id,
+      recordedByName: teacherMath.fullName,
+      status: 'RESOLVED',
+      createdAt: '2026-09-28T09:00:00Z',
+    };
+    this.studentBehaviorRecords.set(beh3.id, beh3);
+
+    // School A: Student Lifecycle Events
+    const lce1: StudentLifecycleEvent = {
+      id: `lce_horizon_001`,
+      organizationId: schoolAId,
+      studentId: student1.id,
+      studentName: student1.fullName,
+      previousStatus: 'ACTIVE',
+      newStatus: 'ACTIVE',
+      reason: 'القبول والتسجيل الأكاديمي للعام الدراسي 2026-2027',
+      actionBy: adminA.id,
+      actionByName: adminA.fullName,
+      effectiveDate: '2026-08-20',
+      timestamp: '2026-08-20T08:00:00Z',
+    };
+    this.studentLifecycleEvents.set(lce1.id, lce1);
+
+    // School A: Parent Student Links
+    const psl1: ParentStudentLink = {
+      id: `psl_horizon_001`,
+      organizationId: schoolAId,
+      parentId: parent1.id,
+      parentName: parent1.fullName,
+      studentId: student1.id,
+      studentName: student1.fullName,
+      relationship: 'FATHER',
+      isEmergencyContact: true,
+      createdAt: '2026-01-01T00:00:00Z',
+    };
+    this.parentStudentLinks.set(psl1.id, psl1);
+
     // Populate Organization Memberships & default auth providers for all seeded users
     for (const user of Array.from(this.users.values())) {
       user.emailVerified = true;
@@ -1080,6 +1285,16 @@ class PlatformDatabase {
   // Academic Structure
   getAcademicYears(organizationId: string): AcademicYear[] {
     return Array.from(this.academicYears.values()).filter((y) => y.organizationId === organizationId);
+  }
+
+  getCurrentAcademicYear(organizationId: string): AcademicYear | undefined {
+    return Array.from(this.academicYears.values()).find((y) => y.organizationId === organizationId && y.isCurrent);
+  }
+
+  getCoursesByClassroom(classroomId: string, organizationId: string): Course[] {
+    return Array.from(this.courses.values()).filter(
+      (c) => c.organizationId === organizationId && c.classroomId === classroomId
+    );
   }
 
   getAcademicYearById(id: string, organizationId: string): AcademicYear | undefined {
@@ -1539,6 +1754,242 @@ class PlatformDatabase {
     return true;
   }
 
+  // --- Student Records (Full SIS Profile, Demographics, Medical & Emergency) ---
+  getStudentRecords(
+    organizationId: string,
+    filters?: { status?: StudentLifecycleStatus; search?: string; studentId?: string }
+  ): StudentRecord[] {
+    return Array.from(this.studentRecords.values()).filter((rec) => {
+      if (rec.organizationId !== organizationId) return false;
+      if (filters?.status && rec.status !== filters.status) return false;
+      if (filters?.studentId && rec.studentId !== filters.studentId) return false;
+      if (filters?.search) {
+        const q = filters.search.toLowerCase().trim();
+        const user = this.getUserById(rec.studentId, organizationId);
+        const matchName = user?.fullName.toLowerCase().includes(q);
+        const matchEmail = user?.email.toLowerCase().includes(q);
+        const matchNationalId = rec.nationalId.toLowerCase().includes(q);
+        const matchStdId = user?.studentIdNumber?.toLowerCase().includes(q);
+        if (!matchName && !matchEmail && !matchNationalId && !matchStdId) return false;
+      }
+      return true;
+    });
+  }
+
+  getStudentRecordById(id: string, organizationId: string): StudentRecord | undefined {
+    const rec = this.studentRecords.get(id);
+    if (!rec || rec.organizationId !== organizationId) return undefined;
+    return rec;
+  }
+
+  getStudentRecordByStudentId(studentId: string, organizationId: string): StudentRecord | undefined {
+    return Array.from(this.studentRecords.values()).find(
+      (rec) => rec.organizationId === organizationId && rec.studentId === studentId
+    );
+  }
+
+  getStudentRecordByNationalId(nationalId: string, organizationId: string): StudentRecord | undefined {
+    return Array.from(this.studentRecords.values()).find(
+      (rec) => rec.organizationId === organizationId && rec.nationalId === nationalId
+    );
+  }
+
+  createStudentRecord(
+    data: Omit<StudentRecord, 'id' | 'createdAt' | 'updatedAt'>
+  ): StudentRecord {
+    const id = `std_rec_${data.studentId}`;
+    const now = new Date().toISOString();
+    const record: StudentRecord = {
+      ...data,
+      id,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.studentRecords.set(id, record);
+    return record;
+  }
+
+  updateStudentRecord(
+    studentId: string,
+    organizationId: string,
+    updates: Partial<StudentRecord>
+  ): StudentRecord | undefined {
+    const rec = this.getStudentRecordByStudentId(studentId, organizationId);
+    if (!rec) return undefined;
+
+    const updated: StudentRecord = {
+      ...rec,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.studentRecords.set(rec.id, updated);
+    return updated;
+  }
+
+  deleteStudentRecord(studentId: string, organizationId: string): boolean {
+    const rec = this.getStudentRecordByStudentId(studentId, organizationId);
+    if (!rec) return false;
+    this.studentRecords.delete(rec.id);
+    return true;
+  }
+
+  // --- Student Behavior & Merit Records ---
+  getStudentBehaviorRecords(
+    organizationId: string,
+    filters?: { studentId?: string; type?: StudentBehaviorType; status?: string }
+  ): StudentBehaviorRecord[] {
+    return Array.from(this.studentBehaviorRecords.values())
+      .filter((beh) => {
+        if (beh.organizationId !== organizationId) return false;
+        if (filters?.studentId && beh.studentId !== filters.studentId) return false;
+        if (filters?.type && beh.type !== filters.type) return false;
+        if (filters?.status && beh.status !== filters.status) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.incidentDate).getTime() - new Date(a.incidentDate).getTime());
+  }
+
+  getStudentBehaviorRecordById(id: string, organizationId: string): StudentBehaviorRecord | undefined {
+    const beh = this.studentBehaviorRecords.get(id);
+    if (!beh || beh.organizationId !== organizationId) return undefined;
+    return beh;
+  }
+
+  createStudentBehaviorRecord(
+    data: Omit<StudentBehaviorRecord, 'id' | 'createdAt'>
+  ): StudentBehaviorRecord {
+    const id = `beh_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const student = this.getUserById(data.studentId, data.organizationId);
+    const recordedByUser = this.getUserById(data.recordedBy, data.organizationId);
+
+    const record: StudentBehaviorRecord = {
+      ...data,
+      id,
+      studentName: student?.fullName,
+      recordedByName: recordedByUser?.fullName,
+      createdAt: new Date().toISOString(),
+    };
+    this.studentBehaviorRecords.set(id, record);
+    return record;
+  }
+
+  updateStudentBehaviorRecord(
+    id: string,
+    organizationId: string,
+    updates: Partial<StudentBehaviorRecord>
+  ): StudentBehaviorRecord | undefined {
+    const beh = this.getStudentBehaviorRecordById(id, organizationId);
+    if (!beh) return undefined;
+
+    const updated: StudentBehaviorRecord = {
+      ...beh,
+      ...updates,
+    };
+    this.studentBehaviorRecords.set(id, updated);
+    return updated;
+  }
+
+  deleteStudentBehaviorRecord(id: string, organizationId: string): boolean {
+    const beh = this.getStudentBehaviorRecordById(id, organizationId);
+    if (!beh) return false;
+    this.studentBehaviorRecords.delete(id);
+    return true;
+  }
+
+  // --- Student Lifecycle Events ---
+  getStudentLifecycleEvents(organizationId: string, studentId?: string): StudentLifecycleEvent[] {
+    return Array.from(this.studentLifecycleEvents.values())
+      .filter((ev) => {
+        if (ev.organizationId !== organizationId) return false;
+        if (studentId && ev.studentId !== studentId) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+
+  createStudentLifecycleEvent(
+    data: Omit<StudentLifecycleEvent, 'id' | 'timestamp'>
+  ): StudentLifecycleEvent {
+    const id = `lce_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const student = this.getUserById(data.studentId, data.organizationId);
+    const actionUser = this.getUserById(data.actionBy, data.organizationId);
+
+    const event: StudentLifecycleEvent = {
+      ...data,
+      id,
+      studentName: student?.fullName,
+      actionByName: actionUser?.fullName,
+      timestamp: new Date().toISOString(),
+    };
+    this.studentLifecycleEvents.set(id, event);
+    return event;
+  }
+
+  // --- Comprehensive Student Dossier (Holistic SIS Record) ---
+  getStudentDossier(studentId: string, organizationId: string): StudentDossier | null {
+    const student = this.getUserById(studentId, organizationId);
+    if (!student || student.role !== 'STUDENT') return null;
+
+    const record = this.getStudentRecordByStudentId(studentId, organizationId);
+    const enrollments = this.getStudentEnrollments(organizationId, { studentId });
+    const currentEnrollment = enrollments.find((e) => e.status === 'ACTIVE') || enrollments[0];
+    const parents = this.getParentStudentLinks(organizationId, { studentId });
+    const behaviorRecords = this.getStudentBehaviorRecords(organizationId, { studentId });
+    const behaviorPointsTotal = behaviorRecords.reduce((acc, r) => acc + (r.points || 0), 0);
+
+    // Attendance stats
+    const studentAttendance = Array.from(this.attendanceRecords.values()).filter(
+      (a) => a.organizationId === organizationId && a.studentId === studentId
+    );
+    const totalDays = studentAttendance.length;
+    const presentDays = studentAttendance.filter((a) => a.status === 'PRESENT').length;
+    const absentDays = studentAttendance.filter((a) => a.status === 'ABSENT').length;
+    const lateDays = studentAttendance.filter((a) => a.status === 'LATE').length;
+    const excusedDays = studentAttendance.filter((a) => a.status === 'EXCUSED').length;
+    const attendanceRate = totalDays > 0 ? Math.round(((presentDays + lateDays + excusedDays) / totalDays) * 100) : 100;
+
+    // Academic performance stats
+    const submissions = this.getSubmissionsByStudent(studentId, organizationId);
+    const courses = student.classroomId ? this.getCoursesByClassroom(student.classroomId, organizationId) : [];
+    let scoreSum = 0;
+    let gradedCount = 0;
+    for (const sub of submissions) {
+      if (typeof sub.score === 'number') {
+        const assignment = this.getAssignmentById(sub.assignmentId, organizationId);
+        const maxScore = assignment?.maxScore || 100;
+        scoreSum += (sub.score / maxScore) * 100;
+        gradedCount++;
+      }
+    }
+    const averageScore = gradedCount > 0 ? Math.round(scoreSum / gradedCount) : 92;
+
+    const lifecycleHistory = this.getStudentLifecycleEvents(organizationId, studentId);
+
+    return {
+      student,
+      record,
+      enrollments,
+      currentEnrollment,
+      parents,
+      behaviorRecords,
+      behaviorPointsTotal,
+      attendanceStats: {
+        totalDays,
+        presentDays,
+        absentDays,
+        lateDays,
+        excusedDays,
+        attendanceRate,
+      },
+      academicStats: {
+        enrolledCoursesCount: courses.length,
+        submissionsCount: submissions.length,
+        averageScore,
+      },
+      lifecycleHistory,
+    };
+  }
+
   // Lessons
   getLessonsByCourse(courseId: string, organizationId: string): Lesson[] {
     return Array.from(this.lessons.values())
@@ -1945,6 +2396,9 @@ class PlatformDatabase {
     this.teacherAssignments.clear();
     this.studentEnrollments.clear();
     this.parentStudentLinks.clear();
+    this.studentRecords.clear();
+    this.studentBehaviorRecords.clear();
+    this.studentLifecycleEvents.clear();
     this.seedInitialData();
   }
 

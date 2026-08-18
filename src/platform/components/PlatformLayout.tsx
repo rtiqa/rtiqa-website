@@ -65,6 +65,7 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
     { id: 'assignments', label: 'الواجبات والتكليفات', icon: ClipboardCheck },
     { id: 'gradebook', label: user.role === 'STUDENT' ? 'سجل درجاتي' : 'سجل الدرجات والتقييم', icon: Award },
     { id: 'attendance', label: 'الحضور والغياب', icon: GraduationCap },
+    { id: 'students', label: 'شؤون الطلاب وسجل SIS', icon: UserCheck, roles: ['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER'] },
     { id: 'users', label: 'إدارة المستخدمين والطلاب', icon: Users, roles: ['ORG_ADMIN', 'SUPER_ADMIN'] },
     { id: 'academic', label: 'الهيكل الأكاديمي والصفوف', icon: Layers, roles: ['ORG_ADMIN', 'SUPER_ADMIN'] },
     { id: 'settings', label: 'إعدادات المؤسسة وسجل الأمان', icon: Settings, roles: ['ORG_ADMIN', 'SUPER_ADMIN'] },

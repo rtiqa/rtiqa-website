@@ -1219,6 +1219,7 @@ authRouter.post('/demo-switch', (req: PlatformRequest, res: express.Response) =>
       else if (persona === 'teacher2') email = 'teacher2@horizon.edu.sa';
       else if (persona === 'student') email = 'student@horizon.edu.sa';
       else if (persona === 'student2') email = 'student2@horizon.edu.sa';
+      else if (persona === 'parent') email = 'parent@horizon.edu.sa';
       else email = 'admin@horizon.edu.sa';
     } else {
       if (persona === 'teacher') email = 'teacher.sara@elite.edu.sa';

@@ -251,6 +251,73 @@ CREATE TABLE IF NOT EXISTS parent_student_links (
 CREATE INDEX IF NOT EXISTS idx_parent_student_parent ON parent_student_links(organization_id, parent_id);
 CREATE INDEX IF NOT EXISTS idx_parent_student_student ON parent_student_links(organization_id, student_id);
 
+-- 8.4 Student Records (Full SIS Profile, Medical, Emergency, Demographics)
+CREATE TABLE IF NOT EXISTS student_records (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    student_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    national_id VARCHAR(64) NOT NULL,
+    date_of_birth DATE NOT NULL,
+    gender VARCHAR(16) NOT NULL CHECK (gender IN ('MALE', 'FEMALE')),
+    blood_type VARCHAR(16) DEFAULT 'UNKNOWN' CHECK (blood_type IN ('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'UNKNOWN')),
+    nationality VARCHAR(64) DEFAULT 'سعودي',
+    admission_date DATE NOT NULL,
+    graduation_date DATE,
+    status VARCHAR(32) DEFAULT 'ACTIVE' NOT NULL CHECK (status IN ('ACTIVE', 'PROBATION', 'SUSPENDED', 'WITHDRAWN', 'TRANSFERRED', 'GRADUATED')),
+    status_reason TEXT,
+    medical_conditions TEXT,
+    allergies TEXT,
+    special_dietary_needs TEXT,
+    emergency_contact_name VARCHAR(255) NOT NULL,
+    emergency_contact_phone VARCHAR(64) NOT NULL,
+    emergency_contact_relationship VARCHAR(64) NOT NULL,
+    previous_school VARCHAR(255),
+    special_needs_notes TEXT,
+    gifted_program BOOLEAN DEFAULT FALSE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_student_records_org_student UNIQUE (organization_id, student_id),
+    CONSTRAINT uq_student_records_org_national_id UNIQUE (organization_id, national_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_records_org ON student_records(organization_id);
+CREATE INDEX IF NOT EXISTS idx_student_records_status ON student_records(organization_id, status);
+CREATE INDEX IF NOT EXISTS idx_student_records_national_id ON student_records(organization_id, national_id);
+
+-- 8.5 Student Behavior Records (Conduct, Praises, Merits, Infractions)
+CREATE TABLE IF NOT EXISTS student_behavior_records (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    student_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(32) NOT NULL CHECK (type IN ('POSITIVE_PRAISE', 'MERIT', 'MINOR_INFRACTION', 'MAJOR_INFRACTION', 'COUNSELING_REFERRAL', 'SUSPENSION_NOTICE')),
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    points INT DEFAULT 0 NOT NULL,
+    action_taken TEXT,
+    incident_date DATE NOT NULL,
+    recorded_by VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(32) DEFAULT 'OPEN' NOT NULL CHECK (status IN ('OPEN', 'RESOLVED', 'UNDER_REVIEW')),
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_behavior_org_student ON student_behavior_records(organization_id, student_id);
+CREATE INDEX IF NOT EXISTS idx_student_behavior_date ON student_behavior_records(organization_id, incident_date DESC);
+
+-- 8.6 Student Lifecycle Events (Audit History of Transitions & Promotions)
+CREATE TABLE IF NOT EXISTS student_lifecycle_events (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    student_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    previous_status VARCHAR(32) NOT NULL,
+    new_status VARCHAR(32) NOT NULL,
+    reason TEXT NOT NULL,
+    action_by VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    effective_date DATE NOT NULL,
+    timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_student_lifecycle_org_student ON student_lifecycle_events(organization_id, student_id);
+
 -- 9. Lessons (Course Units & Content)
 CREATE TABLE IF NOT EXISTS lessons (
     id VARCHAR(64) PRIMARY KEY,
@@ -598,5 +665,27 @@ DROP POLICY IF EXISTS tenant_isolation_parent_student_links ON parent_student_li
 CREATE POLICY tenant_isolation_parent_student_links ON parent_student_links
     USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 23. Student Records Policy
+ALTER TABLE student_records ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_student_records ON student_records;
+CREATE POLICY tenant_isolation_student_records ON student_records
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 24. Student Behavior Records Policy
+ALTER TABLE student_behavior_records ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_student_behavior_records ON student_behavior_records;
+CREATE POLICY tenant_isolation_student_behavior_records ON student_behavior_records
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 25. Student Lifecycle Events Policy
+ALTER TABLE student_lifecycle_events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_student_lifecycle_events ON student_lifecycle_events;
+CREATE POLICY tenant_isolation_student_lifecycle_events ON student_lifecycle_events
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
 
 

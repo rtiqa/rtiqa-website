@@ -173,6 +173,101 @@ export interface TeacherAssignment {
 
 export type StudentEnrollmentStatus = 'ACTIVE' | 'TRANSFERRED' | 'SUSPENDED' | 'GRADUATED';
 
+export type StudentLifecycleStatus = 'ACTIVE' | 'PROBATION' | 'SUSPENDED' | 'WITHDRAWN' | 'TRANSFERRED' | 'GRADUATED';
+
+export type StudentGender = 'MALE' | 'FEMALE';
+
+export type StudentBloodType = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-' | 'UNKNOWN';
+
+export interface StudentRecord {
+  id: string;
+  organizationId: string;
+  studentId: string;
+  nationalId: string;
+  dateOfBirth: string; // YYYY-MM-DD
+  gender: StudentGender;
+  bloodType?: StudentBloodType;
+  nationality?: string;
+  admissionDate: string; // YYYY-MM-DD
+  graduationDate?: string; // YYYY-MM-DD
+  status: StudentLifecycleStatus;
+  statusReason?: string;
+  medicalConditions?: string;
+  allergies?: string;
+  specialDietaryNeeds?: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelationship: string;
+  previousSchool?: string;
+  specialNeedsNotes?: string;
+  giftedProgram: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type StudentBehaviorType =
+  | 'POSITIVE_PRAISE'
+  | 'MERIT'
+  | 'MINOR_INFRACTION'
+  | 'MAJOR_INFRACTION'
+  | 'COUNSELING_REFERRAL'
+  | 'SUSPENSION_NOTICE';
+
+export interface StudentBehaviorRecord {
+  id: string;
+  organizationId: string;
+  studentId: string;
+  studentName?: string;
+  type: StudentBehaviorType;
+  title: string;
+  description: string;
+  points: number; // e.g. +5, -2
+  actionTaken?: string;
+  incidentDate: string; // YYYY-MM-DD
+  recordedBy: string;
+  recordedByName?: string;
+  status: 'OPEN' | 'RESOLVED' | 'UNDER_REVIEW';
+  createdAt: string;
+}
+
+export interface StudentLifecycleEvent {
+  id: string;
+  organizationId: string;
+  studentId: string;
+  studentName?: string;
+  previousStatus: StudentLifecycleStatus;
+  newStatus: StudentLifecycleStatus;
+  reason: string;
+  actionBy: string;
+  actionByName?: string;
+  effectiveDate: string; // YYYY-MM-DD
+  timestamp: string;
+}
+
+export interface StudentDossier {
+  student: User;
+  record?: StudentRecord;
+  enrollments: StudentEnrollment[];
+  currentEnrollment?: StudentEnrollment;
+  parents: ParentStudentLink[];
+  behaviorRecords: StudentBehaviorRecord[];
+  behaviorPointsTotal: number;
+  attendanceStats: {
+    totalDays: number;
+    presentDays: number;
+    absentDays: number;
+    lateDays: number;
+    excusedDays: number;
+    attendanceRate: number;
+  };
+  academicStats: {
+    enrolledCoursesCount: number;
+    submissionsCount: number;
+    averageScore: number;
+  };
+  lifecycleHistory: StudentLifecycleEvent[];
+}
+
 export interface StudentEnrollment {
   id: string;
   organizationId: string;

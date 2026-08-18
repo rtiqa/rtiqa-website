@@ -156,11 +156,11 @@ var init_postgres = __esm({
 });
 
 // server.ts
-import express12 from "express";
+import express13 from "express";
 import path from "path";
 
 // server/platform/index.ts
-import express11 from "express";
+import express12 from "express";
 
 // server/platform/auth.ts
 import crypto2 from "crypto";
@@ -309,6 +309,12 @@ var PlatformDatabase = class {
     this.aiMessages = /* @__PURE__ */ new Map();
     this.aiUsageRecords = /* @__PURE__ */ new Map();
     this.aiDocumentChunks = /* @__PURE__ */ new Map();
+    this.teacherAssignments = /* @__PURE__ */ new Map();
+    this.studentEnrollments = /* @__PURE__ */ new Map();
+    this.parentStudentLinks = /* @__PURE__ */ new Map();
+    this.studentRecords = /* @__PURE__ */ new Map();
+    this.studentBehaviorRecords = /* @__PURE__ */ new Map();
+    this.studentLifecycleEvents = /* @__PURE__ */ new Map();
     this.seedInitialData();
   }
   // --- Engine Status Check ---
@@ -520,6 +526,17 @@ var PlatformDatabase = class {
       updatedAt: "2026-01-01T00:00:00Z"
     };
     this.users.set(student4.id, student4);
+    const parent1 = {
+      id: "usr_horizon_p_khalid",
+      organizationId: schoolAId,
+      email: "parent@horizon.edu.sa",
+      fullName: "\u062E\u0627\u0644\u062F \u0627\u0644\u0633\u0639\u064A\u062F (\u0648\u0644\u064A \u0623\u0645\u0631)",
+      role: "PARENT",
+      isActive: true,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z"
+    };
+    this.users.set(parent1.id, parent1);
     const courseMath10AId = "crs_horizon_math_10a";
     this.courses.set(courseMath10AId, {
       id: courseMath10AId,
@@ -546,6 +563,20 @@ var PlatformDatabase = class {
       description: "\u0645\u0642\u0631\u0631 \u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u0641\u0627\u0639\u0644\u064A \u0648\u0627\u0644\u062A\u062C\u0627\u0631\u0628 \u0627\u0644\u0645\u0639\u0645\u0644\u064A\u0629 \u0627\u0644\u0631\u0642\u0645\u064A\u0629",
       subjectName: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u062C\u0631\u064A\u0628\u064A\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627",
       teacherName: teacherMath.fullName,
+      classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)"
+    });
+    const courseArabic10AId = "crs_horizon_arab_10a";
+    this.courses.set(courseArabic10AId, {
+      id: courseArabic10AId,
+      organizationId: schoolAId,
+      subjectId: arabicSubId,
+      termId: termAId,
+      teacherId: teacherArabic.id,
+      classroomId: class10AId,
+      title: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+      description: "\u0645\u0642\u0631\u0631 \u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 \u0648\u0627\u0644\u0646\u0642\u062F",
+      subjectName: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
+      teacherName: teacherArabic.fullName,
       classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)"
     });
     const lesson1Id = "lsn_horizon_math_01";
@@ -767,6 +798,294 @@ var PlatformDatabase = class {
       teacherName: teacherB.fullName,
       classroomName: "Section 10-Alpha"
     });
+    const taMathAId = "ta_horizon_math_10a";
+    this.teacherAssignments.set(taMathAId, {
+      id: taMathAId,
+      organizationId: schoolAId,
+      teacherId: teacherMath.id,
+      teacherName: teacherMath.fullName,
+      teacherEmail: teacherMath.email,
+      courseId: courseMath10AId,
+      courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631",
+      subjectId: mathSubId,
+      subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+      classroomId: class10AId,
+      classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+      academicYearId: yearAId,
+      academicYearName: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
+      role: "PRIMARY_TEACHER",
+      weeklyHours: 5,
+      status: "ACTIVE",
+      createdAt: "2026-08-20T00:00:00Z",
+      updatedAt: "2026-08-20T00:00:00Z"
+    });
+    const taArabAId = "ta_horizon_arab_10a";
+    this.teacherAssignments.set(taArabAId, {
+      id: taArabAId,
+      organizationId: schoolAId,
+      teacherId: teacherArabic.id,
+      teacherName: teacherArabic.fullName,
+      teacherEmail: teacherArabic.email,
+      courseId: courseArabic10AId,
+      courseTitle: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631",
+      subjectId: arabicSubId,
+      subjectName: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
+      classroomId: class10AId,
+      classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+      academicYearId: yearAId,
+      academicYearName: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
+      role: "PRIMARY_TEACHER",
+      weeklyHours: 4,
+      status: "ACTIVE",
+      createdAt: "2026-08-20T00:00:00Z",
+      updatedAt: "2026-08-20T00:00:00Z"
+    });
+    const studentsListA = [
+      { user: student1, roll: "10A-01" },
+      { user: student2, roll: "10A-02" },
+      { user: student3, roll: "10A-03" },
+      { user: student4, roll: "10A-04" }
+    ];
+    for (const item of studentsListA) {
+      const enrId = `enr_horizon_${item.user.id}`;
+      this.studentEnrollments.set(enrId, {
+        id: enrId,
+        organizationId: schoolAId,
+        studentId: item.user.id,
+        studentName: item.user.fullName,
+        studentEmail: item.user.email,
+        studentIdNumber: item.user.studentIdNumber,
+        classroomId: class10AId,
+        classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+        gradeLevelId: grade10Id,
+        gradeLevelName: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u0627\u0644\u062B\u0627\u0646\u0648\u064A)",
+        academicYearId: yearAId,
+        academicYearName: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
+        rollNumber: item.roll,
+        status: "ACTIVE",
+        enrolledAt: "2026-08-20T00:00:00Z",
+        updatedAt: "2026-08-20T00:00:00Z"
+      });
+    }
+    const taPhysBId = "ta_elite_phys_10a";
+    this.teacherAssignments.set(taPhysBId, {
+      id: taPhysBId,
+      organizationId: schoolBId,
+      teacherId: teacherB.id,
+      teacherName: teacherB.fullName,
+      teacherEmail: teacherB.email,
+      courseId: coursePhys10AId,
+      courseTitle: "Advanced Physics - Grade 10",
+      subjectId: physSubId,
+      subjectName: "Advanced Physics",
+      classroomId: classBId,
+      classroomName: "Section 10-Alpha",
+      academicYearId: yearBId,
+      academicYearName: "Academic Year 2026-2027 (1448H)",
+      role: "PRIMARY_TEACHER",
+      weeklyHours: 6,
+      status: "ACTIVE",
+      createdAt: "2026-09-01T00:00:00Z",
+      updatedAt: "2026-09-01T00:00:00Z"
+    });
+    const enrBId = `enr_elite_${studentB.id}`;
+    this.studentEnrollments.set(enrBId, {
+      id: enrBId,
+      organizationId: schoolBId,
+      studentId: studentB.id,
+      studentName: studentB.fullName,
+      studentEmail: studentB.email,
+      studentIdNumber: studentB.studentIdNumber,
+      classroomId: classBId,
+      classroomName: "Section 10-Alpha",
+      gradeLevelId: gradeBId,
+      gradeLevelName: "Grade 10 (Advanced)",
+      academicYearId: yearBId,
+      academicYearName: "Academic Year 2026-2027 (1448H)",
+      rollNumber: "ELT-10A-01",
+      status: "ACTIVE",
+      enrolledAt: "2026-09-01T00:00:00Z",
+      updatedAt: "2026-09-01T00:00:00Z"
+    });
+    const stdRec1 = {
+      id: `std_rec_${student1.id}`,
+      organizationId: schoolAId,
+      studentId: student1.id,
+      nationalId: "1098765432",
+      dateOfBirth: "2010-04-15",
+      gender: "MALE",
+      bloodType: "O+",
+      nationality: "\u0633\u0639\u0648\u062F\u064A",
+      admissionDate: "2024-09-01",
+      status: "ACTIVE",
+      medicalConditions: "\u0644\u0627 \u062A\u0648\u062C\u062F \u062D\u0627\u0644\u0627\u062A \u0645\u0632\u0645\u0646\u0629",
+      allergies: "\u062D\u0633\u0627\u0633\u064A\u0629 \u062E\u0641\u064A\u0641\u0629 \u0645\u0646 \u0627\u0644\u0641\u0648\u0644 \u0627\u0644\u0633\u0648\u062F\u0627\u0646\u064A",
+      specialDietaryNeeds: "\u0648\u062C\u0628\u0627\u062A \u062E\u0627\u0644\u064A\u0629 \u0645\u0646 \u0627\u0644\u0645\u0643\u0633\u0631\u0627\u062A",
+      emergencyContactName: "\u062E\u0627\u0644\u062F \u0627\u0644\u0633\u0639\u064A\u062F (\u0627\u0644\u0623\u0628)",
+      emergencyContactPhone: "+966501234567",
+      emergencyContactRelationship: "FATHER",
+      previousSchool: "\u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0631\u0648\u0627\u062F \u0627\u0644\u0646\u0645\u0648\u0630\u062C\u064A\u0629",
+      giftedProgram: true,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z"
+    };
+    this.studentRecords.set(stdRec1.id, stdRec1);
+    const stdRec2 = {
+      id: `std_rec_${student2.id}`,
+      organizationId: schoolAId,
+      studentId: student2.id,
+      nationalId: "1087654321",
+      dateOfBirth: "2010-08-22",
+      gender: "FEMALE",
+      bloodType: "A+",
+      nationality: "\u0633\u0639\u0648\u062F\u064A\u0629",
+      admissionDate: "2024-09-01",
+      status: "ACTIVE",
+      emergencyContactName: "\u0641\u0627\u0637\u0645\u0629 \u0627\u0644\u0639\u062A\u064A\u0628\u064A (\u0627\u0644\u0623\u0645)",
+      emergencyContactPhone: "+966507654321",
+      emergencyContactRelationship: "MOTHER",
+      previousSchool: "\u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0645\u0633\u062A\u0642\u0628\u0644 \u0627\u0644\u0623\u0647\u0644\u064A\u0629",
+      giftedProgram: false,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z"
+    };
+    this.studentRecords.set(stdRec2.id, stdRec2);
+    const stdRec3 = {
+      id: `std_rec_${student3.id}`,
+      organizationId: schoolAId,
+      studentId: student3.id,
+      nationalId: "1076543210",
+      dateOfBirth: "2010-11-03",
+      gender: "MALE",
+      bloodType: "B+",
+      nationality: "\u0633\u0639\u0648\u062F\u064A",
+      admissionDate: "2024-09-01",
+      status: "ACTIVE",
+      medicalConditions: "\u0631\u0628\u0648 \u062A\u062D\u0633\u0633\u064A \u062E\u0641\u064A\u0641 \u0639\u0646\u062F \u0645\u0645\u0627\u0631\u0633\u0629 \u0627\u0644\u0645\u062C\u0647\u0648\u062F \u0627\u0644\u0634\u062F\u064A\u062F",
+      allergies: "\u063A\u0628\u0627\u0631 \u0627\u0644\u0637\u0644\u0639 \u0648\u0627\u0644\u0623\u062A\u0631\u0628\u0629",
+      emergencyContactName: "\u0645\u062D\u0645\u062F \u0627\u0644\u0645\u0637\u064A\u0631\u064A (\u0627\u0644\u0623\u0628)",
+      emergencyContactPhone: "+966509988776",
+      emergencyContactRelationship: "FATHER",
+      giftedProgram: false,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z"
+    };
+    this.studentRecords.set(stdRec3.id, stdRec3);
+    const stdRec4 = {
+      id: `std_rec_${student4.id}`,
+      organizationId: schoolAId,
+      studentId: student4.id,
+      nationalId: "1065432109",
+      dateOfBirth: "2010-02-18",
+      gender: "FEMALE",
+      bloodType: "AB+",
+      nationality: "\u0633\u0639\u0648\u062F\u064A\u0629",
+      admissionDate: "2024-09-01",
+      status: "ACTIVE",
+      emergencyContactName: "\u0633\u0644\u0637\u0627\u0646 \u0627\u0644\u0642\u062D\u0637\u0627\u0646\u064A (\u0627\u0644\u0623\u0628)",
+      emergencyContactPhone: "+966505544332",
+      emergencyContactRelationship: "FATHER",
+      giftedProgram: true,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z"
+    };
+    this.studentRecords.set(stdRec4.id, stdRec4);
+    const stdRecB = {
+      id: `std_rec_${studentB.id}`,
+      organizationId: schoolBId,
+      studentId: studentB.id,
+      nationalId: "2098765432",
+      dateOfBirth: "2010-06-10",
+      gender: "MALE",
+      bloodType: "O+",
+      nationality: "\u0633\u0639\u0648\u062F\u064A",
+      admissionDate: "2024-09-01",
+      status: "ACTIVE",
+      emergencyContactName: "James Hayes (Father)",
+      emergencyContactPhone: "+966551122334",
+      emergencyContactRelationship: "FATHER",
+      giftedProgram: true,
+      createdAt: "2026-01-01T00:00:00Z",
+      updatedAt: "2026-01-01T00:00:00Z"
+    };
+    this.studentRecords.set(stdRecB.id, stdRecB);
+    const beh1 = {
+      id: `beh_horizon_001`,
+      organizationId: schoolAId,
+      studentId: student1.id,
+      studentName: student1.fullName,
+      type: "MERIT",
+      title: "\u0627\u0644\u062A\u0641\u0648\u0642 \u0641\u064A \u0623\u0648\u0644\u0645\u0628\u064A\u0627\u062F \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0645\u062F\u0631\u0633\u064A",
+      description: "\u062D\u0642\u0642 \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0623\u0648\u0644 \u0639\u0644\u0649 \u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u0645\u062F\u0631\u0633\u0629 \u0641\u064A \u0645\u0633\u0627\u0628\u0642\u0629 \u062D\u0644 \u0627\u0644\u0645\u0633\u0627\u0626\u0644 \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629",
+      points: 10,
+      actionTaken: "\u0645\u0646\u062D \u0634\u0647\u0627\u062F\u0629 \u062A\u0641\u0648\u0642 \u0645\u0639 \u0625\u0634\u0639\u0627\u0631 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631",
+      incidentDate: "2026-09-15",
+      recordedBy: teacherMath.id,
+      recordedByName: teacherMath.fullName,
+      status: "RESOLVED",
+      createdAt: "2026-09-15T10:00:00Z"
+    };
+    this.studentBehaviorRecords.set(beh1.id, beh1);
+    const beh2 = {
+      id: `beh_horizon_002`,
+      organizationId: schoolAId,
+      studentId: student2.id,
+      studentName: student2.fullName,
+      type: "POSITIVE_PRAISE",
+      title: "\u0645\u0634\u0627\u0631\u0643\u0629 \u0645\u062A\u0645\u064A\u0632\u0629 \u0641\u064A \u0627\u0644\u0625\u0630\u0627\u0639\u0629 \u0627\u0644\u0645\u062F\u0631\u0633\u064A\u0629",
+      description: "\u0625\u0644\u0642\u0627\u0621 \u0645\u0645\u064A\u0632 \u0648\u0625\u0639\u062F\u0627\u062F \u0645\u062D\u062A\u0648\u0649 \u062B\u0642\u0627\u0641\u064A \u0647\u0627\u062F\u0641 \u0644\u0644\u0625\u0630\u0627\u0639\u0629 \u0627\u0644\u0645\u062F\u0631\u0633\u064A\u0629 \u0627\u0644\u0635\u0628\u0627\u062D\u064A\u0629",
+      points: 5,
+      actionTaken: "\u062A\u0633\u062C\u064A\u0644 \u0628\u0637\u0627\u0642\u0629 \u062A\u0645\u064A\u0632 \u0633\u0644\u0648\u0643\u064A",
+      incidentDate: "2026-09-20",
+      recordedBy: teacherArabic.id,
+      recordedByName: teacherArabic.fullName,
+      status: "RESOLVED",
+      createdAt: "2026-09-20T08:30:00Z"
+    };
+    this.studentBehaviorRecords.set(beh2.id, beh2);
+    const beh3 = {
+      id: `beh_horizon_003`,
+      organizationId: schoolAId,
+      studentId: student3.id,
+      studentName: student3.fullName,
+      type: "MINOR_INFRACTION",
+      title: "\u062A\u0623\u062E\u0631 \u0645\u062A\u0643\u0631\u0631 \u0639\u0646 \u0627\u0644\u062D\u0635\u0629 \u0627\u0644\u0623\u0648\u0644\u0649",
+      description: "\u062A\u0623\u062E\u0631 3 \u0645\u0631\u0627\u062A \u062E\u0644\u0627\u0644 \u0627\u0644\u0623\u0633\u0628\u0648\u0639 \u062F\u0648\u0646 \u0625\u062D\u0636\u0627\u0631 \u0639\u0630\u0631 \u0645\u0633\u0628\u0642",
+      points: -2,
+      actionTaken: "\u062A\u0646\u0628\u064A\u0647 \u0634\u0641\u0647\u064A \u0648\u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631",
+      incidentDate: "2026-09-28",
+      recordedBy: teacherMath.id,
+      recordedByName: teacherMath.fullName,
+      status: "RESOLVED",
+      createdAt: "2026-09-28T09:00:00Z"
+    };
+    this.studentBehaviorRecords.set(beh3.id, beh3);
+    const lce1 = {
+      id: `lce_horizon_001`,
+      organizationId: schoolAId,
+      studentId: student1.id,
+      studentName: student1.fullName,
+      previousStatus: "ACTIVE",
+      newStatus: "ACTIVE",
+      reason: "\u0627\u0644\u0642\u0628\u0648\u0644 \u0648\u0627\u0644\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0644\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
+      actionBy: adminA.id,
+      actionByName: adminA.fullName,
+      effectiveDate: "2026-08-20",
+      timestamp: "2026-08-20T08:00:00Z"
+    };
+    this.studentLifecycleEvents.set(lce1.id, lce1);
+    const psl1 = {
+      id: `psl_horizon_001`,
+      organizationId: schoolAId,
+      parentId: parent1.id,
+      parentName: parent1.fullName,
+      studentId: student1.id,
+      studentName: student1.fullName,
+      relationship: "FATHER",
+      isEmergencyContact: true,
+      createdAt: "2026-01-01T00:00:00Z"
+    };
+    this.parentStudentLinks.set(psl1.id, psl1);
     for (const user of Array.from(this.users.values())) {
       user.emailVerified = true;
       user.phoneVerified = true;
@@ -1076,11 +1395,51 @@ var PlatformDatabase = class {
   getAcademicYears(organizationId) {
     return Array.from(this.academicYears.values()).filter((y) => y.organizationId === organizationId);
   }
+  getCurrentAcademicYear(organizationId) {
+    return Array.from(this.academicYears.values()).find((y) => y.organizationId === organizationId && y.isCurrent);
+  }
+  getCoursesByClassroom(classroomId, organizationId) {
+    return Array.from(this.courses.values()).filter(
+      (c) => c.organizationId === organizationId && c.classroomId === classroomId
+    );
+  }
+  getAcademicYearById(id, organizationId) {
+    const item = this.academicYears.get(id);
+    if (!item || item.organizationId !== organizationId) return void 0;
+    return item;
+  }
   createAcademicYear(data) {
     const id = `year_${Date.now()}`;
     const item = { ...data, id };
+    if (item.isCurrent) {
+      for (const [yId, year] of this.academicYears.entries()) {
+        if (year.organizationId === data.organizationId && yId !== id) {
+          year.isCurrent = false;
+        }
+      }
+    }
     this.academicYears.set(id, item);
     return item;
+  }
+  updateAcademicYear(id, organizationId, updates) {
+    const item = this.getAcademicYearById(id, organizationId);
+    if (!item) return void 0;
+    if (updates.isCurrent) {
+      for (const [yId, year] of this.academicYears.entries()) {
+        if (year.organizationId === organizationId && yId !== id) {
+          year.isCurrent = false;
+        }
+      }
+    }
+    const updated = { ...item, ...updates };
+    this.academicYears.set(id, updated);
+    return updated;
+  }
+  deleteAcademicYear(id, organizationId) {
+    const item = this.getAcademicYearById(id, organizationId);
+    if (!item) return false;
+    this.academicYears.delete(id);
+    return true;
   }
   getTerms(organizationId, academicYearId) {
     return Array.from(this.terms.values()).filter((t) => {
@@ -1089,11 +1448,43 @@ var PlatformDatabase = class {
       return true;
     });
   }
+  getTermById(id, organizationId) {
+    const item = this.terms.get(id);
+    if (!item || item.organizationId !== organizationId) return void 0;
+    return item;
+  }
   createTerm(data) {
     const id = `term_${Date.now()}`;
     const item = { ...data, id };
+    if (item.isCurrent) {
+      for (const [tId, term] of this.terms.entries()) {
+        if (term.organizationId === data.organizationId && tId !== id) {
+          term.isCurrent = false;
+        }
+      }
+    }
     this.terms.set(id, item);
     return item;
+  }
+  updateTerm(id, organizationId, updates) {
+    const item = this.getTermById(id, organizationId);
+    if (!item) return void 0;
+    if (updates.isCurrent) {
+      for (const [tId, term] of this.terms.entries()) {
+        if (term.organizationId === organizationId && tId !== id) {
+          term.isCurrent = false;
+        }
+      }
+    }
+    const updated = { ...item, ...updates };
+    this.terms.set(id, updated);
+    return updated;
+  }
+  deleteTerm(id, organizationId) {
+    const item = this.getTermById(id, organizationId);
+    if (!item) return false;
+    this.terms.delete(id);
+    return true;
   }
   getGradeLevels(organizationId) {
     return Array.from(this.gradeLevels.values()).filter((g) => g.organizationId === organizationId).sort((a, b) => a.sequenceOrder - b.sequenceOrder);
@@ -1108,6 +1499,19 @@ var PlatformDatabase = class {
     const item = { ...data, id };
     this.gradeLevels.set(id, item);
     return item;
+  }
+  updateGradeLevel(id, organizationId, updates) {
+    const gl = this.getGradeLevelById(id, organizationId);
+    if (!gl) return void 0;
+    const updated = { ...gl, ...updates };
+    this.gradeLevels.set(id, updated);
+    return updated;
+  }
+  deleteGradeLevel(id, organizationId) {
+    const gl = this.getGradeLevelById(id, organizationId);
+    if (!gl) return false;
+    this.gradeLevels.delete(id);
+    return true;
   }
   getClassrooms(organizationId, gradeLevelId) {
     return Array.from(this.classrooms.values()).filter((c) => {
@@ -1127,14 +1531,45 @@ var PlatformDatabase = class {
     this.classrooms.set(id, item);
     return item;
   }
+  updateClassroom(id, organizationId, updates) {
+    const c = this.getClassroomById(id, organizationId);
+    if (!c) return void 0;
+    const updated = { ...c, ...updates };
+    this.classrooms.set(id, updated);
+    return updated;
+  }
+  deleteClassroom(id, organizationId) {
+    const c = this.getClassroomById(id, organizationId);
+    if (!c) return false;
+    this.classrooms.delete(id);
+    return true;
+  }
   getSubjects(organizationId) {
     return Array.from(this.subjects.values()).filter((s) => s.organizationId === organizationId);
+  }
+  getSubjectById(id, organizationId) {
+    const s = this.subjects.get(id);
+    if (!s || s.organizationId !== organizationId) return void 0;
+    return s;
   }
   createSubject(data) {
     const id = `sub_${Date.now()}`;
     const item = { ...data, id };
     this.subjects.set(id, item);
     return item;
+  }
+  updateSubject(id, organizationId, updates) {
+    const s = this.getSubjectById(id, organizationId);
+    if (!s) return void 0;
+    const updated = { ...s, ...updates };
+    this.subjects.set(id, updated);
+    return updated;
+  }
+  deleteSubject(id, organizationId) {
+    const s = this.getSubjectById(id, organizationId);
+    if (!s) return false;
+    this.subjects.delete(id);
+    return true;
   }
   // Courses
   getCourses(organizationId, teacherId, classroomId) {
@@ -1160,10 +1595,378 @@ var PlatformDatabase = class {
       id,
       subjectName: subject?.name,
       teacherName: teacher?.fullName,
-      classroomName: classroom?.name
+      classroomName: classroom?.name,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
     };
     this.courses.set(id, course);
     return course;
+  }
+  updateCourse(id, organizationId, updates) {
+    const course = this.getCourseById(id, organizationId);
+    if (!course) return void 0;
+    const subject = updates.subjectId ? this.subjects.get(updates.subjectId) : void 0;
+    const teacher = updates.teacherId ? this.users.get(updates.teacherId) : void 0;
+    const classroom = updates.classroomId ? this.classrooms.get(updates.classroomId) : void 0;
+    const updated = {
+      ...course,
+      ...updates,
+      subjectName: subject ? subject.name : course.subjectName,
+      teacherName: teacher ? teacher.fullName : course.teacherName,
+      classroomName: classroom ? classroom.name : course.classroomName,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.courses.set(id, updated);
+    return updated;
+  }
+  deleteCourse(id, organizationId) {
+    const course = this.getCourseById(id, organizationId);
+    if (!course) return false;
+    this.courses.delete(id);
+    return true;
+  }
+  // --- Teacher Assignments ---
+  getTeacherAssignments(organizationId, filters) {
+    return Array.from(this.teacherAssignments.values()).filter((ta) => {
+      if (ta.organizationId !== organizationId) return false;
+      if (filters?.teacherId && ta.teacherId !== filters.teacherId) return false;
+      if (filters?.courseId && ta.courseId !== filters.courseId) return false;
+      if (filters?.classroomId && ta.classroomId !== filters.classroomId) return false;
+      if (filters?.academicYearId && ta.academicYearId !== filters.academicYearId) return false;
+      if (filters?.subjectId && ta.subjectId !== filters.subjectId) return false;
+      return true;
+    });
+  }
+  getTeacherAssignmentById(id, organizationId) {
+    const ta = this.teacherAssignments.get(id);
+    if (!ta || ta.organizationId !== organizationId) return void 0;
+    return ta;
+  }
+  createTeacherAssignment(data) {
+    const id = `ta_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const teacher = this.getUserById(data.teacherId, data.organizationId);
+    const subject = this.getSubjectById(data.subjectId, data.organizationId);
+    const classroom = this.getClassroomById(data.classroomId, data.organizationId);
+    const course = data.courseId ? this.getCourseById(data.courseId, data.organizationId) : void 0;
+    const year = data.academicYearId ? this.getAcademicYearById(data.academicYearId, data.organizationId) : void 0;
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const assignment = {
+      ...data,
+      id,
+      teacherName: teacher?.fullName,
+      teacherEmail: teacher?.email,
+      subjectName: subject?.name,
+      classroomName: classroom?.name,
+      courseTitle: course?.title,
+      academicYearName: year?.name,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.teacherAssignments.set(id, assignment);
+    return assignment;
+  }
+  updateTeacherAssignment(id, organizationId, updates) {
+    const ta = this.getTeacherAssignmentById(id, organizationId);
+    if (!ta) return void 0;
+    const teacher = updates.teacherId ? this.getUserById(updates.teacherId, organizationId) : void 0;
+    const subject = updates.subjectId ? this.getSubjectById(updates.subjectId, organizationId) : void 0;
+    const classroom = updates.classroomId ? this.getClassroomById(updates.classroomId, organizationId) : void 0;
+    const updated = {
+      ...ta,
+      ...updates,
+      teacherName: teacher ? teacher.fullName : ta.teacherName,
+      teacherEmail: teacher ? teacher.email : ta.teacherEmail,
+      subjectName: subject ? subject.name : ta.subjectName,
+      classroomName: classroom ? classroom.name : ta.classroomName,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.teacherAssignments.set(id, updated);
+    return updated;
+  }
+  deleteTeacherAssignment(id, organizationId) {
+    const ta = this.getTeacherAssignmentById(id, organizationId);
+    if (!ta) return false;
+    this.teacherAssignments.delete(id);
+    return true;
+  }
+  // --- Student Enrollments ---
+  getStudentEnrollments(organizationId, filters) {
+    return Array.from(this.studentEnrollments.values()).filter((enr) => {
+      if (enr.organizationId !== organizationId) return false;
+      if (filters?.classroomId && enr.classroomId !== filters.classroomId) return false;
+      if (filters?.studentId && enr.studentId !== filters.studentId) return false;
+      if (filters?.academicYearId && enr.academicYearId !== filters.academicYearId) return false;
+      if (filters?.status && enr.status !== filters.status) return false;
+      return true;
+    });
+  }
+  getStudentEnrollmentById(id, organizationId) {
+    const enr = this.studentEnrollments.get(id);
+    if (!enr || enr.organizationId !== organizationId) return void 0;
+    return enr;
+  }
+  createStudentEnrollment(data) {
+    const id = `enr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const student = this.getUserById(data.studentId, data.organizationId);
+    const classroom = this.getClassroomById(data.classroomId, data.organizationId);
+    const gradeLevel = classroom ? this.getGradeLevelById(classroom.gradeLevelId, data.organizationId) : void 0;
+    const year = this.getAcademicYearById(data.academicYearId, data.organizationId);
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const enrollment = {
+      ...data,
+      id,
+      studentName: student?.fullName,
+      studentEmail: student?.email,
+      studentIdNumber: student?.studentIdNumber,
+      classroomName: classroom?.name,
+      gradeLevelId: classroom?.gradeLevelId,
+      gradeLevelName: gradeLevel?.name,
+      academicYearName: year?.name,
+      enrolledAt: now,
+      updatedAt: now
+    };
+    this.studentEnrollments.set(id, enrollment);
+    if (student && data.classroomId) {
+      this.updateUser(student.id, data.organizationId, { classroomId: data.classroomId });
+    }
+    return enrollment;
+  }
+  updateStudentEnrollment(id, organizationId, updates) {
+    const enr = this.getStudentEnrollmentById(id, organizationId);
+    if (!enr) return void 0;
+    const classroom = updates.classroomId ? this.getClassroomById(updates.classroomId, organizationId) : void 0;
+    const gradeLevel = classroom ? this.getGradeLevelById(classroom.gradeLevelId, organizationId) : void 0;
+    const updated = {
+      ...enr,
+      ...updates,
+      classroomName: classroom ? classroom.name : enr.classroomName,
+      gradeLevelId: classroom ? classroom.gradeLevelId : enr.gradeLevelId,
+      gradeLevelName: gradeLevel ? gradeLevel.name : enr.gradeLevelName,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.studentEnrollments.set(id, updated);
+    return updated;
+  }
+  deleteStudentEnrollment(id, organizationId) {
+    const enr = this.getStudentEnrollmentById(id, organizationId);
+    if (!enr) return false;
+    this.studentEnrollments.delete(id);
+    return true;
+  }
+  // --- Parent Student Links ---
+  getParentStudentLinks(organizationId, filters) {
+    return Array.from(this.parentStudentLinks.values()).filter((link) => {
+      if (link.organizationId !== organizationId) return false;
+      if (filters?.parentId && link.parentId !== filters.parentId) return false;
+      if (filters?.studentId && link.studentId !== filters.studentId) return false;
+      return true;
+    });
+  }
+  createParentStudentLink(data) {
+    const id = `psl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const parent = this.getUserById(data.parentId, data.organizationId);
+    const student = this.getUserById(data.studentId, data.organizationId);
+    const link = {
+      ...data,
+      id,
+      parentName: parent?.fullName,
+      studentName: student?.fullName,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.parentStudentLinks.set(id, link);
+    return link;
+  }
+  deleteParentStudentLink(id, organizationId) {
+    const link = this.parentStudentLinks.get(id);
+    if (!link || link.organizationId !== organizationId) return false;
+    this.parentStudentLinks.delete(id);
+    return true;
+  }
+  // --- Student Records (Full SIS Profile, Demographics, Medical & Emergency) ---
+  getStudentRecords(organizationId, filters) {
+    return Array.from(this.studentRecords.values()).filter((rec) => {
+      if (rec.organizationId !== organizationId) return false;
+      if (filters?.status && rec.status !== filters.status) return false;
+      if (filters?.studentId && rec.studentId !== filters.studentId) return false;
+      if (filters?.search) {
+        const q = filters.search.toLowerCase().trim();
+        const user = this.getUserById(rec.studentId, organizationId);
+        const matchName = user?.fullName.toLowerCase().includes(q);
+        const matchEmail = user?.email.toLowerCase().includes(q);
+        const matchNationalId = rec.nationalId.toLowerCase().includes(q);
+        const matchStdId = user?.studentIdNumber?.toLowerCase().includes(q);
+        if (!matchName && !matchEmail && !matchNationalId && !matchStdId) return false;
+      }
+      return true;
+    });
+  }
+  getStudentRecordById(id, organizationId) {
+    const rec = this.studentRecords.get(id);
+    if (!rec || rec.organizationId !== organizationId) return void 0;
+    return rec;
+  }
+  getStudentRecordByStudentId(studentId, organizationId) {
+    return Array.from(this.studentRecords.values()).find(
+      (rec) => rec.organizationId === organizationId && rec.studentId === studentId
+    );
+  }
+  getStudentRecordByNationalId(nationalId, organizationId) {
+    return Array.from(this.studentRecords.values()).find(
+      (rec) => rec.organizationId === organizationId && rec.nationalId === nationalId
+    );
+  }
+  createStudentRecord(data) {
+    const id = `std_rec_${data.studentId}`;
+    const now = (/* @__PURE__ */ new Date()).toISOString();
+    const record = {
+      ...data,
+      id,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.studentRecords.set(id, record);
+    return record;
+  }
+  updateStudentRecord(studentId, organizationId, updates) {
+    const rec = this.getStudentRecordByStudentId(studentId, organizationId);
+    if (!rec) return void 0;
+    const updated = {
+      ...rec,
+      ...updates,
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.studentRecords.set(rec.id, updated);
+    return updated;
+  }
+  deleteStudentRecord(studentId, organizationId) {
+    const rec = this.getStudentRecordByStudentId(studentId, organizationId);
+    if (!rec) return false;
+    this.studentRecords.delete(rec.id);
+    return true;
+  }
+  // --- Student Behavior & Merit Records ---
+  getStudentBehaviorRecords(organizationId, filters) {
+    return Array.from(this.studentBehaviorRecords.values()).filter((beh) => {
+      if (beh.organizationId !== organizationId) return false;
+      if (filters?.studentId && beh.studentId !== filters.studentId) return false;
+      if (filters?.type && beh.type !== filters.type) return false;
+      if (filters?.status && beh.status !== filters.status) return false;
+      return true;
+    }).sort((a, b) => new Date(b.incidentDate).getTime() - new Date(a.incidentDate).getTime());
+  }
+  getStudentBehaviorRecordById(id, organizationId) {
+    const beh = this.studentBehaviorRecords.get(id);
+    if (!beh || beh.organizationId !== organizationId) return void 0;
+    return beh;
+  }
+  createStudentBehaviorRecord(data) {
+    const id = `beh_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const student = this.getUserById(data.studentId, data.organizationId);
+    const recordedByUser = this.getUserById(data.recordedBy, data.organizationId);
+    const record = {
+      ...data,
+      id,
+      studentName: student?.fullName,
+      recordedByName: recordedByUser?.fullName,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.studentBehaviorRecords.set(id, record);
+    return record;
+  }
+  updateStudentBehaviorRecord(id, organizationId, updates) {
+    const beh = this.getStudentBehaviorRecordById(id, organizationId);
+    if (!beh) return void 0;
+    const updated = {
+      ...beh,
+      ...updates
+    };
+    this.studentBehaviorRecords.set(id, updated);
+    return updated;
+  }
+  deleteStudentBehaviorRecord(id, organizationId) {
+    const beh = this.getStudentBehaviorRecordById(id, organizationId);
+    if (!beh) return false;
+    this.studentBehaviorRecords.delete(id);
+    return true;
+  }
+  // --- Student Lifecycle Events ---
+  getStudentLifecycleEvents(organizationId, studentId) {
+    return Array.from(this.studentLifecycleEvents.values()).filter((ev) => {
+      if (ev.organizationId !== organizationId) return false;
+      if (studentId && ev.studentId !== studentId) return false;
+      return true;
+    }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  }
+  createStudentLifecycleEvent(data) {
+    const id = `lce_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const student = this.getUserById(data.studentId, data.organizationId);
+    const actionUser = this.getUserById(data.actionBy, data.organizationId);
+    const event = {
+      ...data,
+      id,
+      studentName: student?.fullName,
+      actionByName: actionUser?.fullName,
+      timestamp: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    this.studentLifecycleEvents.set(id, event);
+    return event;
+  }
+  // --- Comprehensive Student Dossier (Holistic SIS Record) ---
+  getStudentDossier(studentId, organizationId) {
+    const student = this.getUserById(studentId, organizationId);
+    if (!student || student.role !== "STUDENT") return null;
+    const record = this.getStudentRecordByStudentId(studentId, organizationId);
+    const enrollments = this.getStudentEnrollments(organizationId, { studentId });
+    const currentEnrollment = enrollments.find((e) => e.status === "ACTIVE") || enrollments[0];
+    const parents = this.getParentStudentLinks(organizationId, { studentId });
+    const behaviorRecords = this.getStudentBehaviorRecords(organizationId, { studentId });
+    const behaviorPointsTotal = behaviorRecords.reduce((acc, r) => acc + (r.points || 0), 0);
+    const studentAttendance = Array.from(this.attendanceRecords.values()).filter(
+      (a) => a.organizationId === organizationId && a.studentId === studentId
+    );
+    const totalDays = studentAttendance.length;
+    const presentDays = studentAttendance.filter((a) => a.status === "PRESENT").length;
+    const absentDays = studentAttendance.filter((a) => a.status === "ABSENT").length;
+    const lateDays = studentAttendance.filter((a) => a.status === "LATE").length;
+    const excusedDays = studentAttendance.filter((a) => a.status === "EXCUSED").length;
+    const attendanceRate = totalDays > 0 ? Math.round((presentDays + lateDays + excusedDays) / totalDays * 100) : 100;
+    const submissions = this.getSubmissionsByStudent(studentId, organizationId);
+    const courses = student.classroomId ? this.getCoursesByClassroom(student.classroomId, organizationId) : [];
+    let scoreSum = 0;
+    let gradedCount = 0;
+    for (const sub of submissions) {
+      if (typeof sub.score === "number") {
+        const assignment = this.getAssignmentById(sub.assignmentId, organizationId);
+        const maxScore = assignment?.maxScore || 100;
+        scoreSum += sub.score / maxScore * 100;
+        gradedCount++;
+      }
+    }
+    const averageScore = gradedCount > 0 ? Math.round(scoreSum / gradedCount) : 92;
+    const lifecycleHistory = this.getStudentLifecycleEvents(organizationId, studentId);
+    return {
+      student,
+      record,
+      enrollments,
+      currentEnrollment,
+      parents,
+      behaviorRecords,
+      behaviorPointsTotal,
+      attendanceStats: {
+        totalDays,
+        presentDays,
+        absentDays,
+        lateDays,
+        excusedDays,
+        attendanceRate
+      },
+      academicStats: {
+        enrolledCoursesCount: courses.length,
+        submissionsCount: submissions.length,
+        averageScore
+      },
+      lifecycleHistory
+    };
   }
   // Lessons
   getLessonsByCourse(courseId, organizationId) {
@@ -1496,6 +2299,12 @@ var PlatformDatabase = class {
     this.aiMessages.clear();
     this.aiUsageRecords.clear();
     this.aiDocumentChunks.clear();
+    this.teacherAssignments.clear();
+    this.studentEnrollments.clear();
+    this.parentStudentLinks.clear();
+    this.studentRecords.clear();
+    this.studentBehaviorRecords.clear();
+    this.studentLifecycleEvents.clear();
     this.seedInitialData();
   }
   // Verification helpers
@@ -1525,21 +2334,28 @@ var db = new PlatformDatabase();
 // server/platform/auth.ts
 var devRuntimeSecret = null;
 function assertProductionAuthSecret() {
-  if (process.env.NODE_ENV === "production" && (!process.env.AUTH_SECRET || process.env.AUTH_SECRET.trim() === "")) {
+  const isProduction = process.env.NODE_ENV === "production";
+  const secret = process.env.AUTH_SECRET;
+  if (isProduction && (!secret || secret.trim() === "")) {
     throw new Error(
       "[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. A strong cryptographic secret must be provided via environment variables."
     );
   }
 }
 function getAuthSecret() {
-  const envSecret = process.env.AUTH_SECRET || process.env.JWT_SECRET;
+  const isProduction = process.env.NODE_ENV === "production";
+  const secret = process.env.AUTH_SECRET;
+  if (isProduction) {
+    if (!secret || secret.trim() === "") {
+      throw new Error(
+        "[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. A strong cryptographic secret must be provided via environment variables."
+      );
+    }
+    return secret.trim();
+  }
+  const envSecret = secret || process.env.JWT_SECRET;
   if (envSecret && envSecret.trim() !== "") {
     return envSecret.trim();
-  }
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      "[FATAL SECURITY ERROR] AUTH_SECRET environment variable is missing in production. A strong cryptographic secret must be provided via environment variables."
-    );
   }
   if (!devRuntimeSecret) {
     devRuntimeSecret = crypto2.randomBytes(32).toString("hex");
@@ -2920,6 +3736,7 @@ authRouter.post("/demo-switch", (req, res) => {
       else if (persona === "teacher2") email = "teacher2@horizon.edu.sa";
       else if (persona === "student") email = "student@horizon.edu.sa";
       else if (persona === "student2") email = "student2@horizon.edu.sa";
+      else if (persona === "parent") email = "parent@horizon.edu.sa";
       else email = "admin@horizon.edu.sa";
     } else {
       if (persona === "teacher") email = "teacher.sara@elite.edu.sa";
@@ -3338,11 +4155,26 @@ academicRouter.get("/years", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-academicRouter.post("/years", requireRoles(["ORG_ADMIN"]), (req, res) => {
+academicRouter.get("/years/:id", (req, res) => {
+  try {
+    const year = db.getAcademicYearById(req.params.id, req.organization.id);
+    if (!year) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    res.json({ success: true, data: year });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.post("/years", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
   try {
     const { name, startDate, endDate, isCurrent } = req.body;
     if (!name || !startDate || !endDate) {
-      return res.status(400).json({ success: false, error: "MISSING_FIELDS", message: "\u0627\u0633\u0645 \u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0648\u062A\u0648\u0627\u0631\u064A\u062E \u0627\u0644\u0628\u062F\u0627\u064A\u0629 \u0648\u0627\u0644\u0646\u0647\u0627\u064A\u0629 \u0645\u0637\u0644\u0648\u0628\u0629" });
+      return res.status(400).json({
+        success: false,
+        error: "MISSING_FIELDS",
+        message: "\u0627\u0633\u0645 \u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0648\u062A\u0648\u0627\u0631\u064A\u062E \u0627\u0644\u0628\u062F\u0627\u064A\u0629 \u0648\u0627\u0644\u0646\u0647\u0627\u064A\u0629 \u0645\u0637\u0644\u0648\u0628\u0629"
+      });
     }
     const year = db.createAcademicYear({
       organizationId: req.organization.id,
@@ -3351,7 +4183,36 @@ academicRouter.post("/years", requireRoles(["ORG_ADMIN"]), (req, res) => {
       endDate,
       isCurrent: Boolean(isCurrent)
     });
-    res.json({ success: true, data: year });
+    res.status(201).json({ success: true, data: year });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.put("/years/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const existing = db.getAcademicYearById(req.params.id, req.organization.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    const { name, startDate, endDate, isCurrent } = req.body;
+    const updated = db.updateAcademicYear(req.params.id, req.organization.id, {
+      name: name ? String(name).trim() : void 0,
+      startDate,
+      endDate,
+      isCurrent: isCurrent !== void 0 ? Boolean(isCurrent) : void 0
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.delete("/years/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const success = db.deleteAcademicYear(req.params.id, req.organization.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0628\u0646\u062C\u0627\u062D" });
   } catch {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
@@ -3365,7 +4226,18 @@ academicRouter.get("/terms", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-academicRouter.post("/terms", requireRoles(["ORG_ADMIN"]), (req, res) => {
+academicRouter.get("/terms/:id", (req, res) => {
+  try {
+    const term = db.getTermById(req.params.id, req.organization.id);
+    if (!term) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    res.json({ success: true, data: term });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.post("/terms", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
   try {
     const { academicYearId, name, startDate, endDate, isCurrent } = req.body;
     if (!academicYearId || !name || !startDate || !endDate) {
@@ -3382,7 +4254,40 @@ academicRouter.post("/terms", requireRoles(["ORG_ADMIN"]), (req, res) => {
       endDate,
       isCurrent: Boolean(isCurrent)
     });
-    res.json({ success: true, data: term });
+    res.status(201).json({ success: true, data: term });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.put("/terms/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const existing = db.getTermById(req.params.id, req.organization.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    const { name, startDate, endDate, isCurrent, academicYearId } = req.body;
+    if (academicYearId && !db.isAcademicYearInOrg(academicYearId, req.organization.id)) {
+      return res.status(400).json({ success: false, error: "INVALID_YEAR", message: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    const updated = db.updateTerm(req.params.id, req.organization.id, {
+      name: name ? String(name).trim() : void 0,
+      startDate,
+      endDate,
+      isCurrent: isCurrent !== void 0 ? Boolean(isCurrent) : void 0,
+      academicYearId
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.delete("/terms/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const success = db.deleteTerm(req.params.id, req.organization.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0628\u0646\u062C\u0627\u062D" });
   } catch {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
@@ -3395,7 +4300,18 @@ academicRouter.get("/grades", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-academicRouter.post("/grades", requireRoles(["ORG_ADMIN"]), (req, res) => {
+academicRouter.get("/grades/:id", (req, res) => {
+  try {
+    const grade = db.getGradeLevelById(req.params.id, req.organization.id);
+    if (!grade) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    res.json({ success: true, data: grade });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.post("/grades", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
   try {
     const { name, sequenceOrder } = req.body;
     if (!name) return res.status(400).json({ success: false, error: "NAME_REQUIRED", message: "\u0627\u0633\u0645 \u0627\u0644\u0645\u0631\u062D\u0644\u0629/\u0627\u0644\u0635\u0641 \u0645\u0637\u0644\u0648\u0628" });
@@ -3404,7 +4320,34 @@ academicRouter.post("/grades", requireRoles(["ORG_ADMIN"]), (req, res) => {
       name: String(name).trim(),
       sequenceOrder: Number(sequenceOrder) || 1
     });
-    res.json({ success: true, data: grade });
+    res.status(201).json({ success: true, data: grade });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.put("/grades/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const existing = db.getGradeLevelById(req.params.id, req.organization.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    const { name, sequenceOrder } = req.body;
+    const updated = db.updateGradeLevel(req.params.id, req.organization.id, {
+      name: name ? String(name).trim() : void 0,
+      sequenceOrder: sequenceOrder !== void 0 ? Number(sequenceOrder) : void 0
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.delete("/grades/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const success = db.deleteGradeLevel(req.params.id, req.organization.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u0628\u0646\u062C\u0627\u062D" });
   } catch {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
@@ -3418,10 +4361,23 @@ academicRouter.get("/classrooms", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-academicRouter.post("/classrooms", requireRoles(["ORG_ADMIN"]), (req, res) => {
+academicRouter.get("/classrooms/:id", (req, res) => {
+  try {
+    const classroom = db.getClassroomById(req.params.id, req.organization.id);
+    if (!classroom) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    res.json({ success: true, data: classroom });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.post("/classrooms", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
   try {
     const { gradeLevelId, name, capacity } = req.body;
-    if (!gradeLevelId || !name) return res.status(400).json({ success: false, error: "MISSING_FIELDS", message: "\u0627\u0644\u0635\u0641 \u0648\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0645\u0637\u0644\u0648\u0628\u0629" });
+    if (!gradeLevelId || !name) {
+      return res.status(400).json({ success: false, error: "MISSING_FIELDS", message: "\u0627\u0644\u0635\u0641 \u0648\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0645\u0637\u0644\u0648\u0628\u0629" });
+    }
     if (!db.isGradeLevelInOrg(gradeLevelId, req.organization.id)) {
       return res.status(400).json({ success: false, error: "INVALID_GRADE_LEVEL", message: "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
     }
@@ -3431,7 +4387,38 @@ academicRouter.post("/classrooms", requireRoles(["ORG_ADMIN"]), (req, res) => {
       name: String(name).trim(),
       capacity: capacity ? Number(capacity) : void 0
     });
-    res.json({ success: true, data: classroom });
+    res.status(201).json({ success: true, data: classroom });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.put("/classrooms/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const existing = db.getClassroomById(req.params.id, req.organization.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    const { name, gradeLevelId, capacity } = req.body;
+    if (gradeLevelId && !db.isGradeLevelInOrg(gradeLevelId, req.organization.id)) {
+      return res.status(400).json({ success: false, error: "INVALID_GRADE_LEVEL", message: "\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    const updated = db.updateClassroom(req.params.id, req.organization.id, {
+      name: name ? String(name).trim() : void 0,
+      gradeLevelId,
+      capacity: capacity !== void 0 ? Number(capacity) : void 0
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.delete("/classrooms/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const success = db.deleteClassroom(req.params.id, req.organization.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0634\u0639\u0628\u0629 \u0628\u0646\u062C\u0627\u062D" });
   } catch {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
@@ -3444,10 +4431,23 @@ academicRouter.get("/subjects", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-academicRouter.post("/subjects", requireRoles(["ORG_ADMIN"]), (req, res) => {
+academicRouter.get("/subjects/:id", (req, res) => {
+  try {
+    const subject = db.getSubjectById(req.params.id, req.organization.id);
+    if (!subject) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0645\u0627\u062F\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    res.json({ success: true, data: subject });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.post("/subjects", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
   try {
     const { name, code, color, description } = req.body;
-    if (!name || !code) return res.status(400).json({ success: false, error: "NAME_AND_CODE_REQUIRED", message: "\u0627\u0633\u0645 \u0627\u0644\u0645\u0627\u062F\u0629 \u0648\u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u062A\u0639\u0631\u064A\u0641\u064A \u0645\u0637\u0644\u0648\u0628\u064A\u0646" });
+    if (!name || !code) {
+      return res.status(400).json({ success: false, error: "NAME_AND_CODE_REQUIRED", message: "\u0627\u0633\u0645 \u0627\u0644\u0645\u0627\u062F\u0629 \u0648\u0627\u0644\u0631\u0645\u0632 \u0627\u0644\u062A\u0639\u0631\u064A\u0641\u064A \u0645\u0637\u0644\u0648\u0628\u064A\u0646" });
+    }
     const subject = db.createSubject({
       organizationId: req.organization.id,
       name: String(name).trim(),
@@ -3455,7 +4455,293 @@ academicRouter.post("/subjects", requireRoles(["ORG_ADMIN"]), (req, res) => {
       color: color || "#10b981",
       description: description ? String(description).trim() : void 0
     });
-    res.json({ success: true, data: subject });
+    res.status(201).json({ success: true, data: subject });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.put("/subjects/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const existing = db.getSubjectById(req.params.id, req.organization.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0645\u0627\u062F\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    const { name, code, color, description } = req.body;
+    const updated = db.updateSubject(req.params.id, req.organization.id, {
+      name: name ? String(name).trim() : void 0,
+      code: code ? String(code).trim().toUpperCase() : void 0,
+      color,
+      description: description !== void 0 ? String(description).trim() : void 0
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.delete("/subjects/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const success = db.deleteSubject(req.params.id, req.organization.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0645\u0627\u062F\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0645\u0627\u062F\u0629 \u0628\u0646\u062C\u0627\u062D" });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.get("/teacher-assignments", (req, res) => {
+  try {
+    const { role, id: userId } = req.user;
+    const orgId = req.organization.id;
+    const { teacherId, classroomId, courseId, academicYearId, subjectId } = req.query;
+    let filterTeacher = teacherId;
+    if (role === "TEACHER") {
+      filterTeacher = userId;
+    }
+    const assignments = db.getTeacherAssignments(orgId, {
+      teacherId: filterTeacher,
+      classroomId,
+      courseId,
+      academicYearId,
+      subjectId
+    });
+    res.json({ success: true, data: assignments });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.post("/teacher-assignments", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const { teacherId, subjectId, classroomId, courseId, academicYearId, role, weeklyHours, status } = req.body;
+    if (!teacherId || !subjectId || !classroomId) {
+      return res.status(400).json({
+        success: false,
+        error: "MISSING_FIELDS",
+        message: "\u0627\u0644\u0645\u0639\u0644\u0645 \u0648\u0627\u0644\u0645\u0627\u062F\u0629 \u0648\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u0645\u0637\u0644\u0648\u0628\u0629"
+      });
+    }
+    const orgId = req.organization.id;
+    const teacher = db.getUserById(teacherId, orgId);
+    if (!teacher || teacher.role !== "TEACHER" && teacher.role !== "ORG_ADMIN") {
+      return res.status(400).json({ success: false, error: "INVALID_TEACHER", message: "\u0627\u0644\u0645\u0639\u0644\u0645 \u0627\u0644\u0645\u062D\u062F\u062F \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    if (!db.isSubjectInOrg(subjectId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_SUBJECT", message: "\u0627\u0644\u0645\u0627\u062F\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    if (!db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    const assignment = db.createTeacherAssignment({
+      organizationId: orgId,
+      teacherId,
+      subjectId,
+      classroomId,
+      courseId: courseId || void 0,
+      academicYearId: academicYearId || void 0,
+      role: role || "PRIMARY_TEACHER",
+      weeklyHours: weeklyHours ? Number(weeklyHours) : 4,
+      status: status || "ACTIVE"
+    });
+    res.status(201).json({ success: true, data: assignment });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.put("/teacher-assignments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const existing = db.getTeacherAssignmentById(req.params.id, req.organization.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u062A\u0643\u0644\u064A\u0641 \u0627\u0644\u0645\u0639\u0644\u0645 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    const { teacherId, subjectId, classroomId, role, weeklyHours, status, courseId, academicYearId } = req.body;
+    const orgId = req.organization.id;
+    if (teacherId) {
+      const teacher = db.getUserById(teacherId, orgId);
+      if (!teacher) return res.status(400).json({ success: false, error: "INVALID_TEACHER", message: "\u0627\u0644\u0645\u0639\u0644\u0645 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D" });
+    }
+    if (subjectId && !db.isSubjectInOrg(subjectId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_SUBJECT", message: "\u0627\u0644\u0645\u0627\u062F\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    if (classroomId && !db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    const updated = db.updateTeacherAssignment(req.params.id, orgId, {
+      teacherId,
+      subjectId,
+      classroomId,
+      courseId,
+      academicYearId,
+      role,
+      weeklyHours: weeklyHours !== void 0 ? Number(weeklyHours) : void 0,
+      status
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.delete("/teacher-assignments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const success = db.deleteTeacherAssignment(req.params.id, req.organization.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u062A\u0643\u0644\u064A\u0641 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u062A\u0643\u0644\u064A\u0641 \u0627\u0644\u0645\u0639\u0644\u0645 \u0628\u0646\u062C\u0627\u062D" });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.get("/enrollments", (req, res) => {
+  try {
+    const { role, id: userId, classroomId: userClassroomId } = req.user;
+    const orgId = req.organization.id;
+    const { classroomId, studentId, academicYearId, status } = req.query;
+    let filterStudent = studentId;
+    let filterClassroom = classroomId;
+    if (role === "STUDENT") {
+      filterStudent = userId;
+    } else if (role === "PARENT") {
+      const links = db.getParentStudentLinks(orgId, { parentId: userId });
+      const childIds = new Set(links.map((l) => l.studentId));
+      if (studentId && !childIds.has(studentId)) {
+        return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u0644\u0627 \u062A\u0645\u0644\u0643 \u0635\u0644\u0627\u062D\u064A\u0629 \u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0647\u0630\u0627 \u0627\u0644\u0637\u0627\u0644\u0628" });
+      }
+    }
+    const enrollments = db.getStudentEnrollments(orgId, {
+      classroomId: filterClassroom,
+      studentId: filterStudent,
+      academicYearId,
+      status
+    });
+    res.json({ success: true, data: enrollments });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.post("/enrollments", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const { studentId, classroomId, academicYearId, rollNumber, status } = req.body;
+    if (!studentId || !classroomId || !academicYearId) {
+      return res.status(400).json({
+        success: false,
+        error: "MISSING_FIELDS",
+        message: "\u0627\u0644\u0637\u0627\u0644\u0628 \u0648\u0627\u0644\u0634\u0639\u0628\u0629 \u0648\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0645\u0637\u0644\u0648\u0628\u0629 \u0644\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u0637\u0627\u0644\u0628"
+      });
+    }
+    const orgId = req.organization.id;
+    const student = db.getUserById(studentId, orgId);
+    if (!student || student.role !== "STUDENT") {
+      return res.status(400).json({ success: false, error: "INVALID_STUDENT", message: "\u0627\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F \u0623\u0648 \u0646\u0648\u0639 \u0627\u0644\u062D\u0633\u0627\u0628 \u063A\u064A\u0631 \u0635\u062D\u064A\u062D" });
+    }
+    if (!db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    if (!db.isAcademicYearInOrg(academicYearId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_YEAR", message: "\u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    const existing = db.getStudentEnrollments(orgId, { studentId, academicYearId });
+    if (existing.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: "DUPLICATE_ENROLLMENT",
+        message: "\u0627\u0644\u0637\u0627\u0644\u0628 \u0645\u0633\u062C\u0644 \u0628\u0627\u0644\u0641\u0639\u0644 \u0641\u064A \u0647\u0630\u0647 \u0627\u0644\u0633\u0646\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629",
+        data: existing[0]
+      });
+    }
+    const enrollment = db.createStudentEnrollment({
+      organizationId: orgId,
+      studentId,
+      classroomId,
+      academicYearId,
+      rollNumber: rollNumber ? String(rollNumber).trim() : void 0,
+      status: status || "ACTIVE"
+    });
+    res.status(201).json({ success: true, data: enrollment });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.put("/enrollments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const existing = db.getStudentEnrollmentById(req.params.id, req.organization.id);
+    if (!existing) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    const { classroomId, rollNumber, status } = req.body;
+    const orgId = req.organization.id;
+    if (classroomId && !db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    const updated = db.updateStudentEnrollment(req.params.id, orgId, {
+      classroomId,
+      rollNumber: rollNumber !== void 0 ? String(rollNumber).trim() : void 0,
+      status
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.delete("/enrollments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const success = db.deleteStudentEnrollment(req.params.id, req.organization.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    res.json({ success: true, message: "\u062A\u0645 \u0625\u0644\u063A\u0627\u0621 \u0642\u064A\u062F \u0627\u0644\u0637\u0627\u0644\u0628 \u0628\u0646\u062C\u0627\u062D" });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.get("/parent-links", (req, res) => {
+  try {
+    const { role, id: userId } = req.user;
+    const orgId = req.organization.id;
+    const { parentId, studentId } = req.query;
+    let filterParent = parentId;
+    if (role === "PARENT") {
+      filterParent = userId;
+    }
+    const links = db.getParentStudentLinks(orgId, { parentId: filterParent, studentId });
+    res.json({ success: true, data: links });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.post("/parent-links", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const { parentId, studentId, relationship, isEmergencyContact } = req.body;
+    if (!parentId || !studentId) {
+      return res.status(400).json({ success: false, error: "MISSING_FIELDS", message: "\u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631 \u0648\u0627\u0644\u0637\u0627\u0644\u0628 \u0645\u0637\u0644\u0648\u0628\u064A\u0646" });
+    }
+    const orgId = req.organization.id;
+    const parent = db.getUserById(parentId, orgId);
+    const student = db.getUserById(studentId, orgId);
+    if (!parent || parent.role !== "PARENT") {
+      return res.status(400).json({ success: false, error: "INVALID_PARENT", message: "\u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F \u0623\u0648 \u0627\u0644\u062F\u0648\u0631 \u063A\u064A\u0631 \u0635\u062D\u064A\u062D" });
+    }
+    if (!student || student.role !== "STUDENT") {
+      return res.status(400).json({ success: false, error: "INVALID_STUDENT", message: "\u0627\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F \u0623\u0648 \u0627\u0644\u062F\u0648\u0631 \u063A\u064A\u0631 \u0635\u062D\u064A\u062D" });
+    }
+    const link = db.createParentStudentLink({
+      organizationId: orgId,
+      parentId,
+      studentId,
+      relationship: relationship || "FATHER",
+      isEmergencyContact: isEmergencyContact !== void 0 ? Boolean(isEmergencyContact) : true
+    });
+    res.status(201).json({ success: true, data: link });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+academicRouter.delete("/parent-links/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const success = db.deleteParentStudentLink(req.params.id, req.organization.id);
+    if (!success) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u0631\u0627\u0628\u0637 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    res.json({ success: true, message: "\u062A\u0645 \u0641\u0643 \u0627\u0631\u062A\u0628\u0627\u0637 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631 \u0628\u0627\u0644\u0637\u0627\u0644\u0628" });
   } catch {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
@@ -3867,6 +5153,63 @@ courseRouter.post("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (r
       teacherId: assignedTeacherId
     });
     res.json({ success: true, data: course });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+courseRouter.put("/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const course = db.getCourseById(req.params.id, orgId);
+    if (!course) {
+      return res.status(404).json({ success: false, error: "COURSE_NOT_FOUND", message: "\u0627\u0644\u0645\u0642\u0631\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    if (req.user.role === "TEACHER" && course.teacherId !== req.user.id) {
+      return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u0644\u0627 \u062A\u0645\u0644\u0643 \u0635\u0644\u0627\u062D\u064A\u0629 \u062A\u0639\u062F\u064A\u0644 \u0647\u0630\u0627 \u0627\u0644\u0645\u0642\u0631\u0631" });
+    }
+    const { title, description, subjectId, classroomId, termId, teacherId } = req.body;
+    if (subjectId && !db.isSubjectInOrg(subjectId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_SUBJECT", message: "\u0627\u0644\u0645\u0627\u062F\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    if (termId && !db.isTermInOrg(termId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_TERM", message: "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u063A\u064A\u0631 \u0635\u0627\u0644\u062D" });
+    }
+    if (classroomId && !db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    let finalTeacherId = course.teacherId;
+    if ((req.user.role === "ORG_ADMIN" || req.user.role === "SUPER_ADMIN") && teacherId) {
+      const t = db.getUserById(teacherId, orgId);
+      if (!t) {
+        return res.status(400).json({ success: false, error: "INVALID_TEACHER", message: "\u0627\u0644\u0645\u0639\u0644\u0645 \u0627\u0644\u0645\u062D\u062F\u062F \u063A\u064A\u0631 \u0635\u0627\u0644\u062D" });
+      }
+      finalTeacherId = t.id;
+    }
+    const updated = db.updateCourse(req.params.id, orgId, {
+      title: title ? String(title).trim() : void 0,
+      description: description !== void 0 ? String(description).trim() : void 0,
+      subjectId,
+      classroomId,
+      termId,
+      teacherId: finalTeacherId
+    });
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+courseRouter.delete("/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const course = db.getCourseById(req.params.id, orgId);
+    if (!course) {
+      return res.status(404).json({ success: false, error: "COURSE_NOT_FOUND", message: "\u0627\u0644\u0645\u0642\u0631\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    const success = db.deleteCourse(req.params.id, orgId);
+    if (!success) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0641\u0634\u0644 \u062D\u0630\u0641 \u0627\u0644\u0645\u0642\u0631\u0631" });
+    }
+    res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0645\u0642\u0631\u0631 \u0628\u0646\u062C\u0627\u062D" });
   } catch {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
@@ -5557,8 +6900,707 @@ aiRouter.post(
   }
 );
 
+// server/platform/routes/studentRoutes.ts
+import express11 from "express";
+var studentRouter = express11.Router();
+studentRouter.use(requireAuth);
+var DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+var VALID_LIFECYCLE_STATUSES = [
+  "ACTIVE",
+  "PROBATION",
+  "SUSPENDED",
+  "WITHDRAWN",
+  "TRANSFERRED",
+  "GRADUATED"
+];
+var VALID_GENDERS = ["MALE", "FEMALE"];
+var VALID_BLOOD_TYPES = [
+  "A+",
+  "A-",
+  "B+",
+  "B-",
+  "AB+",
+  "AB-",
+  "O+",
+  "O-",
+  "UNKNOWN"
+];
+var VALID_BEHAVIOR_TYPES = [
+  "POSITIVE_PRAISE",
+  "MERIT",
+  "MINOR_INFRACTION",
+  "MAJOR_INFRACTION",
+  "COUNSELING_REFERRAL",
+  "SUSPENSION_NOTICE"
+];
+function canAccessStudent(req, studentId) {
+  if (!req.user || !req.organization) return false;
+  if (["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"].includes(req.user.role)) return true;
+  if (req.user.role === "STUDENT" && req.user.id === studentId) return true;
+  if (req.user.role === "PARENT") {
+    const links = db.getParentStudentLinks(req.organization.id, {
+      parentId: req.user.id,
+      studentId
+    });
+    return links.length > 0;
+  }
+  return false;
+}
+studentRouter.get(
+  "/",
+  requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]),
+  (req, res) => {
+    try {
+      const orgId = req.organization.id;
+      const classroomId = req.query.classroomId;
+      const gradeLevelId = req.query.gradeLevelId;
+      const status = req.query.status;
+      const search = req.query.search?.toLowerCase().trim();
+      let studentUsers = db.getUsersByOrg(orgId, "STUDENT");
+      if (classroomId) {
+        studentUsers = studentUsers.filter((s) => s.classroomId === classroomId);
+      }
+      const allRecords = db.getStudentRecords(orgId);
+      const recordsMap = new Map(allRecords.map((r) => [r.studentId, r]));
+      const allEnrollments = db.getStudentEnrollments(orgId);
+      const enrollmentsByStudent = /* @__PURE__ */ new Map();
+      for (const enr of allEnrollments) {
+        const list = enrollmentsByStudent.get(enr.studentId) || [];
+        list.push(enr);
+        enrollmentsByStudent.set(enr.studentId, list);
+      }
+      const allBehaviors = db.getStudentBehaviorRecords(orgId);
+      const pointsByStudent = /* @__PURE__ */ new Map();
+      for (const beh of allBehaviors) {
+        const cur = pointsByStudent.get(beh.studentId) || 0;
+        pointsByStudent.set(beh.studentId, cur + (beh.points || 0));
+      }
+      let results = studentUsers.map((u) => {
+        const rec = recordsMap.get(u.id);
+        const enrollments = enrollmentsByStudent.get(u.id) || [];
+        const activeEnrollment = enrollments.find((e) => e.status === "ACTIVE") || enrollments[0];
+        const classroom = u.classroomId ? db.getClassroomById(u.classroomId, orgId) : void 0;
+        const gradeLevel = classroom ? db.getGradeLevelById(classroom.gradeLevelId, orgId) : void 0;
+        return {
+          id: u.id,
+          studentUserId: u.id,
+          email: u.email,
+          fullName: u.fullName,
+          studentIdNumber: u.studentIdNumber,
+          phone: u.phone,
+          avatarUrl: u.avatarUrl,
+          isActive: u.isActive,
+          classroomId: u.classroomId,
+          classroomName: classroom?.name || activeEnrollment?.classroomName,
+          gradeLevelId: classroom?.gradeLevelId || activeEnrollment?.gradeLevelId,
+          gradeLevelName: gradeLevel?.name || activeEnrollment?.gradeLevelName,
+          record: rec,
+          status: rec?.status || (u.isActive ? "ACTIVE" : "WITHDRAWN"),
+          nationalId: rec?.nationalId,
+          dateOfBirth: rec?.dateOfBirth,
+          gender: rec?.gender,
+          bloodType: rec?.bloodType,
+          emergencyContactName: rec?.emergencyContactName,
+          emergencyContactPhone: rec?.emergencyContactPhone,
+          giftedProgram: rec?.giftedProgram || false,
+          behaviorPoints: pointsByStudent.get(u.id) || 0,
+          createdAt: u.createdAt
+        };
+      });
+      if (gradeLevelId) {
+        results = results.filter((s) => s.gradeLevelId === gradeLevelId);
+      }
+      if (status) {
+        results = results.filter((s) => s.status === status);
+      }
+      if (search) {
+        results = results.filter(
+          (s) => s.fullName.toLowerCase().includes(search) || s.email.toLowerCase().includes(search) || s.studentIdNumber && s.studentIdNumber.toLowerCase().includes(search) || s.nationalId && s.nationalId.toLowerCase().includes(search)
+        );
+      }
+      res.json({
+        success: true,
+        data: results
+      });
+    } catch {
+      res.status(500).json({ success: false, error: "SERVER_ERROR" });
+    }
+  }
+);
+studentRouter.get("/:studentId", (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const orgId = req.organization.id;
+    if (!canAccessStudent(req, studentId)) {
+      return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0647\u0630\u0627 \u0627\u0644\u0633\u062C\u0644" });
+    }
+    const studentUser = db.getUserById(studentId, orgId);
+    if (!studentUser || studentUser.role !== "STUDENT") {
+      return res.status(404).json({ success: false, error: "STUDENT_NOT_FOUND", message: "\u0627\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    const record = db.getStudentRecordByStudentId(studentId, orgId);
+    const enrollments = db.getStudentEnrollments(orgId, { studentId });
+    const parents = db.getParentStudentLinks(orgId, { studentId });
+    res.json({
+      success: true,
+      data: {
+        student: studentUser,
+        record,
+        enrollments,
+        parents
+      }
+    });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+studentRouter.get("/:studentId/dossier", (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const orgId = req.organization.id;
+    if (!canAccessStudent(req, studentId)) {
+      return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u0641" });
+    }
+    const dossier = db.getStudentDossier(studentId, orgId);
+    if (!dossier) {
+      return res.status(404).json({ success: false, error: "STUDENT_NOT_FOUND", message: "\u0627\u0644\u0645\u0644\u0641 \u0627\u0644\u0634\u0627\u0645\u0644 \u0644\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    res.json({
+      success: true,
+      data: dossier
+    });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+studentRouter.post(
+  "/",
+  requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]),
+  (req, res) => {
+    try {
+      const orgId = req.organization.id;
+      const {
+        email,
+        fullName,
+        nationalId,
+        dateOfBirth,
+        gender,
+        emergencyContactName,
+        emergencyContactPhone,
+        emergencyContactRelationship,
+        studentIdNumber,
+        phone,
+        bloodType,
+        nationality,
+        admissionDate,
+        medicalConditions,
+        allergies,
+        specialDietaryNeeds,
+        previousSchool,
+        specialNeedsNotes,
+        giftedProgram,
+        classroomId,
+        academicYearId
+      } = req.body;
+      if (!email || !fullName || !nationalId || !dateOfBirth || !gender || !emergencyContactName || !emergencyContactPhone) {
+        return res.status(400).json({
+          success: false,
+          error: "MISSING_FIELDS",
+          message: "\u0627\u0644\u0628\u064A\u0627\u0646\u0627\u062A \u0627\u0644\u0623\u0633\u0627\u0633\u064A\u0629 (\u0627\u0644\u0627\u0633\u0645\u060C \u0627\u0644\u0628\u0631\u064A\u062F\u060C \u0627\u0644\u0647\u0648\u064A\u0629\u060C \u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0645\u064A\u0644\u0627\u062F\u060C \u0627\u0644\u062C\u0646\u0633\u060C \u062C\u0647\u0629 \u0627\u0644\u0627\u062A\u0635\u0627\u0644 \u0644\u0644\u0637\u0648\u0627\u0631\u0626) \u0625\u0644\u0632\u0627\u0645\u064A\u0629"
+        });
+      }
+      const normalizedEmail = sanitizeString(email).toLowerCase();
+      if (!isValidEmail(normalizedEmail)) {
+        return res.status(400).json({ success: false, error: "INVALID_EMAIL", message: "\u0635\u064A\u063A\u0629 \u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u063A\u064A\u0631 \u0635\u062D\u064A\u062D\u0629" });
+      }
+      if (db.findUserByEmail(normalizedEmail, orgId)) {
+        return res.status(400).json({ success: false, error: "EMAIL_EXISTS", message: "\u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0645\u0633\u062C\u0644 \u0645\u0633\u0628\u0642\u0627\u064B \u0641\u064A \u0647\u0630\u0647 \u0627\u0644\u0645\u062F\u0631\u0633\u0629" });
+      }
+      const cleanNationalId = sanitizeString(nationalId).trim();
+      if (!cleanNationalId) {
+        return res.status(400).json({ success: false, error: "INVALID_NATIONAL_ID", message: "\u0631\u0642\u0645 \u0627\u0644\u0647\u0648\u064A\u0629 \u0627\u0644\u0648\u0637\u0646\u064A\u0629 \u0623\u0648 \u0627\u0644\u0625\u0642\u0627\u0645\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D" });
+      }
+      if (db.getStudentRecordByNationalId(cleanNationalId, orgId)) {
+        return res.status(400).json({ success: false, error: "NATIONAL_ID_EXISTS", message: "\u0631\u0642\u0645 \u0627\u0644\u0647\u0648\u064A\u0629 \u0627\u0644\u0648\u0637\u0646\u064A\u0629 \u0645\u0633\u062C\u0644 \u0645\u0633\u0628\u0642\u0627\u064B \u0644\u0637\u0627\u0644\u0628 \u0622\u062E\u0631" });
+      }
+      if (!DATE_REGEX.test(dateOfBirth)) {
+        return res.status(400).json({ success: false, error: "INVALID_DOB", message: "\u0635\u064A\u063A\u0629 \u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0645\u064A\u0644\u0627\u062F \u064A\u062C\u0628 \u0623\u0646 \u062A\u0643\u0648\u0646 YYYY-MM-DD" });
+      }
+      if (!VALID_GENDERS.includes(gender)) {
+        return res.status(400).json({ success: false, error: "INVALID_GENDER", message: "\u0627\u0644\u062C\u0646\u0633 \u0627\u0644\u0645\u062D\u062F\u062F \u063A\u064A\u0631 \u0635\u0627\u0644\u062D" });
+      }
+      if (bloodType && !VALID_BLOOD_TYPES.includes(bloodType)) {
+        return res.status(400).json({ success: false, error: "INVALID_BLOOD_TYPE", message: "\u0641\u0635\u064A\u0644\u0629 \u0627\u0644\u062F\u0645 \u0627\u0644\u0645\u062D\u062F\u062F\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+      }
+      if (classroomId && !db.getClassroomById(classroomId, orgId)) {
+        return res.status(400).json({ success: false, error: "INVALID_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+      }
+      const autoStdId = studentIdNumber ? sanitizeString(studentIdNumber) : `STD-${(/* @__PURE__ */ new Date()).getFullYear()}-${Math.floor(1e3 + Math.random() * 9e3)}`;
+      const studentUser = db.createUser({
+        organizationId: orgId,
+        email: normalizedEmail,
+        fullName: sanitizeString(fullName),
+        role: "STUDENT",
+        phone: phone ? sanitizeString(phone) : void 0,
+        studentIdNumber: autoStdId,
+        classroomId: classroomId || void 0,
+        isActive: true
+      });
+      const admission = admissionDate && DATE_REGEX.test(admissionDate) ? admissionDate : (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      const record = db.createStudentRecord({
+        organizationId: orgId,
+        studentId: studentUser.id,
+        nationalId: cleanNationalId,
+        dateOfBirth,
+        gender,
+        bloodType: bloodType || "UNKNOWN",
+        nationality: nationality ? sanitizeString(nationality) : "\u0633\u0639\u0648\u062F\u064A",
+        admissionDate: admission,
+        status: "ACTIVE",
+        medicalConditions: medicalConditions ? sanitizeString(medicalConditions) : void 0,
+        allergies: allergies ? sanitizeString(allergies) : void 0,
+        specialDietaryNeeds: specialDietaryNeeds ? sanitizeString(specialDietaryNeeds) : void 0,
+        emergencyContactName: sanitizeString(emergencyContactName),
+        emergencyContactPhone: sanitizeString(emergencyContactPhone),
+        emergencyContactRelationship: emergencyContactRelationship ? sanitizeString(emergencyContactRelationship) : "GUARDIAN",
+        previousSchool: previousSchool ? sanitizeString(previousSchool) : void 0,
+        specialNeedsNotes: specialNeedsNotes ? sanitizeString(specialNeedsNotes) : void 0,
+        giftedProgram: Boolean(giftedProgram)
+      });
+      let enrollment;
+      if (classroomId) {
+        const currentYear = academicYearId ? db.getAcademicYearById(academicYearId, orgId) : db.getCurrentAcademicYear(orgId);
+        if (currentYear) {
+          enrollment = db.createStudentEnrollment({
+            organizationId: orgId,
+            studentId: studentUser.id,
+            classroomId,
+            academicYearId: currentYear.id,
+            status: "ACTIVE"
+          });
+        }
+      }
+      db.createStudentLifecycleEvent({
+        organizationId: orgId,
+        studentId: studentUser.id,
+        previousStatus: "ACTIVE",
+        newStatus: "ACTIVE",
+        reason: "\u062A\u0633\u062C\u064A\u0644 \u0648\u0642\u0628\u0648\u0644 \u062C\u062F\u064A\u062F \u0641\u064A \u0627\u0644\u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u062F\u0631\u0633\u064A (SIS)",
+        actionBy: req.user.id,
+        effectiveDate: admission
+      });
+      db.logAction(
+        orgId,
+        req.user.id,
+        req.user.email,
+        "CREATE_STUDENT_SIS_RECORD",
+        "StudentRecord",
+        record.id,
+        { studentId: studentUser.id, nationalId: cleanNationalId, fullName: studentUser.fullName },
+        req.ip
+      );
+      res.status(201).json({
+        success: true,
+        data: {
+          student: studentUser,
+          record,
+          enrollment
+        }
+      });
+    } catch {
+      res.status(500).json({ success: false, error: "SERVER_ERROR" });
+    }
+  }
+);
+studentRouter.put(
+  "/:studentId/profile",
+  requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]),
+  (req, res) => {
+    try {
+      const { studentId } = req.params;
+      const orgId = req.organization.id;
+      const studentUser = db.getUserById(studentId, orgId);
+      if (!studentUser || studentUser.role !== "STUDENT") {
+        return res.status(404).json({ success: false, error: "STUDENT_NOT_FOUND", message: "\u0627\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+      }
+      const {
+        fullName,
+        phone,
+        studentIdNumber,
+        nationalId,
+        dateOfBirth,
+        gender,
+        bloodType,
+        nationality,
+        emergencyContactName,
+        emergencyContactPhone,
+        emergencyContactRelationship,
+        medicalConditions,
+        allergies,
+        specialDietaryNeeds,
+        previousSchool,
+        specialNeedsNotes,
+        giftedProgram,
+        classroomId
+      } = req.body;
+      if (nationalId) {
+        const cleanNationalId = sanitizeString(nationalId).trim();
+        const existing = db.getStudentRecordByNationalId(cleanNationalId, orgId);
+        if (existing && existing.studentId !== studentId) {
+          return res.status(400).json({ success: false, error: "NATIONAL_ID_EXISTS", message: "\u0631\u0642\u0645 \u0627\u0644\u0647\u0648\u064A\u0629 \u0627\u0644\u0648\u0637\u0646\u064A\u0629 \u0645\u0633\u062A\u062E\u062F\u0645 \u0645\u0646 \u0642\u0628\u0644 \u0637\u0627\u0644\u0628 \u0622\u062E\u0631" });
+        }
+      }
+      const userUpdates = {};
+      if (fullName) userUpdates.fullName = sanitizeString(fullName);
+      if (phone !== void 0) userUpdates.phone = phone ? sanitizeString(phone) : void 0;
+      if (studentIdNumber) userUpdates.studentIdNumber = sanitizeString(studentIdNumber);
+      if (classroomId !== void 0) {
+        if (classroomId && !db.getClassroomById(classroomId, orgId)) {
+          return res.status(400).json({ success: false, error: "INVALID_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+        }
+        userUpdates.classroomId = classroomId || void 0;
+      }
+      if (Object.keys(userUpdates).length > 0) {
+        db.updateUser(studentId, orgId, userUpdates);
+      }
+      let record = db.getStudentRecordByStudentId(studentId, orgId);
+      if (!record) {
+        record = db.createStudentRecord({
+          organizationId: orgId,
+          studentId,
+          nationalId: nationalId ? sanitizeString(nationalId) : studentUser.studentIdNumber || "N/A",
+          dateOfBirth: dateOfBirth && DATE_REGEX.test(dateOfBirth) ? dateOfBirth : "2010-01-01",
+          gender: gender && VALID_GENDERS.includes(gender) ? gender : "MALE",
+          bloodType: bloodType && VALID_BLOOD_TYPES.includes(bloodType) ? bloodType : "UNKNOWN",
+          admissionDate: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
+          status: "ACTIVE",
+          emergencyContactName: emergencyContactName ? sanitizeString(emergencyContactName) : "\u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631",
+          emergencyContactPhone: emergencyContactPhone ? sanitizeString(emergencyContactPhone) : "+966500000000",
+          emergencyContactRelationship: emergencyContactRelationship ? sanitizeString(emergencyContactRelationship) : "GUARDIAN",
+          giftedProgram: Boolean(giftedProgram)
+        });
+      } else {
+        const recordUpdates = {};
+        if (nationalId) recordUpdates.nationalId = sanitizeString(nationalId);
+        if (dateOfBirth && DATE_REGEX.test(dateOfBirth)) recordUpdates.dateOfBirth = dateOfBirth;
+        if (gender && VALID_GENDERS.includes(gender)) recordUpdates.gender = gender;
+        if (bloodType && VALID_BLOOD_TYPES.includes(bloodType)) recordUpdates.bloodType = bloodType;
+        if (nationality !== void 0) recordUpdates.nationality = sanitizeString(nationality);
+        if (emergencyContactName) recordUpdates.emergencyContactName = sanitizeString(emergencyContactName);
+        if (emergencyContactPhone) recordUpdates.emergencyContactPhone = sanitizeString(emergencyContactPhone);
+        if (emergencyContactRelationship) recordUpdates.emergencyContactRelationship = sanitizeString(emergencyContactRelationship);
+        if (medicalConditions !== void 0) recordUpdates.medicalConditions = sanitizeString(medicalConditions);
+        if (allergies !== void 0) recordUpdates.allergies = sanitizeString(allergies);
+        if (specialDietaryNeeds !== void 0) recordUpdates.specialDietaryNeeds = sanitizeString(specialDietaryNeeds);
+        if (previousSchool !== void 0) recordUpdates.previousSchool = sanitizeString(previousSchool);
+        if (specialNeedsNotes !== void 0) recordUpdates.specialNeedsNotes = sanitizeString(specialNeedsNotes);
+        if (giftedProgram !== void 0) recordUpdates.giftedProgram = Boolean(giftedProgram);
+        record = db.updateStudentRecord(studentId, orgId, recordUpdates);
+      }
+      db.logAction(
+        orgId,
+        req.user.id,
+        req.user.email,
+        "UPDATE_STUDENT_PROFILE",
+        "StudentRecord",
+        record?.id || studentId,
+        { studentId },
+        req.ip
+      );
+      res.json({
+        success: true,
+        data: {
+          student: db.getUserById(studentId, orgId),
+          record
+        }
+      });
+    } catch {
+      res.status(500).json({ success: false, error: "SERVER_ERROR" });
+    }
+  }
+);
+studentRouter.post(
+  "/:studentId/status-transition",
+  requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]),
+  (req, res) => {
+    try {
+      const { studentId } = req.params;
+      const orgId = req.organization.id;
+      const { newStatus, reason, effectiveDate } = req.body;
+      if (!newStatus || !reason) {
+        return res.status(400).json({ success: false, error: "MISSING_FIELDS", message: "\u0627\u0644\u062D\u0627\u0644\u0629 \u0627\u0644\u062C\u062F\u064A\u062F\u0629 \u0648\u0633\u0628\u0628 \u0627\u0644\u062A\u063A\u064A\u064A\u0631 \u0625\u0644\u0632\u0627\u0645\u064A\u0627\u0646" });
+      }
+      if (!VALID_LIFECYCLE_STATUSES.includes(newStatus)) {
+        return res.status(400).json({ success: false, error: "INVALID_STATUS", message: "\u0627\u0644\u062D\u0627\u0644\u0629 \u0627\u0644\u0645\u062D\u062F\u062F\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+      }
+      const studentUser = db.getUserById(studentId, orgId);
+      if (!studentUser || studentUser.role !== "STUDENT") {
+        return res.status(404).json({ success: false, error: "STUDENT_NOT_FOUND", message: "\u0627\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+      }
+      let record = db.getStudentRecordByStudentId(studentId, orgId);
+      const previousStatus = record?.status || (studentUser.isActive ? "ACTIVE" : "WITHDRAWN");
+      const effDate = effectiveDate && DATE_REGEX.test(effectiveDate) ? effectiveDate : (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      if (!record) {
+        record = db.createStudentRecord({
+          organizationId: orgId,
+          studentId,
+          nationalId: studentUser.studentIdNumber || "N/A",
+          dateOfBirth: "2010-01-01",
+          gender: "MALE",
+          admissionDate: effDate,
+          status: newStatus,
+          statusReason: sanitizeString(reason),
+          emergencyContactName: "\u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631",
+          emergencyContactPhone: "+966500000000",
+          emergencyContactRelationship: "GUARDIAN",
+          giftedProgram: false
+        });
+      } else {
+        record = db.updateStudentRecord(studentId, orgId, {
+          status: newStatus,
+          statusReason: sanitizeString(reason),
+          graduationDate: newStatus === "GRADUATED" ? effDate : record.graduationDate
+        });
+      }
+      const isStillActive = newStatus === "ACTIVE" || newStatus === "PROBATION";
+      db.updateUser(studentId, orgId, { isActive: isStillActive });
+      if (!isStillActive) {
+        const enrollments = db.getStudentEnrollments(orgId, { studentId, status: "ACTIVE" });
+        for (const enr of enrollments) {
+          db.updateStudentEnrollment(enr.id, orgId, {
+            status: newStatus === "GRADUATED" ? "GRADUATED" : newStatus === "TRANSFERRED" ? "TRANSFERRED" : "SUSPENDED"
+          });
+        }
+      }
+      const event = db.createStudentLifecycleEvent({
+        organizationId: orgId,
+        studentId,
+        previousStatus,
+        newStatus,
+        reason: sanitizeString(reason),
+        actionBy: req.user.id,
+        effectiveDate: effDate
+      });
+      db.logAction(
+        orgId,
+        req.user.id,
+        req.user.email,
+        "STUDENT_LIFECYCLE_TRANSITION",
+        "StudentRecord",
+        record?.id || studentId,
+        { studentId, previousStatus, newStatus, reason },
+        req.ip
+      );
+      res.json({
+        success: true,
+        data: {
+          record,
+          event
+        }
+      });
+    } catch {
+      res.status(500).json({ success: false, error: "SERVER_ERROR" });
+    }
+  }
+);
+studentRouter.get("/:studentId/behavior", (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const orgId = req.organization.id;
+    if (!canAccessStudent(req, studentId)) {
+      return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0633\u062C\u0644 \u0627\u0644\u0633\u0644\u0648\u0643" });
+    }
+    const records = db.getStudentBehaviorRecords(orgId, { studentId });
+    res.json({
+      success: true,
+      data: records
+    });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+studentRouter.post(
+  "/:studentId/behavior",
+  requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]),
+  (req, res) => {
+    try {
+      const { studentId } = req.params;
+      const orgId = req.organization.id;
+      const { type, title, description, points, actionTaken, incidentDate } = req.body;
+      if (!type || !title || !description) {
+        return res.status(400).json({ success: false, error: "MISSING_FIELDS", message: "\u0627\u0644\u0646\u0648\u0639 \u0648\u0627\u0644\u0639\u0646\u0648\u0627\u0646 \u0648\u0627\u0644\u0648\u0635\u0641 \u062D\u0642\u0648\u0644 \u0625\u0644\u0632\u0627\u0645\u064A\u0629" });
+      }
+      if (!VALID_BEHAVIOR_TYPES.includes(type)) {
+        return res.status(400).json({ success: false, error: "INVALID_TYPE", message: "\u0646\u0648\u0639 \u0627\u0644\u0633\u062C\u0644 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D" });
+      }
+      const studentUser = db.getUserById(studentId, orgId);
+      if (!studentUser || studentUser.role !== "STUDENT") {
+        return res.status(404).json({ success: false, error: "STUDENT_NOT_FOUND", message: "\u0627\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+      }
+      const incDate = incidentDate && DATE_REGEX.test(incidentDate) ? incidentDate : (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      const behavior = db.createStudentBehaviorRecord({
+        organizationId: orgId,
+        studentId,
+        type,
+        title: sanitizeString(title),
+        description: sanitizeString(description),
+        points: typeof points === "number" ? points : 0,
+        actionTaken: actionTaken ? sanitizeString(actionTaken) : void 0,
+        incidentDate: incDate,
+        recordedBy: req.user.id,
+        status: "OPEN"
+      });
+      db.logAction(
+        orgId,
+        req.user.id,
+        req.user.email,
+        "LOG_STUDENT_BEHAVIOR",
+        "StudentBehaviorRecord",
+        behavior.id,
+        { studentId, type, points },
+        req.ip
+      );
+      res.status(201).json({
+        success: true,
+        data: behavior
+      });
+    } catch {
+      res.status(500).json({ success: false, error: "SERVER_ERROR" });
+    }
+  }
+);
+studentRouter.put(
+  "/behavior/:behaviorId",
+  requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]),
+  (req, res) => {
+    try {
+      const { behaviorId } = req.params;
+      const orgId = req.organization.id;
+      const { status, actionTaken } = req.body;
+      const existing = db.getStudentBehaviorRecordById(behaviorId, orgId);
+      if (!existing) {
+        return res.status(404).json({ success: false, error: "RECORD_NOT_FOUND", message: "\u0627\u0644\u0633\u062C\u0644 \u0627\u0644\u0633\u0644\u0648\u0643\u064A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+      }
+      const updates = {};
+      if (status && ["OPEN", "RESOLVED", "UNDER_REVIEW"].includes(status)) {
+        updates.status = status;
+      }
+      if (actionTaken !== void 0) {
+        updates.actionTaken = sanitizeString(actionTaken);
+      }
+      const updated = db.updateStudentBehaviorRecord(behaviorId, orgId, updates);
+      res.json({
+        success: true,
+        data: updated
+      });
+    } catch {
+      res.status(500).json({ success: false, error: "SERVER_ERROR" });
+    }
+  }
+);
+studentRouter.delete(
+  "/behavior/:behaviorId",
+  requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]),
+  (req, res) => {
+    try {
+      const { behaviorId } = req.params;
+      const orgId = req.organization.id;
+      const existing = db.getStudentBehaviorRecordById(behaviorId, orgId);
+      if (!existing) {
+        return res.status(404).json({ success: false, error: "RECORD_NOT_FOUND", message: "\u0627\u0644\u0633\u062C\u0644 \u0627\u0644\u0633\u0644\u0648\u0643\u064A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+      }
+      db.deleteStudentBehaviorRecord(behaviorId, orgId);
+      res.json({
+        success: true,
+        message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0633\u062C\u0644 \u0627\u0644\u0633\u0644\u0648\u0643\u064A \u0628\u0646\u062C\u0627\u062D"
+      });
+    } catch {
+      res.status(500).json({ success: false, error: "SERVER_ERROR" });
+    }
+  }
+);
+studentRouter.post(
+  "/promote-batch",
+  requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]),
+  (req, res) => {
+    try {
+      const orgId = req.organization.id;
+      const { studentIds, targetClassroomId, targetAcademicYearId, reason } = req.body;
+      if (!Array.isArray(studentIds) || studentIds.length === 0 || !targetClassroomId || !targetAcademicYearId) {
+        return res.status(400).json({
+          success: false,
+          error: "MISSING_FIELDS",
+          message: "\u064A\u062C\u0628 \u062A\u062D\u062F\u064A\u062F \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0637\u0644\u0627\u0628\u060C \u0648\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u0645\u0633\u062A\u0647\u062F\u0641\u0629\u060C \u0648\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0627\u0644\u0645\u0633\u062A\u0647\u062F\u0641"
+        });
+      }
+      if (!db.getClassroomById(targetClassroomId, orgId)) {
+        return res.status(400).json({ success: false, error: "INVALID_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u0627\u0644\u0645\u0633\u062A\u0647\u062F\u0641\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+      }
+      if (!db.getAcademicYearById(targetAcademicYearId, orgId)) {
+        return res.status(400).json({ success: false, error: "INVALID_ACADEMIC_YEAR", message: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0627\u0644\u0645\u0633\u062A\u0647\u062F\u0641 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+      }
+      const targetClassroom = db.getClassroomById(targetClassroomId, orgId);
+      const transitionReason = reason ? sanitizeString(reason) : `\u062A\u0631\u0642\u064A\u0629 \u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u062C\u0645\u0627\u0639\u064A\u0629 \u0625\u0644\u0649 ${targetClassroom?.name || "\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u062C\u062F\u064A\u062F\u0629"}`;
+      const now = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+      const promotedStudents = [];
+      for (const stdId of studentIds) {
+        const user = db.getUserById(stdId, orgId);
+        if (!user || user.role !== "STUDENT") continue;
+        db.updateUser(stdId, orgId, { classroomId: targetClassroomId, isActive: true });
+        const existingEnrollments = db.getStudentEnrollments(orgId, { studentId: stdId });
+        for (const enr of existingEnrollments) {
+          if (enr.status === "ACTIVE" && enr.academicYearId !== targetAcademicYearId) {
+            db.updateStudentEnrollment(enr.id, orgId, { status: "GRADUATED" });
+          }
+        }
+        db.createStudentEnrollment({
+          organizationId: orgId,
+          studentId: stdId,
+          classroomId: targetClassroomId,
+          academicYearId: targetAcademicYearId,
+          status: "ACTIVE"
+        });
+        const rec = db.getStudentRecordByStudentId(stdId, orgId);
+        if (rec) {
+          db.updateStudentRecord(stdId, orgId, { status: "ACTIVE", statusReason: transitionReason });
+        }
+        db.createStudentLifecycleEvent({
+          organizationId: orgId,
+          studentId: stdId,
+          previousStatus: rec?.status || "ACTIVE",
+          newStatus: "ACTIVE",
+          reason: transitionReason,
+          actionBy: req.user.id,
+          effectiveDate: now
+        });
+        promotedStudents.push(stdId);
+      }
+      db.logAction(
+        orgId,
+        req.user.id,
+        req.user.email,
+        "BATCH_PROMOTE_STUDENTS",
+        "StudentEnrollment",
+        targetClassroomId,
+        { count: promotedStudents.length, studentIds: promotedStudents, targetClassroomId, targetAcademicYearId },
+        req.ip
+      );
+      res.json({
+        success: true,
+        message: `\u062A\u0645 \u062A\u0631\u0642\u064A\u0629 ${promotedStudents.length} \u0637\u0627\u0644\u0628 \u0628\u0646\u062C\u0627\u062D`,
+        data: {
+          promotedCount: promotedStudents.length,
+          studentIds: promotedStudents
+        }
+      });
+    } catch {
+      res.status(500).json({ success: false, error: "SERVER_ERROR" });
+    }
+  }
+);
+
 // server/platform/index.ts
-var platformApiRouter = express11.Router();
+var platformApiRouter = express12.Router();
 platformApiRouter.get("/health", async (req, res) => {
   try {
     const dbStatus = await db.getEngineStatus();
@@ -5584,12 +7626,13 @@ platformApiRouter.use("/attendance", requireOrg, attendanceRouter);
 platformApiRouter.use("/gradebook", requireOrg, gradebookRouter);
 platformApiRouter.use("/dashboard", requireOrg, dashboardRouter);
 platformApiRouter.use("/ai", requireOrg, aiRouter);
+platformApiRouter.use("/students", requireOrg, studentRouter);
 
 // server.ts
 init_postgres();
 async function createApp() {
   assertProductionAuthSecret();
-  const app = express12();
+  const app = express13();
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
@@ -5639,7 +7682,7 @@ async function createApp() {
     }
     next();
   });
-  app.use(express12.json({ limit: "1mb" }));
+  app.use(express13.json({ limit: "1mb" }));
   const rateLimitStore2 = /* @__PURE__ */ new Map();
   const formRateLimiter = (req, res, next) => {
     const rawIp = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress || "unknown";
@@ -5819,7 +7862,7 @@ async function createApp() {
   });
   if (process.env.NODE_ENV === "production") {
     const distPath = path.join(process.cwd(), "dist");
-    app.use(express12.static(distPath));
+    app.use(express13.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
