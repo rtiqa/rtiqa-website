@@ -136,17 +136,36 @@ export async function seedDatabase(): Promise<{ success: boolean; message: strin
       ON CONFLICT (id) DO NOTHING;
     `);
 
-    // 12. Attendance Records
+    // 12. Attendance Sessions & Records
     await client.query(`
-      INSERT INTO attendance_records (id, organization_id, course_id, classroom_id, student_id, recorded_by, date, status, notes)
+      INSERT INTO attendance_sessions (id, organization_id, classroom_id, course_id, date, period_number, title, status, opened_by)
       VALUES
-        ('att_horizon_20260901_omar', 'org_horizon_001', 'crs_horizon_math_10a', 'class_horizon_10a', 'usr_horizon_s_omar', 'usr_horizon_teacher', '2026-09-01', 'PRESENT', ''),
-        ('att_horizon_20260901_noura', 'org_horizon_001', 'crs_horizon_math_10a', 'class_horizon_10a', 'usr_horizon_s_noura', 'usr_horizon_teacher', '2026-09-01', 'PRESENT', ''),
-        ('att_horizon_20260901_faisal', 'org_horizon_001', 'crs_horizon_math_10a', 'class_horizon_10a', 'usr_horizon_s_faisal', 'usr_horizon_teacher', '2026-09-01', 'LATE', 'تأخر 10 دقائق بسبب الازدحام')
+        ('att_sess_horizon_001', 'org_horizon_001', 'class_horizon_10a', 'crs_horizon_math_10a', '2026-09-01', 1, 'تحضير الرياضيات - 1 سبتمبر 2026', 'COMPLETED', 'usr_horizon_teacher')
+      ON CONFLICT (id) DO NOTHING;
+
+      INSERT INTO attendance_records (id, organization_id, session_id, course_id, classroom_id, student_id, recorded_by, date, status, notes)
+      VALUES
+        ('att_horizon_20260901_omar', 'org_horizon_001', 'att_sess_horizon_001', 'crs_horizon_math_10a', 'class_horizon_10a', 'usr_horizon_s_omar', 'usr_horizon_teacher', '2026-09-01', 'PRESENT', ''),
+        ('att_horizon_20260901_noura', 'org_horizon_001', 'att_sess_horizon_001', 'crs_horizon_math_10a', 'class_horizon_10a', 'usr_horizon_s_noura', 'usr_horizon_teacher', '2026-09-01', 'PRESENT', ''),
+        ('att_horizon_20260901_faisal', 'org_horizon_001', 'att_sess_horizon_001', 'crs_horizon_math_10a', 'class_horizon_10a', 'usr_horizon_s_faisal', 'usr_horizon_teacher', '2026-09-01', 'LATE', 'تأخر 10 دقائق بسبب الازدحام')
       ON CONFLICT (id) DO NOTHING;
     `);
 
-    // 13. Audit Logs
+    // 13. Assessments & Assessment Grades
+    await client.query(`
+      INSERT INTO assessments (id, organization_id, course_id, subject_id, classroom_id, term_id, academic_year_id, title, description, category, max_score, weight_percentage, due_date, status, created_by)
+      VALUES
+        ('ass_horizon_midterm_math', 'org_horizon_001', 'crs_horizon_math_10a', 'sub_horizon_math', 'class_horizon_10a', 'term_horizon_t1', 'ay_horizon_2026', 'اختبار منتصف الفصل الدراسي - رياضيات 10', 'اختبار شامل في الجبر والمصفوفات', 'EXAM', 100.00, 30.00, '2026-10-25 10:00:00+03', 'PUBLISHED', 'usr_horizon_teacher')
+      ON CONFLICT (id) DO NOTHING;
+
+      INSERT INTO assessment_grades (id, organization_id, assessment_id, student_id, score, feedback, graded_by)
+      VALUES
+        ('grd_ass_omar_midterm', 'org_horizon_001', 'ass_horizon_midterm_math', 'usr_horizon_s_omar', 96.50, 'أداء متميز واستيعاب عميق للقوانين', 'usr_horizon_teacher'),
+        ('grd_ass_noura_midterm', 'org_horizon_001', 'ass_horizon_midterm_math', 'usr_horizon_s_noura', 92.00, 'إجابات دقيقة ومتقنة', 'usr_horizon_teacher')
+      ON CONFLICT (id) DO NOTHING;
+    `);
+
+    // 14. Audit Logs
     await client.query(`
       INSERT INTO audit_logs (id, organization_id, user_id, user_email, action, resource_type, resource_id, details)
       VALUES

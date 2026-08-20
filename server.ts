@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { platformApiRouter } from './server/platform/index.ts';
 import { assertProductionPostgres } from './src/db/postgres.ts';
 import { assertProductionAuthSecret } from './server/platform/auth.ts';
@@ -325,11 +326,12 @@ export async function startServer() {
   return server;
 }
 
-const isMainModule = Boolean(
-  process.argv[1] && (process.argv[1].endsWith('server.ts') || process.argv[1].endsWith('server.cjs'))
+const isDirectRun = Boolean(
+  process.argv.some((arg) => arg.includes('server.ts') || arg.includes('server.cjs') || arg.includes('server.js')) ||
+  (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]))
 );
 
-if (isMainModule && process.env.NODE_ENV !== 'test') {
+if (isDirectRun && process.env.NODE_ENV !== 'test') {
   startServer().catch((err) => {
     console.error('Failed to start server:', err);
     process.exit(1);

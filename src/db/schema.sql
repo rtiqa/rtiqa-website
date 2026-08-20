@@ -368,10 +368,29 @@ CREATE TABLE IF NOT EXISTS submissions (
 CREATE INDEX IF NOT EXISTS idx_submissions_assignment ON submissions(organization_id, assignment_id);
 CREATE INDEX IF NOT EXISTS idx_submissions_student ON submissions(organization_id, student_id);
 
--- 12. Attendance Records
+-- 12. Attendance Sessions & Records
+CREATE TABLE IF NOT EXISTS attendance_sessions (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    classroom_id VARCHAR(64) NOT NULL REFERENCES classrooms(id) ON DELETE CASCADE,
+    course_id VARCHAR(64) REFERENCES courses(id) ON DELETE SET NULL,
+    date DATE NOT NULL,
+    period_number INT DEFAULT 1,
+    title VARCHAR(255),
+    status VARCHAR(32) DEFAULT 'OPEN' NOT NULL CHECK (status IN ('OPEN', 'COMPLETED', 'LOCKED')),
+    opened_by VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_attendance_sessions UNIQUE (organization_id, classroom_id, course_id, date, period_number)
+);
+
+CREATE INDEX IF NOT EXISTS idx_attendance_sessions_lookup ON attendance_sessions(organization_id, classroom_id, date);
+CREATE INDEX IF NOT EXISTS idx_attendance_sessions_course ON attendance_sessions(organization_id, course_id, date);
+
 CREATE TABLE IF NOT EXISTS attendance_records (
     id VARCHAR(128) PRIMARY KEY,
     organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    session_id VARCHAR(64) REFERENCES attendance_sessions(id) ON DELETE SET NULL,
     course_id VARCHAR(64) REFERENCES courses(id) ON DELETE SET NULL,
     classroom_id VARCHAR(64) REFERENCES classrooms(id) ON DELETE CASCADE,
     student_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -379,11 +398,58 @@ CREATE TABLE IF NOT EXISTS attendance_records (
     date DATE NOT NULL,
     status VARCHAR(16) NOT NULL CHECK (status IN ('PRESENT', 'ABSENT', 'LATE', 'EXCUSED')),
     notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_attendance_records_unique UNIQUE (organization_id, classroom_id, student_id, date, course_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_attendance_lookup ON attendance_records(organization_id, classroom_id, date);
 CREATE INDEX IF NOT EXISTS idx_attendance_student ON attendance_records(organization_id, student_id, date);
+CREATE INDEX IF NOT EXISTS idx_attendance_session ON attendance_records(organization_id, session_id);
+
+-- 12.1 Assessments (Comprehensive Academic Evaluations & Gradebook Model)
+CREATE TABLE IF NOT EXISTS assessments (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    course_id VARCHAR(64) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    subject_id VARCHAR(64) REFERENCES subjects(id) ON DELETE CASCADE,
+    classroom_id VARCHAR(64) REFERENCES classrooms(id) ON DELETE CASCADE,
+    term_id VARCHAR(64) REFERENCES terms(id) ON DELETE CASCADE,
+    academic_year_id VARCHAR(64) REFERENCES academic_years(id) ON DELETE SET NULL,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    category VARCHAR(64) DEFAULT 'EXAM' NOT NULL,
+    max_score NUMERIC(6,2) DEFAULT 100 NOT NULL,
+    weight_percentage NUMERIC(5,2) DEFAULT 100 NOT NULL,
+    due_date TIMESTAMPTZ,
+    assessment_date DATE,
+    status VARCHAR(32) DEFAULT 'PUBLISHED' NOT NULL CHECK (status IN ('DRAFT', 'PUBLISHED', 'CLOSED', 'ARCHIVED')),
+    created_by VARCHAR(64) REFERENCES users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_assessments_course_title UNIQUE (organization_id, course_id, title)
+);
+
+CREATE INDEX IF NOT EXISTS idx_assessments_course ON assessments(organization_id, course_id);
+CREATE INDEX IF NOT EXISTS idx_assessments_classroom ON assessments(organization_id, classroom_id);
+CREATE INDEX IF NOT EXISTS idx_assessments_term ON assessments(organization_id, term_id);
+
+-- 12.2 Assessment Grades (Student Gradebook Entries)
+CREATE TABLE IF NOT EXISTS assessment_grades (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    assessment_id VARCHAR(64) NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+    student_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    score NUMERIC(6,2) NOT NULL,
+    feedback TEXT,
+    graded_by VARCHAR(64) REFERENCES users(id) ON DELETE SET NULL,
+    graded_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT uq_assessment_grades_student UNIQUE (organization_id, assessment_id, student_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_assessment_grades_assessment ON assessment_grades(organization_id, assessment_id);
+CREATE INDEX IF NOT EXISTS idx_assessment_grades_student ON assessment_grades(organization_id, student_id);
 
 -- 13. Audit Logs (Security & Compliance)
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -686,6 +752,28 @@ DROP POLICY IF EXISTS tenant_isolation_student_lifecycle_events ON student_lifec
 CREATE POLICY tenant_isolation_student_lifecycle_events ON student_lifecycle_events
     USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 26. Attendance Sessions Policy
+ALTER TABLE attendance_sessions ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_attendance_sessions ON attendance_sessions;
+CREATE POLICY tenant_isolation_attendance_sessions ON attendance_sessions
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 27. Assessments Policy
+ALTER TABLE assessments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_assessments ON assessments;
+CREATE POLICY tenant_isolation_assessments ON assessments
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 28. Assessment Grades Policy
+ALTER TABLE assessment_grades ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_assessment_grades ON assessment_grades;
+CREATE POLICY tenant_isolation_assessment_grades ON assessment_grades
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
 
 
 

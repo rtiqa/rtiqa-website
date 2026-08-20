@@ -92,26 +92,27 @@ export const StudentDashboardPage: React.FC<StudentDashboardPageProps> = ({ onNa
           color="blue"
         />
         <StatCard
-          title="واجبات بانتظار التسليم"
+          title="واجبات وتقييمات قادمة"
           value={stats?.pendingAssignmentsCount || 0}
-          subtitle="تكليفات نشطة"
+          subtitle="تكليفات واختبارات نشطة"
           icon={Clock}
           color={stats?.pendingAssignmentsCount > 0 ? 'amber' : 'emerald'}
         />
         <StatCard
-          title="الواجبات المكتملة"
-          value={stats?.completedAssignmentsCount || 0}
-          subtitle="تم تسليمها بنجاح"
+          title="نسبة الحضور والانضباط"
+          value={`${stats?.attendanceRate !== undefined ? stats.attendanceRate : 100}%`}
+          subtitle={`حضور: ${stats?.attendanceSummary?.presentDays || 0} يوم`}
           icon={CheckCircle2}
           color="emerald"
+          trend="منضبط"
         />
         <StatCard
-          title="المعدل التراكمي للتقييمات"
-          value={`${stats?.gpaPercent || 95}%`}
-          subtitle="أداء أكاديمي ممتاز"
+          title="المعدل والتقدير التراكمي"
+          value={`${stats?.gpaPercent !== undefined ? stats.gpaPercent : 0}%`}
+          subtitle={`التقدير: ${stats?.letterGrade || 'A+'}`}
           icon={Award}
           color="purple"
-          trend="ممتاز"
+          trend={stats?.letterGrade || 'ممتاز'}
         />
       </div>
 

@@ -6,6 +6,14 @@ import {
   Assignment,
   Submission,
   AttendanceRecord,
+  AttendanceSession,
+  AttendanceSessionStatus,
+  Assessment,
+  AssessmentCategory,
+  AssessmentStatus,
+  AssessmentGrade,
+  GradebookMatrix,
+  StudentAcademicPerformanceSummary,
   AcademicYear,
   Term,
   GradeLevel,
@@ -730,12 +738,67 @@ class PlatformApiClient {
   }
 
   // --- Attendance ---
-  async getAttendance(params: { courseId?: string; classroomId?: string; date?: string } = {}) {
+  async getAttendance(params: { courseId?: string; classroomId?: string; date?: string; studentId?: string } = {}) {
     const query = new URLSearchParams();
     if (params.courseId) query.set('courseId', params.courseId);
     if (params.classroomId) query.set('classroomId', params.classroomId);
     if (params.date) query.set('date', params.date);
+    if (params.studentId) query.set('studentId', params.studentId);
     return this.request<{ success: boolean; data: AttendanceRecord[]; date: string }>(`/attendance?${query.toString()}`);
+  }
+
+  async getAttendanceSessions(params: { classroomId?: string; courseId?: string; date?: string; status?: AttendanceSessionStatus } = {}) {
+    const query = new URLSearchParams();
+    if (params.classroomId) query.set('classroomId', params.classroomId);
+    if (params.courseId) query.set('courseId', params.courseId);
+    if (params.date) query.set('date', params.date);
+    if (params.status) query.set('status', params.status);
+    return this.request<{ success: boolean; data: AttendanceSession[] }>(`/attendance/sessions?${query.toString()}`);
+  }
+
+  async getAttendanceSessionById(id: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        session: AttendanceSession;
+        roster: Array<{
+          studentId: string;
+          studentName: string;
+          studentIdNumber?: string;
+          status: string;
+          notes?: string;
+          recordId?: string;
+        }>;
+        records: AttendanceRecord[];
+      };
+    }>(`/attendance/sessions/${id}`);
+  }
+
+  async createAttendanceSession(data: {
+    classroomId: string;
+    courseId?: string;
+    date?: string;
+    periodNumber?: number;
+    title?: string;
+    notes?: string;
+  }) {
+    return this.request<{ success: boolean; data: AttendanceSession }>('/attendance/sessions', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async submitSessionRollCall(sessionId: string, records: { studentId: string; status: string; notes?: string }[]) {
+    return this.request<{ success: boolean; data: AttendanceRecord[]; message: string }>(`/attendance/sessions/${sessionId}/roll-call`, {
+      method: 'POST',
+      body: JSON.stringify({ records }),
+    });
+  }
+
+  async deleteAttendanceSession(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/attendance/sessions/${id}`, {
+      method: 'DELETE',
+    });
   }
 
   async getAttendanceRoster(classroomId: string, date: string) {
@@ -746,6 +809,7 @@ class PlatformApiClient {
     courseId?: string;
     classroomId?: string;
     date?: string;
+    sessionId?: string;
     records: { studentId: string; status: string; notes?: string }[];
   }) {
     return this.request<{ success: boolean; data: AttendanceRecord[] }>('/attendance', {
@@ -758,9 +822,26 @@ class PlatformApiClient {
     courseId?: string;
     classroomId?: string;
     date?: string;
+    sessionId?: string;
     records: { studentId: string; status: string; notes?: string }[];
   }) {
     return this.saveAttendanceBatch(data);
+  }
+
+  async getStudentAttendanceSummary(studentId: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        studentId: string;
+        totalDays: number;
+        presentDays: number;
+        absentDays: number;
+        lateDays: number;
+        excusedDays: number;
+        attendanceRate: number;
+        records: AttendanceRecord[];
+      };
+    }>(`/attendance/student/${studentId}`);
   }
 
   async getAttendanceSummary(studentId?: string) {
@@ -768,9 +849,70 @@ class PlatformApiClient {
     return this.request<{ success: boolean; data: any }>(`/attendance/summary${q}`);
   }
 
-  // --- Gradebook ---
+  // --- Assessments & Gradebook ---
+  async getAssessments(params: { courseId?: string; classroomId?: string; termId?: string; category?: AssessmentCategory; status?: AssessmentStatus } = {}) {
+    const query = new URLSearchParams();
+    if (params.courseId) query.set('courseId', params.courseId);
+    if (params.classroomId) query.set('classroomId', params.classroomId);
+    if (params.termId) query.set('termId', params.termId);
+    if (params.category) query.set('category', params.category);
+    if (params.status) query.set('status', params.status);
+    return this.request<{ success: boolean; data: Assessment[] }>(`/gradebook/assessments?${query.toString()}`);
+  }
+
+  async getAssessmentById(id: string) {
+    return this.request<{ success: boolean; data: Assessment }>(`/gradebook/assessments/${id}`);
+  }
+
+  async createAssessment(data: Partial<Assessment>) {
+    return this.request<{ success: boolean; data: Assessment }>('/gradebook/assessments', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateAssessment(id: string, data: Partial<Assessment>) {
+    return this.request<{ success: boolean; data: Assessment }>(`/gradebook/assessments/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteAssessment(id: string) {
+    return this.request<{ success: boolean; message: string }>(`/gradebook/assessments/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAssessmentGrades(assessmentId: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        assessment: Assessment;
+        roster: Array<{
+          studentId: string;
+          studentName: string;
+          studentIdNumber?: string;
+          score?: number;
+          percentage?: number;
+          feedback?: string;
+          gradedAt?: string;
+          gradedByName?: string;
+          status: 'GRADED' | 'UNGRADED';
+        }>;
+      };
+    }>(`/gradebook/assessments/${assessmentId}/grades`);
+  }
+
+  async recordAssessmentGradesBatch(assessmentId: string, grades: { studentId: string; score: number; feedback?: string }[]) {
+    return this.request<{ success: boolean; data: AssessmentGrade[]; message: string }>(`/gradebook/assessments/${assessmentId}/grades`, {
+      method: 'POST',
+      body: JSON.stringify({ grades }),
+    });
+  }
+
   async getGradebook(courseId: string) {
-    return this.request<{ success: boolean; data: any }>(`/gradebook?courseId=${courseId}`);
+    return this.request<{ success: boolean; data: GradebookMatrix }>(`/gradebook?courseId=${courseId}`);
   }
 
   async getCourseGradebook(courseId: string) {
@@ -778,12 +920,16 @@ class PlatformApiClient {
   }
 
   async exportGradebookCsv(courseId: string) {
-    return this.request<{ success: boolean; csv: string }>(`/gradebook/export-csv?courseId=${courseId}`);
+    return this.request<{ success: boolean; csv: string; fileName: string }>(`/gradebook/export-csv?courseId=${courseId}`);
+  }
+
+  async getStudentAcademicPerformance(studentId: string) {
+    return this.request<{ success: boolean; data: StudentAcademicPerformanceSummary }>(`/gradebook/student/${studentId}/performance`);
   }
 
   async getMyGrades(studentId?: string) {
     const q = studentId ? `?studentId=${studentId}` : '';
-    return this.request<{ success: boolean; data: any }>(`/gradebook/my-grades${q}`);
+    return this.request<{ success: boolean; data: StudentAcademicPerformanceSummary }>(`/gradebook/my-grades${q}`);
   }
 
   // --- Settings & Audit ---

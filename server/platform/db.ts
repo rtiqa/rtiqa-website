@@ -11,6 +11,18 @@ import type {
   Assignment,
   Submission,
   AttendanceRecord,
+  AttendanceSession,
+  AttendanceSessionStatus,
+  Assessment,
+  AssessmentCategory,
+  AssessmentStatus,
+  AssessmentGrade,
+  StudentAssessmentItem,
+  StudentCoursePerformance,
+  StudentAcademicPerformanceSummary,
+  GradebookMatrix,
+  GradebookMatrixRow,
+  GradebookMatrixStudentScore,
   AuditLog,
   Invitation,
   OrganizationMembership,
@@ -54,7 +66,10 @@ class PlatformDatabase {
   private lessons: Map<string, Lesson> = new Map();
   private assignments: Map<string, Assignment> = new Map();
   private submissions: Map<string, Submission> = new Map();
+  private attendanceSessions: Map<string, AttendanceSession> = new Map();
   private attendanceRecords: Map<string, AttendanceRecord> = new Map();
+  private assessments: Map<string, Assessment> = new Map();
+  private assessmentGrades: Map<string, AssessmentGrade> = new Map();
   private auditLogs: Map<string, AuditLog> = new Map();
   private invitations: Map<string, Invitation> = new Map();
   private organizationMemberships: Map<string, OrganizationMembership> = new Map();
@@ -923,6 +938,388 @@ class PlatformDatabase {
     };
     this.parentStudentLinks.set(psl1.id, psl1);
 
+    // School A: Attendance Sessions
+    const sess1Id = 'att_sess_horizon_001';
+    this.attendanceSessions.set(sess1Id, {
+      id: sess1Id,
+      organizationId: schoolAId,
+      classroomId: class10AId,
+      classroomName: 'شعبة 10-أ (علمي)',
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات - الصف العاشر (شعبة أ)',
+      date: today,
+      periodNumber: 1,
+      title: 'جلسة تحضير الحصة الأولى - الجبر الخطي',
+      status: 'COMPLETED',
+      openedBy: teacherMath.id,
+      openedByName: teacherMath.fullName,
+      presentCount: 2,
+      absentCount: 0,
+      lateCount: 1,
+      excusedCount: 0,
+      totalStudents: 3,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    // Update existing attendance records with sessionId
+    const attRec1 = this.attendanceRecords.get(`att_${courseMath10AId}_${student1.id}_${today}`);
+    if (attRec1) {
+      attRec1.sessionId = sess1Id;
+      attRec1.classroomName = 'شعبة 10-أ (علمي)';
+      attRec1.studentIdNumber = student1.studentIdNumber;
+      attRec1.recordedByName = teacherMath.fullName;
+    }
+    const attRec2 = this.attendanceRecords.get(`att_${courseMath10AId}_${student2.id}_${today}`);
+    if (attRec2) {
+      attRec2.sessionId = sess1Id;
+      attRec2.classroomName = 'شعبة 10-أ (علمي)';
+      attRec2.studentIdNumber = student2.studentIdNumber;
+      attRec2.recordedByName = teacherMath.fullName;
+    }
+    const attRec3 = this.attendanceRecords.get(`att_${courseMath10AId}_${student3.id}_${today}`);
+    if (attRec3) {
+      attRec3.sessionId = sess1Id;
+      attRec3.classroomName = 'شعبة 10-أ (علمي)';
+      attRec3.studentIdNumber = student3.studentIdNumber;
+      attRec3.recordedByName = teacherMath.fullName;
+    }
+
+    // Additional historic attendance for student1 (to show rich summary)
+    const histDates = ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-09-07'];
+    for (let i = 0; i < histDates.length; i++) {
+      const d = histDates[i];
+      const recKey = `att_${courseMath10AId}_${student1.id}_${d}`;
+      this.attendanceRecords.set(recKey, {
+        id: recKey,
+        organizationId: schoolAId,
+        courseId: courseMath10AId,
+        classroomId: class10AId,
+        classroomName: 'شعبة 10-أ (علمي)',
+        studentId: student1.id,
+        studentName: student1.fullName,
+        studentIdNumber: student1.studentIdNumber,
+        recordedBy: teacherMath.id,
+        recordedByName: teacherMath.fullName,
+        date: d,
+        status: i === 3 ? 'EXCUSED' : 'PRESENT',
+        notes: i === 3 ? 'إجازة مرضية معتمدة' : undefined,
+        createdAt: `${d}T08:00:00Z`,
+      });
+    }
+
+    // School A: Assessments (Course-based evaluations)
+    const assMathMidterm: Assessment = {
+      id: 'ass_math_midterm_10a',
+      organizationId: schoolAId,
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات - الصف العاشر (شعبة أ)',
+      subjectId: mathSubId,
+      subjectName: 'الرياضيات العامة والتحليل',
+      classroomId: class10AId,
+      classroomName: 'شعبة 10-أ (علمي)',
+      termId: termAId,
+      title: 'اختبار منتصف الفصل الأول في الرياضيات',
+      description: 'يشمل وحدات الدوال والمصفوفات والمتجهات',
+      category: 'MIDTERM',
+      maxScore: 100,
+      weightPercentage: 30,
+      dueDate: '2026-10-15T12:00:00Z',
+      assessmentDate: '2026-10-15',
+      status: 'PUBLISHED',
+      createdBy: teacherMath.id,
+      createdByName: teacherMath.fullName,
+      createdAt: '2026-09-01T08:00:00Z',
+      updatedAt: '2026-09-01T08:00:00Z',
+    };
+    this.assessments.set(assMathMidterm.id, assMathMidterm);
+
+    const assMathQuiz1: Assessment = {
+      id: 'ass_math_quiz1_10a',
+      organizationId: schoolAId,
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات - الصف العاشر (شعبة أ)',
+      subjectId: mathSubId,
+      subjectName: 'الرياضيات العامة والتحليل',
+      classroomId: class10AId,
+      classroomName: 'شعبة 10-أ (علمي)',
+      termId: termAId,
+      title: 'اختبار قصير (1): الدوال واللوغاريتمات',
+      description: 'تقييم سريع على فهم التحويل اللوغاريتمي',
+      category: 'QUIZ',
+      maxScore: 20,
+      weightPercentage: 10,
+      dueDate: '2026-09-25T10:00:00Z',
+      assessmentDate: '2026-09-25',
+      status: 'PUBLISHED',
+      createdBy: teacherMath.id,
+      createdByName: teacherMath.fullName,
+      createdAt: '2026-09-05T08:00:00Z',
+      updatedAt: '2026-09-05T08:00:00Z',
+    };
+    this.assessments.set(assMathQuiz1.id, assMathQuiz1);
+
+    const assMathProject: Assessment = {
+      id: 'ass_math_project_10a',
+      organizationId: schoolAId,
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات - الصف العاشر (شعبة أ)',
+      subjectId: mathSubId,
+      subjectName: 'الرياضيات العامة والتحليل',
+      classroomId: class10AId,
+      classroomName: 'شعبة 10-أ (علمي)',
+      termId: termAId,
+      title: 'مشروع الفصل: التطبيقات الواقعية للجبر',
+      description: 'بحث جماعي عن استخدام الخوارزميات المصفوفية في الرسوم الحاسوبية',
+      category: 'PROJECT',
+      maxScore: 50,
+      weightPercentage: 20,
+      dueDate: '2026-11-10T23:59:00Z',
+      assessmentDate: '2026-11-10',
+      status: 'PUBLISHED',
+      createdBy: teacherMath.id,
+      createdByName: teacherMath.fullName,
+      createdAt: '2026-09-10T08:00:00Z',
+      updatedAt: '2026-09-10T08:00:00Z',
+    };
+    this.assessments.set(assMathProject.id, assMathProject);
+
+    const assArabExam: Assessment = {
+      id: 'ass_arab_exam_10a',
+      organizationId: schoolAId,
+      courseId: courseArabic10AId,
+      courseTitle: 'اللغة العربية والبلاغة - الصف العاشر (شعبة أ)',
+      subjectId: arabicSubId,
+      subjectName: 'اللغة العربية والأدب',
+      classroomId: class10AId,
+      classroomName: 'شعبة 10-أ (علمي)',
+      termId: termAId,
+      title: 'اختبار النحو والبلاغة التحليلي',
+      description: 'إعراب نصوص شعرية وتحليل الاستعارة والمجاز',
+      category: 'EXAM',
+      maxScore: 100,
+      weightPercentage: 40,
+      dueDate: '2026-10-20T11:00:00Z',
+      assessmentDate: '2026-10-20',
+      status: 'PUBLISHED',
+      createdBy: teacherArabic.id,
+      createdByName: teacherArabic.fullName,
+      createdAt: '2026-09-02T08:00:00Z',
+      updatedAt: '2026-09-02T08:00:00Z',
+    };
+    this.assessments.set(assArabExam.id, assArabExam);
+
+    // School A: Assessment Grades
+    // Student 1 (عمر خالد السعيد)
+    const gr1_1: AssessmentGrade = {
+      id: `grd_${assMathMidterm.id}_${student1.id}`,
+      organizationId: schoolAId,
+      assessmentId: assMathMidterm.id,
+      assessmentTitle: assMathMidterm.title,
+      assessmentCategory: assMathMidterm.category,
+      maxScore: assMathMidterm.maxScore,
+      studentId: student1.id,
+      studentName: student1.fullName,
+      studentIdNumber: student1.studentIdNumber,
+      score: 96,
+      percentage: 96,
+      feedback: 'أداء ممتاز وتحليل رياضي دقيق جداً',
+      gradedBy: teacherMath.id,
+      gradedByName: teacherMath.fullName,
+      gradedAt: '2026-10-16T10:00:00Z',
+      updatedAt: '2026-10-16T10:00:00Z',
+    };
+    this.assessmentGrades.set(gr1_1.id, gr1_1);
+
+    const gr1_2: AssessmentGrade = {
+      id: `grd_${assMathQuiz1.id}_${student1.id}`,
+      organizationId: schoolAId,
+      assessmentId: assMathQuiz1.id,
+      assessmentTitle: assMathQuiz1.title,
+      assessmentCategory: assMathQuiz1.category,
+      maxScore: assMathQuiz1.maxScore,
+      studentId: student1.id,
+      studentName: student1.fullName,
+      studentIdNumber: student1.studentIdNumber,
+      score: 19.5,
+      percentage: 97.5,
+      feedback: 'إجابة نموذجية وسريعة',
+      gradedBy: teacherMath.id,
+      gradedByName: teacherMath.fullName,
+      gradedAt: '2026-09-26T11:00:00Z',
+      updatedAt: '2026-09-26T11:00:00Z',
+    };
+    this.assessmentGrades.set(gr1_2.id, gr1_2);
+
+    const gr1_3: AssessmentGrade = {
+      id: `grd_${assArabExam.id}_${student1.id}`,
+      organizationId: schoolAId,
+      assessmentId: assArabExam.id,
+      assessmentTitle: assArabExam.title,
+      assessmentCategory: assArabExam.category,
+      maxScore: assArabExam.maxScore,
+      studentId: student1.id,
+      studentName: student1.fullName,
+      studentIdNumber: student1.studentIdNumber,
+      score: 93,
+      percentage: 93,
+      feedback: 'أسلوب لغوي رصين وإعراب دقيق',
+      gradedBy: teacherArabic.id,
+      gradedByName: teacherArabic.fullName,
+      gradedAt: '2026-10-21T09:00:00Z',
+      updatedAt: '2026-10-21T09:00:00Z',
+    };
+    this.assessmentGrades.set(gr1_3.id, gr1_3);
+
+    // Student 2 (نورة العتيبي)
+    const gr2_1: AssessmentGrade = {
+      id: `grd_${assMathMidterm.id}_${student2.id}`,
+      organizationId: schoolAId,
+      assessmentId: assMathMidterm.id,
+      assessmentTitle: assMathMidterm.title,
+      assessmentCategory: assMathMidterm.category,
+      maxScore: assMathMidterm.maxScore,
+      studentId: student2.id,
+      studentName: student2.fullName,
+      studentIdNumber: student2.studentIdNumber,
+      score: 91,
+      percentage: 91,
+      feedback: 'مستوى رائع ومتقن',
+      gradedBy: teacherMath.id,
+      gradedByName: teacherMath.fullName,
+      gradedAt: '2026-10-16T10:30:00Z',
+      updatedAt: '2026-10-16T10:30:00Z',
+    };
+    this.assessmentGrades.set(gr2_1.id, gr2_1);
+
+    const gr2_2: AssessmentGrade = {
+      id: `grd_${assMathQuiz1.id}_${student2.id}`,
+      organizationId: schoolAId,
+      assessmentId: assMathQuiz1.id,
+      assessmentTitle: assMathQuiz1.title,
+      assessmentCategory: assMathQuiz1.category,
+      maxScore: assMathQuiz1.maxScore,
+      studentId: student2.id,
+      studentName: student2.fullName,
+      studentIdNumber: student2.studentIdNumber,
+      score: 18,
+      percentage: 90,
+      feedback: 'أحسنتِ يا نورة',
+      gradedBy: teacherMath.id,
+      gradedByName: teacherMath.fullName,
+      gradedAt: '2026-09-26T11:30:00Z',
+      updatedAt: '2026-09-26T11:30:00Z',
+    };
+    this.assessmentGrades.set(gr2_2.id, gr2_2);
+
+    // Student 3 (فيصل المطيري)
+    const gr3_1: AssessmentGrade = {
+      id: `grd_${assMathMidterm.id}_${student3.id}`,
+      organizationId: schoolAId,
+      assessmentId: assMathMidterm.id,
+      assessmentTitle: assMathMidterm.title,
+      assessmentCategory: assMathMidterm.category,
+      maxScore: assMathMidterm.maxScore,
+      studentId: student3.id,
+      studentName: student3.fullName,
+      studentIdNumber: student3.studentIdNumber,
+      score: 82,
+      percentage: 82,
+      feedback: 'جهد طيب مع الحاجة لمزيد من التمرن على المصفوفات',
+      gradedBy: teacherMath.id,
+      gradedByName: teacherMath.fullName,
+      gradedAt: '2026-10-16T11:00:00Z',
+      updatedAt: '2026-10-16T11:00:00Z',
+    };
+    this.assessmentGrades.set(gr3_1.id, gr3_1);
+
+    // School B: Assessments & Grades (Tenant Isolation Test Verification)
+    const assPhysB: Assessment = {
+      id: 'ass_elite_phys_midterm',
+      organizationId: schoolBId,
+      courseId: coursePhys10AId,
+      courseTitle: 'Advanced Physics - Grade 10',
+      subjectId: physSubId,
+      subjectName: 'Advanced Physics',
+      classroomId: classBId,
+      classroomName: 'Section 10-Alpha',
+      termId: termBId,
+      title: 'Midterm Exam - Classical & Modern Physics',
+      description: 'Kinematics, dynamics, and quantum fundamentals',
+      category: 'MIDTERM',
+      maxScore: 100,
+      weightPercentage: 35,
+      dueDate: '2026-10-25T14:00:00Z',
+      assessmentDate: '2026-10-25',
+      status: 'PUBLISHED',
+      createdBy: teacherB.id,
+      createdByName: teacherB.fullName,
+      createdAt: '2026-09-05T08:00:00Z',
+      updatedAt: '2026-09-05T08:00:00Z',
+    };
+    this.assessments.set(assPhysB.id, assPhysB);
+
+    const grB_1: AssessmentGrade = {
+      id: `grd_${assPhysB.id}_${studentB.id}`,
+      organizationId: schoolBId,
+      assessmentId: assPhysB.id,
+      assessmentTitle: assPhysB.title,
+      assessmentCategory: assPhysB.category,
+      maxScore: assPhysB.maxScore,
+      studentId: studentB.id,
+      studentName: studentB.fullName,
+      studentIdNumber: studentB.studentIdNumber,
+      score: 95,
+      percentage: 95,
+      feedback: 'Outstanding analytical rigor',
+      gradedBy: teacherB.id,
+      gradedByName: teacherB.fullName,
+      gradedAt: '2026-10-26T10:00:00Z',
+      updatedAt: '2026-10-26T10:00:00Z',
+    };
+    this.assessmentGrades.set(grB_1.id, grB_1);
+
+    const sessBId = 'att_sess_elite_001';
+    this.attendanceSessions.set(sessBId, {
+      id: sessBId,
+      organizationId: schoolBId,
+      classroomId: classBId,
+      classroomName: 'Section 10-Alpha',
+      courseId: coursePhys10AId,
+      courseTitle: 'Advanced Physics - Grade 10',
+      date: today,
+      periodNumber: 2,
+      title: 'Morning Lab Session Roll Call',
+      status: 'COMPLETED',
+      openedBy: teacherB.id,
+      openedByName: teacherB.fullName,
+      presentCount: 1,
+      absentCount: 0,
+      lateCount: 0,
+      excusedCount: 0,
+      totalStudents: 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const attRecB: AttendanceRecord = {
+      id: `att_${coursePhys10AId}_${studentB.id}_${today}`,
+      organizationId: schoolBId,
+      sessionId: sessBId,
+      courseId: coursePhys10AId,
+      classroomId: classBId,
+      classroomName: 'Section 10-Alpha',
+      studentId: studentB.id,
+      studentName: studentB.fullName,
+      studentIdNumber: studentB.studentIdNumber,
+      recordedBy: teacherB.id,
+      recordedByName: teacherB.fullName,
+      date: today,
+      status: 'PRESENT',
+      createdAt: new Date().toISOString(),
+    };
+    this.attendanceRecords.set(attRecB.id, attRecB);
+
     // Populate Organization Memberships & default auth providers for all seeded users
     for (const user of Array.from(this.users.values())) {
       user.emailVerified = true;
@@ -1716,6 +2113,25 @@ class PlatformDatabase {
     return true;
   }
 
+  getStudentsByClassroom(classroomId: string, organizationId: string): User[] {
+    const enrollments = this.getStudentEnrollments(organizationId, { classroomId, status: 'ACTIVE' });
+    const students: User[] = [];
+    for (const enr of enrollments) {
+      const u = this.getUserById(enr.studentId, organizationId);
+      if (u) students.push(u);
+    }
+    // Also include any users directly tagged with classroomId
+    const directUsers = Array.from(this.users.values()).filter(
+      (u) => u.organizationId === organizationId && u.role === 'STUDENT' && u.classroomId === classroomId
+    );
+    for (const du of directUsers) {
+      if (!students.some((s) => s.id === du.id)) {
+        students.push(du);
+      }
+    }
+    return students;
+  }
+
   // --- Parent Student Links ---
   getParentStudentLinks(
     organizationId: string,
@@ -2114,35 +2530,1086 @@ class PlatformDatabase {
     return updated;
   }
 
-  // Attendance
-  getAttendance(organizationId: string, courseId?: string, classroomId?: string, date?: string): AttendanceRecord[] {
+  // --- Attendance Sessions & Roll Calls ---
+  async syncAcademicDataFromPostgres(organizationId?: string): Promise<void> {
+    const pool = getPostgresPool();
+    if (!pool) return;
+
+    try {
+      // 1. Sync Attendance Sessions
+      let sessionsQuery = 'SELECT * FROM attendance_sessions';
+      const sessionsParams: any[] = [];
+      if (organizationId) {
+        sessionsQuery += ' WHERE organization_id = $1';
+        sessionsParams.push(organizationId);
+      }
+      const sessRes = await pool.query(sessionsQuery, sessionsParams);
+      for (const row of sessRes.rows) {
+        const classroom = this.getClassroomById(row.classroom_id, row.organization_id);
+        const course = row.course_id ? this.getCourseById(row.course_id, row.organization_id) : undefined;
+        const openedUser = this.getUserById(row.opened_by, row.organization_id);
+        const session: AttendanceSession = {
+          id: row.id,
+          organizationId: row.organization_id,
+          classroomId: row.classroom_id,
+          classroomName: classroom?.name,
+          courseId: row.course_id || undefined,
+          courseTitle: course?.title,
+          date: row.date ? new Date(row.date).toISOString().split('T')[0] : row.date,
+          periodNumber: row.period_number || undefined,
+          title: row.title || undefined,
+          status: row.status,
+          openedBy: row.opened_by,
+          openedByName: openedUser?.fullName,
+          presentCount: Number(row.present_count) || 0,
+          absentCount: Number(row.absent_count) || 0,
+          lateCount: Number(row.late_count) || 0,
+          excusedCount: Number(row.excused_count) || 0,
+          totalStudents: Number(row.total_students) || 0,
+          createdAt: row.created_at?.toISOString ? row.created_at.toISOString() : (row.created_at || new Date().toISOString()),
+          updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : (row.updated_at || new Date().toISOString()),
+        };
+        this.attendanceSessions.set(session.id, session);
+      }
+
+      // 2. Sync Attendance Records
+      let recordsQuery = 'SELECT * FROM attendance_records';
+      const recordsParams: any[] = [];
+      if (organizationId) {
+        recordsQuery += ' WHERE organization_id = $1';
+        recordsParams.push(organizationId);
+      }
+      const recsRes = await pool.query(recordsQuery, recordsParams);
+      for (const row of recsRes.rows) {
+        const student = this.getUserById(row.student_id, row.organization_id);
+        const classroom = this.getClassroomById(row.classroom_id, row.organization_id);
+        const recordedUser = row.recorded_by ? this.getUserById(row.recorded_by, row.organization_id) : undefined;
+        const record: AttendanceRecord = {
+          id: row.id,
+          organizationId: row.organization_id,
+          sessionId: row.session_id || undefined,
+          courseId: row.course_id || undefined,
+          classroomId: row.classroom_id,
+          classroomName: classroom?.name,
+          studentId: row.student_id,
+          studentName: student?.fullName,
+          studentIdNumber: student?.studentIdNumber,
+          recordedBy: row.recorded_by || undefined,
+          recordedByName: recordedUser?.fullName,
+          date: row.date ? new Date(row.date).toISOString().split('T')[0] : row.date,
+          status: row.status,
+          notes: row.notes || undefined,
+          createdAt: row.created_at?.toISOString ? row.created_at.toISOString() : (row.created_at || new Date().toISOString()),
+          updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : (row.updated_at || new Date().toISOString()),
+        };
+        this.attendanceRecords.set(record.id, record);
+      }
+
+      // 3. Sync Assessments
+      let assessmentsQuery = 'SELECT * FROM assessments';
+      const assessmentsParams: any[] = [];
+      if (organizationId) {
+        assessmentsQuery += ' WHERE organization_id = $1';
+        assessmentsParams.push(organizationId);
+      }
+      const assRes = await pool.query(assessmentsQuery, assessmentsParams);
+      for (const row of assRes.rows) {
+        const course = this.getCourseById(row.course_id, row.organization_id);
+        const subject = row.subject_id ? this.getSubjectById(row.subject_id, row.organization_id) : course ? this.getSubjectById(course.subjectId, row.organization_id) : undefined;
+        const classroom = row.classroom_id ? this.getClassroomById(row.classroom_id, row.organization_id) : course?.classroomId ? this.getClassroomById(course.classroomId, row.organization_id) : undefined;
+        const term = row.term_id ? this.getTermById(row.term_id, row.organization_id) : course?.termId ? this.getTermById(course.termId, row.organization_id) : undefined;
+        const creator = row.created_by ? this.getUserById(row.created_by, row.organization_id) : undefined;
+
+        const assessment: Assessment = {
+          id: row.id,
+          organizationId: row.organization_id,
+          courseId: row.course_id,
+          courseTitle: course?.title,
+          subjectId: row.subject_id || course?.subjectId,
+          subjectName: subject?.name || course?.subjectName,
+          classroomId: row.classroom_id || course?.classroomId,
+          classroomName: classroom?.name || course?.classroomName,
+          termId: row.term_id || course?.termId,
+          termName: term?.name,
+          academicYearId: row.academic_year_id || undefined,
+          title: row.title,
+          description: row.description || undefined,
+          category: row.category,
+          maxScore: Number(row.max_score) || 100,
+          weightPercentage: Number(row.weight_percentage) || 100,
+          dueDate: row.due_date?.toISOString ? row.due_date.toISOString() : row.due_date,
+          assessmentDate: row.assessment_date ? new Date(row.assessment_date).toISOString().split('T')[0] : row.assessment_date,
+          status: row.status,
+          createdBy: row.created_by || undefined,
+          createdByName: creator?.fullName,
+          createdAt: row.created_at?.toISOString ? row.created_at.toISOString() : (row.created_at || new Date().toISOString()),
+          updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : (row.updated_at || new Date().toISOString()),
+        };
+        this.assessments.set(assessment.id, assessment);
+      }
+
+      // 4. Sync Assessment Grades
+      let gradesQuery = 'SELECT * FROM assessment_grades';
+      const gradesParams: any[] = [];
+      if (organizationId) {
+        gradesQuery += ' WHERE organization_id = $1';
+        gradesParams.push(organizationId);
+      }
+      const gradesRes = await pool.query(gradesQuery, gradesParams);
+      for (const row of gradesRes.rows) {
+        const student = this.getUserById(row.student_id, row.organization_id);
+        const assessment = this.getAssessmentById(row.assessment_id, row.organization_id);
+        const grader = row.graded_by ? this.getUserById(row.graded_by, row.organization_id) : undefined;
+        const maxScore = assessment?.maxScore || 100;
+        const score = Number(row.score) || 0;
+        const percentage = maxScore > 0 ? Number(((score / maxScore) * 100).toFixed(2)) : 0;
+
+        const grade: AssessmentGrade = {
+          id: row.id,
+          organizationId: row.organization_id,
+          assessmentId: row.assessment_id,
+          assessmentTitle: assessment?.title,
+          studentId: row.student_id,
+          studentName: student?.fullName,
+          studentIdNumber: student?.studentIdNumber,
+          score,
+          maxScore,
+          percentage,
+          feedback: row.feedback || undefined,
+          gradedBy: row.graded_by || undefined,
+          gradedByName: grader?.fullName,
+          gradedAt: row.graded_at?.toISOString ? row.graded_at.toISOString() : (row.graded_at || new Date().toISOString()),
+          updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : (row.updated_at || new Date().toISOString()),
+        };
+        this.assessmentGrades.set(grade.id, grade);
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production') {
+        throw err;
+      }
+      console.error('[PostgreSQL Academic Sync Warning]:', (err as Error).message);
+    }
+  }
+
+  private persistAttendanceSessionToPostgres(session: AttendanceSession): void {
+    const pool = getPostgresPool();
+    if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('PostgreSQL is required in production environment.');
+      }
+      return;
+    }
+    pool.query(
+      `INSERT INTO attendance_sessions (
+        id, organization_id, classroom_id, course_id, date, period_number, title, status, opened_by, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT (id) DO UPDATE SET
+        classroom_id = EXCLUDED.classroom_id,
+        course_id = EXCLUDED.course_id,
+        date = EXCLUDED.date,
+        period_number = EXCLUDED.period_number,
+        title = EXCLUDED.title,
+        status = EXCLUDED.status,
+        updated_at = EXCLUDED.updated_at;`,
+      [
+        session.id,
+        session.organizationId,
+        session.classroomId,
+        session.courseId || null,
+        session.date,
+        session.periodNumber || 1,
+        session.title || null,
+        session.status,
+        session.openedBy,
+        session.createdAt,
+        session.updatedAt,
+      ]
+    ).catch((err) => {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[PostgreSQL Critical Error]: Failed to persist attendance session', err);
+        throw err;
+      }
+      console.error('[PostgreSQL Session Persist Warning]:', (err as Error).message);
+    });
+  }
+
+  private deleteAttendanceSessionFromPostgres(id: string, organizationId: string): void {
+    const pool = getPostgresPool();
+    if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('PostgreSQL is required in production environment.');
+      }
+      return;
+    }
+    pool.query('DELETE FROM attendance_sessions WHERE id = $1 AND organization_id = $2', [id, organizationId]).catch((err) => {
+      if (process.env.NODE_ENV === 'production') {
+        throw err;
+      }
+      console.error('[PostgreSQL Delete Session Warning]:', (err as Error).message);
+    });
+  }
+
+  private persistAttendanceRecordToPostgres(rec: AttendanceRecord): void {
+    const pool = getPostgresPool();
+    if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('PostgreSQL is required in production environment.');
+      }
+      return;
+    }
+    pool.query(
+      `INSERT INTO attendance_records (
+        id, organization_id, session_id, course_id, classroom_id, student_id, recorded_by, date, status, notes, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ON CONFLICT (id) DO UPDATE SET
+        session_id = EXCLUDED.session_id,
+        status = EXCLUDED.status,
+        notes = EXCLUDED.notes,
+        recorded_by = EXCLUDED.recorded_by,
+        updated_at = EXCLUDED.updated_at;`,
+      [
+        rec.id,
+        rec.organizationId,
+        rec.sessionId || null,
+        rec.courseId || null,
+        rec.classroomId,
+        rec.studentId,
+        rec.recordedBy || null,
+        rec.date,
+        rec.status,
+        rec.notes || null,
+        rec.createdAt,
+        rec.updatedAt,
+      ]
+    ).catch((err) => {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[PostgreSQL Critical Error]: Failed to persist attendance record', err);
+        throw err;
+      }
+      console.error('[PostgreSQL Record Persist Warning]:', (err as Error).message);
+    });
+  }
+
+  private persistAssessmentToPostgres(assessment: Assessment): void {
+    const pool = getPostgresPool();
+    if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('PostgreSQL is required in production environment.');
+      }
+      return;
+    }
+    pool.query(
+      `INSERT INTO assessments (
+        id, organization_id, course_id, subject_id, classroom_id, term_id, academic_year_id,
+        title, description, category, max_score, weight_percentage, due_date, assessment_date,
+        status, created_by, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        description = EXCLUDED.description,
+        category = EXCLUDED.category,
+        max_score = EXCLUDED.max_score,
+        weight_percentage = EXCLUDED.weight_percentage,
+        due_date = EXCLUDED.due_date,
+        assessment_date = EXCLUDED.assessment_date,
+        status = EXCLUDED.status,
+        updated_at = EXCLUDED.updated_at;`,
+      [
+        assessment.id,
+        assessment.organizationId,
+        assessment.courseId,
+        assessment.subjectId || null,
+        assessment.classroomId || null,
+        assessment.termId || null,
+        assessment.academicYearId || null,
+        assessment.title,
+        assessment.description || null,
+        assessment.category,
+        assessment.maxScore,
+        assessment.weightPercentage,
+        assessment.dueDate || null,
+        assessment.assessmentDate || null,
+        assessment.status,
+        assessment.createdBy || null,
+        assessment.createdAt,
+        assessment.updatedAt,
+      ]
+    ).catch((err) => {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[PostgreSQL Critical Error]: Failed to persist assessment', err);
+        throw err;
+      }
+      console.error('[PostgreSQL Assessment Persist Warning]:', (err as Error).message);
+    });
+  }
+
+  private deleteAssessmentFromPostgres(id: string, organizationId: string): void {
+    const pool = getPostgresPool();
+    if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('PostgreSQL is required in production environment.');
+      }
+      return;
+    }
+    pool.query('DELETE FROM assessments WHERE id = $1 AND organization_id = $2', [id, organizationId]).catch((err) => {
+      if (process.env.NODE_ENV === 'production') {
+        throw err;
+      }
+      console.error('[PostgreSQL Delete Assessment Warning]:', (err as Error).message);
+    });
+  }
+
+  private persistAssessmentGradeToPostgres(grade: AssessmentGrade): void {
+    const pool = getPostgresPool();
+    if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('PostgreSQL is required in production environment.');
+      }
+      return;
+    }
+    pool.query(
+      `INSERT INTO assessment_grades (
+        id, organization_id, assessment_id, student_id, score, feedback, graded_by, graded_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (id) DO UPDATE SET
+        score = EXCLUDED.score,
+        feedback = EXCLUDED.feedback,
+        graded_by = EXCLUDED.graded_by,
+        graded_at = EXCLUDED.graded_at,
+        updated_at = EXCLUDED.updated_at;`,
+      [
+        grade.id,
+        grade.organizationId,
+        grade.assessmentId,
+        grade.studentId,
+        grade.score,
+        grade.feedback || null,
+        grade.gradedBy || null,
+        grade.gradedAt,
+        grade.updatedAt,
+      ]
+    ).catch((err) => {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[PostgreSQL Critical Error]: Failed to persist assessment grade', err);
+        throw err;
+      }
+      console.error('[PostgreSQL Grade Persist Warning]:', (err as Error).message);
+    });
+  }
+
+  private deleteAssessmentGradeFromPostgres(id: string, organizationId: string): void {
+    const pool = getPostgresPool();
+    if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('PostgreSQL is required in production environment.');
+      }
+      return;
+    }
+    pool.query('DELETE FROM assessment_grades WHERE id = $1 AND organization_id = $2', [id, organizationId]).catch((err) => {
+      if (process.env.NODE_ENV === 'production') {
+        throw err;
+      }
+      console.error('[PostgreSQL Delete Grade Warning]:', (err as Error).message);
+    });
+  }
+
+  getAttendanceSessions(
+    organizationId: string,
+    filters?: { classroomId?: string; courseId?: string; date?: string; status?: AttendanceSessionStatus }
+  ): AttendanceSession[] {
+    return Array.from(this.attendanceSessions.values())
+      .filter((s) => {
+        if (s.organizationId !== organizationId) return false;
+        if (filters?.classroomId && s.classroomId !== filters.classroomId) return false;
+        if (filters?.courseId && s.courseId !== filters.courseId) return false;
+        if (filters?.date && s.date !== filters.date) return false;
+        if (filters?.status && s.status !== filters.status) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+
+  getAttendanceSessionById(id: string, organizationId: string): AttendanceSession | undefined {
+    const s = this.attendanceSessions.get(id);
+    if (!s || s.organizationId !== organizationId) return undefined;
+    return s;
+  }
+
+  createAttendanceSession(
+    data: Omit<AttendanceSession, 'id' | 'createdAt' | 'updatedAt'>
+  ): AttendanceSession {
+    const id = `att_sess_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const classroom = this.getClassroomById(data.classroomId, data.organizationId);
+    const course = data.courseId ? this.getCourseById(data.courseId, data.organizationId) : undefined;
+    const openedUser = this.getUserById(data.openedBy, data.organizationId);
+
+    const now = new Date().toISOString();
+    const session: AttendanceSession = {
+      ...data,
+      id,
+      classroomName: classroom?.name,
+      courseTitle: course?.title,
+      openedByName: openedUser?.fullName,
+      presentCount: data.presentCount || 0,
+      absentCount: data.absentCount || 0,
+      lateCount: data.lateCount || 0,
+      excusedCount: data.excusedCount || 0,
+      totalStudents: data.totalStudents || 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.attendanceSessions.set(id, session);
+    this.persistAttendanceSessionToPostgres(session);
+    return session;
+  }
+
+  updateAttendanceSession(
+    id: string,
+    organizationId: string,
+    updates: Partial<AttendanceSession>
+  ): AttendanceSession | undefined {
+    const s = this.getAttendanceSessionById(id, organizationId);
+    if (!s) return undefined;
+
+    const updated: AttendanceSession = {
+      ...s,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.attendanceSessions.set(id, updated);
+    this.persistAttendanceSessionToPostgres(updated);
+    return updated;
+  }
+
+  deleteAttendanceSession(id: string, organizationId: string): boolean {
+    const s = this.getAttendanceSessionById(id, organizationId);
+    if (!s) return false;
+    this.attendanceSessions.delete(id);
+    this.deleteAttendanceSessionFromPostgres(id, organizationId);
+    // Delete linked attendance records or unlink them
+    for (const [recId, rec] of this.attendanceRecords.entries()) {
+      if (rec.organizationId === organizationId && rec.sessionId === id) {
+        this.attendanceRecords.delete(recId);
+      }
+    }
+    return true;
+  }
+
+  // --- Attendance Records ---
+  getAttendanceRecords(
+    organizationId: string,
+    filters?: { sessionId?: string; courseId?: string; classroomId?: string; studentId?: string; date?: string; status?: string }
+  ): AttendanceRecord[] {
     return Array.from(this.attendanceRecords.values()).filter((r) => {
       if (r.organizationId !== organizationId) return false;
-      if (courseId && r.courseId !== courseId) return false;
-      if (classroomId && r.classroomId !== classroomId) return false;
-      if (date && r.date !== date) return false;
+      if (filters?.sessionId && r.sessionId !== filters.sessionId) return false;
+      if (filters?.courseId && r.courseId !== filters.courseId) return false;
+      if (filters?.classroomId && r.classroomId !== filters.classroomId) return false;
+      if (filters?.studentId && r.studentId !== filters.studentId) return false;
+      if (filters?.date && r.date !== filters.date) return false;
+      if (filters?.status && r.status !== filters.status) return false;
       return true;
     });
   }
 
-  recordAttendanceBatch(organizationId: string, records: Omit<AttendanceRecord, 'id' | 'createdAt'>[]): AttendanceRecord[] {
+  // Legacy alias
+  getAttendance(organizationId: string, courseId?: string, classroomId?: string, date?: string): AttendanceRecord[] {
+    return this.getAttendanceRecords(organizationId, { courseId, classroomId, date });
+  }
+
+  getAttendanceRecordById(id: string, organizationId: string): AttendanceRecord | undefined {
+    const r = this.attendanceRecords.get(id);
+    if (!r || r.organizationId !== organizationId) return undefined;
+    return r;
+  }
+
+  recordAttendanceBatch(
+    organizationId: string,
+    records: Omit<AttendanceRecord, 'id' | 'createdAt'>[],
+    sessionId?: string
+  ): AttendanceRecord[] {
     const saved: AttendanceRecord[] = [];
     const now = new Date().toISOString();
+
+    let present = 0;
+    let absent = 0;
+    let late = 0;
+    let excused = 0;
 
     for (const rec of records) {
       const key = `att_${rec.courseId || rec.classroomId}_${rec.studentId}_${rec.date}`;
       const student = this.getUserById(rec.studentId, organizationId);
+      const classroom = this.getClassroomById(rec.classroomId, organizationId);
+      const recordedUser = rec.recordedBy ? this.getUserById(rec.recordedBy, organizationId) : undefined;
+
       const entry: AttendanceRecord = {
         ...rec,
         id: key,
         organizationId,
-        studentName: student?.fullName,
+        sessionId: sessionId || rec.sessionId,
+        studentName: student?.fullName || rec.studentName,
+        studentIdNumber: student?.studentIdNumber || rec.studentIdNumber,
+        classroomName: classroom?.name || rec.classroomName,
+        recordedByName: recordedUser?.fullName || rec.recordedByName,
         createdAt: now,
+        updatedAt: now,
       };
       this.attendanceRecords.set(key, entry);
+      this.persistAttendanceRecordToPostgres(entry);
       saved.push(entry);
+
+      if (rec.status === 'PRESENT') present++;
+      else if (rec.status === 'ABSENT') absent++;
+      else if (rec.status === 'LATE') late++;
+      else if (rec.status === 'EXCUSED') excused++;
     }
+
+    // If linked to a session, update session stats
+    const activeSessionId = sessionId || records[0]?.sessionId;
+    if (activeSessionId) {
+      const session = this.getAttendanceSessionById(activeSessionId, organizationId);
+      if (session) {
+        session.presentCount = present;
+        session.absentCount = absent;
+        session.lateCount = late;
+        session.excusedCount = excused;
+        session.totalStudents = records.length;
+        session.updatedAt = now;
+        this.attendanceSessions.set(activeSessionId, session);
+        this.persistAttendanceSessionToPostgres(session);
+      }
+    }
+
     return saved;
+  }
+
+  updateAttendanceRecord(
+    id: string,
+    organizationId: string,
+    updates: Partial<AttendanceRecord>
+  ): AttendanceRecord | undefined {
+    const r = this.getAttendanceRecordById(id, organizationId);
+    if (!r) return undefined;
+
+    const updated: AttendanceRecord = {
+      ...r,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.attendanceRecords.set(id, updated);
+    this.persistAttendanceRecordToPostgres(updated);
+    return updated;
+  }
+
+  getAttendanceSummaryForStudent(studentId: string, organizationId: string) {
+    const records = this.getAttendanceRecords(organizationId, { studentId });
+    const totalDays = records.length;
+    const presentDays = records.filter((r) => r.status === 'PRESENT').length;
+    const absentDays = records.filter((r) => r.status === 'ABSENT').length;
+    const lateDays = records.filter((r) => r.status === 'LATE').length;
+    const excusedDays = records.filter((r) => r.status === 'EXCUSED').length;
+    const attendanceRate =
+      totalDays > 0 ? Math.round(((presentDays + lateDays + excusedDays) / totalDays) * 100) : 100;
+
+    return {
+      studentId,
+      totalDays,
+      total: totalDays,
+      presentDays,
+      present: presentDays,
+      absentDays,
+      absent: absentDays,
+      lateDays,
+      late: lateDays,
+      excusedDays,
+      excused: excusedDays,
+      attendanceRate,
+      records: records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    };
+  }
+
+  // --- Assessments (Academic Evaluations & Gradebook) ---
+  getAssessments(
+    organizationId: string,
+    filters?: { courseId?: string; classroomId?: string; termId?: string; category?: string; status?: string }
+  ): Assessment[] {
+    return Array.from(this.assessments.values())
+      .filter((a) => {
+        if (a.organizationId !== organizationId) return false;
+        if (filters?.courseId && a.courseId !== filters.courseId) return false;
+        if (filters?.classroomId && a.classroomId !== filters.classroomId) return false;
+        if (filters?.termId && a.termId !== filters.termId) return false;
+        if (filters?.category && a.category !== filters.category) return false;
+        if (filters?.status && a.status !== filters.status) return false;
+        return true;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  getAssessmentById(id: string, organizationId: string): Assessment | undefined {
+    const a = this.assessments.get(id);
+    if (!a || a.organizationId !== organizationId) return undefined;
+    return a;
+  }
+
+  createAssessment(data: Omit<Assessment, 'id' | 'createdAt' | 'updatedAt'>): Assessment {
+    const id = `ass_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const course = this.getCourseById(data.courseId, data.organizationId);
+    const subject = data.subjectId ? this.getSubjectById(data.subjectId, data.organizationId) : course ? this.getSubjectById(course.subjectId, data.organizationId) : undefined;
+    const classroom = data.classroomId ? this.getClassroomById(data.classroomId, data.organizationId) : course?.classroomId ? this.getClassroomById(course.classroomId, data.organizationId) : undefined;
+    const term = data.termId ? this.getTermById(data.termId, data.organizationId) : course?.termId ? this.getTermById(course.termId, data.organizationId) : undefined;
+    const creator = data.createdBy ? this.getUserById(data.createdBy, data.organizationId) : undefined;
+
+    const now = new Date().toISOString();
+    const assessment: Assessment = {
+      ...data,
+      id,
+      courseTitle: course?.title,
+      subjectId: subject?.id || course?.subjectId,
+      subjectName: subject?.name || course?.subjectName,
+      classroomId: classroom?.id || course?.classroomId,
+      classroomName: classroom?.name || course?.classroomName,
+      termId: term?.id || course?.termId,
+      termName: term?.name,
+      createdByName: creator?.fullName,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.assessments.set(id, assessment);
+    this.persistAssessmentToPostgres(assessment);
+    return assessment;
+  }
+
+  updateAssessment(
+    id: string,
+    organizationId: string,
+    updates: Partial<Assessment>
+  ): Assessment | undefined {
+    const a = this.getAssessmentById(id, organizationId);
+    if (!a) return undefined;
+
+    const updated: Assessment = {
+      ...a,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.assessments.set(id, updated);
+    this.persistAssessmentToPostgres(updated);
+    return updated;
+  }
+
+  deleteAssessment(id: string, organizationId: string): boolean {
+    const a = this.getAssessmentById(id, organizationId);
+    if (!a) return false;
+    this.assessments.delete(id);
+    this.deleteAssessmentFromPostgres(id, organizationId);
+    // Delete linked student grades
+    for (const [gid, gr] of this.assessmentGrades.entries()) {
+      if (gr.organizationId === organizationId && gr.assessmentId === id) {
+        this.assessmentGrades.delete(gid);
+        this.deleteAssessmentGradeFromPostgres(gid, organizationId);
+      }
+    }
+    return true;
+  }
+
+  // --- Assessment Grades ---
+  getAssessmentGrades(
+    organizationId: string,
+    filters?: { assessmentId?: string; studentId?: string }
+  ): AssessmentGrade[] {
+    return Array.from(this.assessmentGrades.values()).filter((g) => {
+      if (g.organizationId !== organizationId) return false;
+      if (filters?.assessmentId && g.assessmentId !== filters.assessmentId) return false;
+      if (filters?.studentId && g.studentId !== filters.studentId) return false;
+      return true;
+    });
+  }
+
+  getAssessmentGradeById(id: string, organizationId: string): AssessmentGrade | undefined {
+    const g = this.assessmentGrades.get(id);
+    if (!g || g.organizationId !== organizationId) return undefined;
+    return g;
+  }
+
+  deleteAssessmentGrade(id: string, organizationId: string): boolean {
+    const g = this.getAssessmentGradeById(id, organizationId);
+    if (!g) return false;
+    this.assessmentGrades.delete(id);
+    this.deleteAssessmentGradeFromPostgres(id, organizationId);
+    return true;
+  }
+
+  getAssessmentGradeByStudentAndAssessment(
+    assessmentId: string,
+    studentId: string,
+    organizationId: string
+  ): AssessmentGrade | undefined {
+    return Array.from(this.assessmentGrades.values()).find(
+      (g) => g.organizationId === organizationId && g.assessmentId === assessmentId && g.studentId === studentId
+    );
+  }
+
+  recordAssessmentGrade(
+    data: Omit<AssessmentGrade, 'id' | 'gradedAt' | 'updatedAt'>
+  ): AssessmentGrade {
+    const assessment = this.getAssessmentById(data.assessmentId, data.organizationId);
+    const student = this.getUserById(data.studentId, data.organizationId);
+    const grader = data.gradedBy ? this.getUserById(data.gradedBy, data.organizationId) : undefined;
+    const maxScore = assessment?.maxScore || data.maxScore || 100;
+    const percentage = Number(((data.score / maxScore) * 100).toFixed(2));
+    const now = new Date().toISOString();
+
+    const existing = this.getAssessmentGradeByStudentAndAssessment(
+      data.assessmentId,
+      data.studentId,
+      data.organizationId
+    );
+
+    if (existing) {
+      const updated: AssessmentGrade = {
+        ...existing,
+        score: data.score,
+        percentage,
+        feedback: data.feedback !== undefined ? data.feedback : existing.feedback,
+        gradedBy: data.gradedBy || existing.gradedBy,
+        gradedByName: grader?.fullName || existing.gradedByName,
+        updatedAt: now,
+      };
+      this.assessmentGrades.set(existing.id, updated);
+      this.persistAssessmentGradeToPostgres(updated);
+      return updated;
+    }
+
+    const id = `grd_${data.assessmentId}_${data.studentId}`;
+    const grade: AssessmentGrade = {
+      ...data,
+      id,
+      assessmentTitle: assessment?.title,
+      assessmentCategory: assessment?.category,
+      maxScore,
+      percentage,
+      studentName: student?.fullName,
+      studentIdNumber: student?.studentIdNumber,
+      gradedByName: grader?.fullName,
+      gradedAt: now,
+      updatedAt: now,
+    };
+    this.assessmentGrades.set(id, grade);
+    this.persistAssessmentGradeToPostgres(grade);
+    return grade;
+  }
+
+  recordAssessmentGradesBatch(
+    organizationId: string,
+    grades: Omit<AssessmentGrade, 'id' | 'gradedAt' | 'updatedAt'>[]
+  ): AssessmentGrade[] {
+    const recorded: AssessmentGrade[] = [];
+    for (const g of grades) {
+      recorded.push(this.recordAssessmentGrade({ ...g, organizationId }));
+    }
+    return recorded;
+  }
+
+  // --- Gradebook Matrix Calculation (Course-Level Holistic Gradebook) ---
+  getGradebookMatrix(courseId: string, organizationId: string): (GradebookMatrix & { matrix: any[] }) | undefined {
+    const course = this.getCourseById(courseId, organizationId);
+    if (!course) return undefined;
+
+    const assessments = this.getAssessments(organizationId, { courseId });
+    const assignments = this.getAssignmentsByCourse(courseId, organizationId);
+
+    // Build unified evaluation items
+    const evalItems = [
+      ...assessments.map((a) => ({
+        id: a.id,
+        title: a.title,
+        category: a.category,
+        maxScore: a.maxScore,
+        weightPercentage: a.weightPercentage,
+        dueDate: a.dueDate,
+        isAssignment: false,
+      })),
+      ...assignments.map((asg) => ({
+        id: asg.id,
+        title: asg.title,
+        category: 'ASSIGNMENT',
+        maxScore: asg.maxScore || 100,
+        weightPercentage: 0,
+        dueDate: asg.dueDate,
+        isAssignment: true,
+      })),
+    ];
+
+    // Find enrolled students for this course / classroom
+    let students: User[] = [];
+    if (course.classroomId) {
+      students = this.getStudentsByClassroom(course.classroomId, organizationId);
+    } else {
+      // Fallback to students enrolled in the course directly or in org
+      students = this.getUsersByOrg(organizationId, 'STUDENT');
+    }
+
+    let classTotalEarned = 0;
+    let classTotalMax = 0;
+
+    const matrixRows = students.map((student) => {
+      const scoresRecord: Record<string, GradebookMatrixStudentScore> = {};
+      let studentEarned = 0;
+      let studentMax = 0;
+
+      for (const item of evalItems) {
+        if (item.isAssignment) {
+          const sub = this.getSubmissionsByAssignment(item.id, organizationId).find((s) => s.studentId === student.id);
+          if (sub && sub.score !== undefined) {
+            const percentage = item.maxScore > 0 ? Number(((sub.score / item.maxScore) * 100).toFixed(2)) : 0;
+            scoresRecord[item.id] = {
+              score: sub.score,
+              maxScore: item.maxScore,
+              percentage,
+              feedback: sub.teacherFeedback,
+              gradedAt: sub.submittedAt,
+              status: 'GRADED',
+            };
+            studentEarned += sub.score;
+            studentMax += item.maxScore;
+          } else {
+            scoresRecord[item.id] = {
+              maxScore: item.maxScore,
+              status: 'PENDING',
+            };
+          }
+        } else {
+          const grade = this.getAssessmentGradeByStudentAndAssessment(item.id, student.id, organizationId);
+          if (grade) {
+            scoresRecord[item.id] = {
+              score: grade.score,
+              maxScore: item.maxScore,
+              percentage: grade.percentage,
+              feedback: grade.feedback,
+              gradedAt: grade.gradedAt,
+              status: 'GRADED',
+            };
+            studentEarned += grade.score;
+            studentMax += item.maxScore;
+          } else {
+            scoresRecord[item.id] = {
+              maxScore: item.maxScore,
+              status: 'PENDING',
+            };
+          }
+        }
+      }
+
+      const percentage = studentMax > 0 ? Number(((studentEarned / studentMax) * 100).toFixed(1)) : 0;
+      classTotalEarned += studentEarned;
+      classTotalMax += studentMax;
+
+      const letterGrade = this.computeLetterGrade(percentage);
+
+      return {
+        studentId: student.id,
+        studentName: student.fullName,
+        studentIdNumber: student.studentIdNumber,
+        classroomName: course.classroomName,
+        scores: scoresRecord,
+        totalEarned: Number(studentEarned.toFixed(1)),
+        totalMax: studentMax,
+        percentage,
+        averagePercent: percentage,
+        letterGrade,
+      };
+    });
+
+    const classAveragePercentage =
+      classTotalMax > 0 ? Number(((classTotalEarned / classTotalMax) * 100).toFixed(1)) : 0;
+
+    return {
+      course,
+      assessments: evalItems.map((a) => ({
+        id: a.id,
+        title: a.title,
+        category: a.category,
+        maxScore: a.maxScore,
+        weightPercentage: a.weightPercentage,
+        dueDate: a.dueDate,
+      })),
+      students: matrixRows,
+      matrix: matrixRows,
+      classAveragePercentage,
+    };
+  }
+
+  // --- Student Academic Performance Summary (Student & Parent Views) ---
+  getStudentAcademicPerformance(
+    studentId: string,
+    organizationId: string
+  ): StudentAcademicPerformanceSummary & { breakdown: any[] } {
+    const student = this.getUserById(studentId, organizationId);
+    const classroomName = student?.classroomId
+      ? this.getClassroomById(student.classroomId, organizationId)?.name
+      : undefined;
+
+    // Determine enrolled courses
+    let courses: Course[] = [];
+    if (student?.classroomId) {
+      courses = this.getCoursesByClassroom(student.classroomId, organizationId);
+    } else {
+      courses = this.getCourses(organizationId);
+    }
+
+    let overallEarned = 0;
+    let overallMax = 0;
+    let totalAssessmentsCount = 0;
+    let completedAssessmentsCount = 0;
+    let pendingAssessmentsCount = 0;
+
+    const coursePerformances = courses.map((c) => {
+      const assessments = this.getAssessments(organizationId, { courseId: c.id });
+      const assignments = this.getAssignmentsByCourse(c.id, organizationId);
+      const evalItems = [
+        ...assessments.map((a) => ({
+          id: a.id,
+          title: a.title,
+          category: a.category,
+          maxScore: a.maxScore,
+          weightPercentage: a.weightPercentage,
+          dueDate: a.dueDate,
+          isAssignment: false,
+        })),
+        ...assignments.map((asg) => ({
+          id: asg.id,
+          title: asg.title,
+          category: 'ASSIGNMENT',
+          maxScore: asg.maxScore || 100,
+          weightPercentage: 0,
+          dueDate: asg.dueDate,
+          isAssignment: true,
+        })),
+      ];
+
+      let cEarned = 0;
+      let cMax = 0;
+      let cGradedCount = 0;
+      let cPendingCount = 0;
+
+      const items: StudentAssessmentItem[] = evalItems.map((evalItem) => {
+        totalAssessmentsCount++;
+        let isGraded = false;
+        let score: number | undefined;
+        let feedback: string | undefined;
+        let gradedAt: string | undefined;
+
+        if (evalItem.isAssignment) {
+          const sub = this.getSubmissionsByAssignment(evalItem.id, organizationId).find((s) => s.studentId === studentId);
+          if (sub && sub.score !== undefined) {
+            isGraded = true;
+            score = sub.score;
+            feedback = sub.teacherFeedback;
+            gradedAt = sub.submittedAt;
+          }
+        } else {
+          const grade = this.getAssessmentGradeByStudentAndAssessment(evalItem.id, studentId, organizationId);
+          if (grade) {
+            isGraded = true;
+            score = grade.score;
+            feedback = grade.feedback;
+            gradedAt = grade.gradedAt;
+          }
+        }
+
+        if (isGraded && score !== undefined) {
+          completedAssessmentsCount++;
+          cGradedCount++;
+          cEarned += score;
+          cMax += evalItem.maxScore;
+          const percentage = evalItem.maxScore > 0 ? Number(((score / evalItem.maxScore) * 100).toFixed(2)) : 0;
+          return {
+            assessmentId: evalItem.id,
+            title: evalItem.title,
+            category: evalItem.category,
+            maxScore: evalItem.maxScore,
+            weightPercentage: evalItem.weightPercentage,
+            score,
+            percentage,
+            feedback,
+            gradedAt,
+            dueDate: evalItem.dueDate,
+            status: 'GRADED',
+          };
+        } else {
+          pendingAssessmentsCount++;
+          cPendingCount++;
+          const isOverdue = evalItem.dueDate && new Date(evalItem.dueDate).getTime() < Date.now();
+          return {
+            assessmentId: evalItem.id,
+            title: evalItem.title,
+            category: evalItem.category,
+            maxScore: evalItem.maxScore,
+            weightPercentage: evalItem.weightPercentage,
+            dueDate: evalItem.dueDate,
+            status: isOverdue ? 'MISSED' : 'PENDING',
+          };
+        }
+      });
+
+      overallEarned += cEarned;
+      overallMax += cMax;
+
+      const cPercent = cMax > 0 ? Number(((cEarned / cMax) * 100).toFixed(1)) : 0;
+      const letterGrade = this.computeLetterGrade(cPercent);
+
+      return {
+        courseId: c.id,
+        courseTitle: c.title,
+        subjectId: c.subjectId,
+        subjectName: c.subjectName,
+        teacherName: c.teacherName,
+        classroomName: c.classroomName,
+        totalAssessments: evalItems.length,
+        gradedAssessments: cGradedCount,
+        pendingAssessments: cPendingCount,
+        earnedPoints: Number(cEarned.toFixed(1)),
+        earned: Number(cEarned.toFixed(1)),
+        maxPossiblePoints: cMax,
+        max: cMax,
+        percentage: cPercent,
+        average: cPercent,
+        letterGrade,
+        assessments: items,
+      };
+    });
+
+    const overallGpaPercent =
+      overallMax > 0 ? Number(((overallEarned / overallMax) * 100).toFixed(1)) : 0;
+    const letterGrade = this.computeLetterGrade(overallGpaPercent);
+
+    return {
+      studentId,
+      studentName: student?.fullName || 'الطالب',
+      studentIdNumber: student?.studentIdNumber,
+      classroomName,
+      enrolledCoursesCount: courses.length,
+      totalAssessmentsCount,
+      completedAssessmentsCount,
+      pendingAssessmentsCount,
+      overallGpaPercent,
+      letterGrade,
+      courses: coursePerformances,
+      breakdown: coursePerformances,
+    };
+  }
+
+  computeLetterGrade(percentage: number): string {
+    if (percentage >= 95) return 'A+';
+    if (percentage >= 90) return 'A';
+    if (percentage >= 85) return 'B+';
+    if (percentage >= 80) return 'B';
+    if (percentage >= 75) return 'C+';
+    if (percentage >= 70) return 'C';
+    if (percentage >= 60) return 'D';
+    if (percentage > 0) return 'F';
+    return 'N/A';
   }
 
   // Audit Logging
@@ -2382,7 +3849,10 @@ class PlatformDatabase {
     this.lessons.clear();
     this.assignments.clear();
     this.submissions.clear();
+    this.attendanceSessions.clear();
     this.attendanceRecords.clear();
+    this.assessments.clear();
+    this.assessmentGrades.clear();
     this.auditLogs.clear();
     this.invitations.clear();
     this.organizationMemberships.clear();

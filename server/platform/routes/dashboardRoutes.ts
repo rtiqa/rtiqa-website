@@ -73,35 +73,47 @@ dashboardRouter.get('/stats', (req: PlatformRequest, res: express.Response) => {
     }
 
     // Student
-    const myCourses = db.getCourses(orgId).filter((c) => c.classroomId === user.classroomId);
-    const mySubmissions = db.getSubmissionsByStudent(user.id, orgId);
-    const allAssignments = db.getAssignmentsByOrg(orgId).filter((a) => myCourses.some((c) => c.id === a.courseId));
+    const academicPerformance = db.getStudentAcademicPerformance(user.id, orgId);
+    const attendanceSummary = db.getAttendanceSummaryForStudent(user.id, orgId);
 
-    const pendingAssignments = allAssignments.filter((a) => !mySubmissions.some((s) => s.assignmentId === a.id));
-    const gradedSubmissions = mySubmissions.filter((s) => s.score !== undefined);
-
-    let earnedTotal = 0;
-    let maxTotal = 0;
-    gradedSubmissions.forEach((s) => {
-      const asg = db.getAssignmentById(s.assignmentId, orgId);
-      if (asg && s.score !== undefined) {
-        earnedTotal += s.score;
-        maxTotal += asg.maxScore;
-      }
+    const myCourses = academicPerformance.courses.map((c) => {
+      const fullCourse = db.getCourseById(c.courseId, orgId);
+      return fullCourse || {
+        id: c.courseId,
+        title: c.courseTitle,
+        subjectId: c.subjectId,
+        subjectName: c.subjectName,
+        teacherName: c.teacherName,
+        classroomName: c.classroomName,
+      };
     });
 
-    const gpaPercent = maxTotal > 0 ? Math.round((earnedTotal / maxTotal) * 100) : 95;
+    const mySubmissions = db.getSubmissionsByStudent(user.id, orgId);
+    const allAssignments = db.getAssignmentsByOrg(orgId).filter((a) => myCourses.some((c) => c.id === a.courseId));
+    const pendingAssignments = allAssignments.filter((a) => !mySubmissions.some((s) => s.assignmentId === a.id));
+
+    // Assessments upcoming
+    const allAssessments = db.getAssessments(orgId).filter((ass) => myCourses.some((c) => c.id === ass.courseId) && ass.status !== 'DRAFT');
+    const myGrades = db.getAssessmentGrades(orgId, { studentId: user.id });
+    const pendingAssessments = allAssessments.filter((ass) => !myGrades.some((g) => g.assessmentId === ass.id));
 
     return res.json({
       success: true,
       data: {
         role: 'STUDENT',
         enrolledCoursesCount: myCourses.length,
-        pendingAssignmentsCount: pendingAssignments.length,
-        completedAssignmentsCount: mySubmissions.length,
-        gpaPercent,
+        pendingAssignmentsCount: pendingAssignments.length + pendingAssessments.length,
+        completedAssignmentsCount: mySubmissions.length + myGrades.length,
+        gpaPercent: academicPerformance.overallGpaPercent,
+        letterGrade: academicPerformance.letterGrade,
+        attendanceRate: attendanceSummary.attendanceRate,
+        attendanceSummary,
+        academicPerformance,
         myCourses,
-        upcomingAssignments: pendingAssignments.slice(0, 4),
+        upcomingAssignments: [
+          ...pendingAssignments.slice(0, 3).map((a) => ({ id: a.id, title: a.title, type: 'ASSIGNMENT', dueDate: a.dueDate, maxScore: a.maxScore })),
+          ...pendingAssessments.slice(0, 3).map((a) => ({ id: a.id, title: a.title, type: a.category, dueDate: a.dueDate, maxScore: a.maxScore })),
+        ],
       },
     });
   } catch {

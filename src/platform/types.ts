@@ -314,15 +314,186 @@ export interface Submission {
 export interface AttendanceRecord {
   id: string;
   organizationId: string;
+  sessionId?: string;
   courseId?: string;
   classroomId: string;
+  classroomName?: string;
   studentId: string;
   studentName?: string;
+  studentIdNumber?: string;
   recordedBy: string;
+  recordedByName?: string;
   date: string;
   status: AttendanceStatus;
   notes?: string;
   createdAt: string;
+  updatedAt?: string;
+}
+
+export type AttendanceSessionStatus = 'OPEN' | 'COMPLETED' | 'LOCKED';
+
+export interface AttendanceSession {
+  id: string;
+  organizationId: string;
+  classroomId: string;
+  classroomName?: string;
+  courseId?: string;
+  courseTitle?: string;
+  date: string;
+  periodNumber?: number;
+  title?: string;
+  status: AttendanceSessionStatus;
+  openedBy: string;
+  openedByName?: string;
+  presentCount?: number;
+  absentCount?: number;
+  lateCount?: number;
+  excusedCount?: number;
+  totalStudents?: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AssessmentCategory =
+  | 'EXAM'
+  | 'QUIZ'
+  | 'HOMEWORK'
+  | 'PROJECT'
+  | 'PARTICIPATION'
+  | 'MIDTERM'
+  | 'FINAL'
+  | 'PRACTICAL'
+  | 'ASSIGNMENT'
+  | 'OTHER'
+  | string;
+
+export type AssessmentStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
+
+export interface Assessment {
+  id: string;
+  organizationId: string;
+  courseId: string;
+  courseTitle?: string;
+  subjectId?: string;
+  subjectName?: string;
+  classroomId?: string;
+  classroomName?: string;
+  termId?: string;
+  termName?: string;
+  academicYearId?: string;
+  title: string;
+  description?: string;
+  category: AssessmentCategory;
+  maxScore: number;
+  weightPercentage?: number;
+  dueDate?: string;
+  assessmentDate?: string;
+  status: AssessmentStatus;
+  createdBy?: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AssessmentGrade {
+  id: string;
+  organizationId: string;
+  assessmentId: string;
+  assessmentTitle?: string;
+  assessmentCategory?: AssessmentCategory;
+  maxScore?: number;
+  studentId: string;
+  studentName?: string;
+  studentIdNumber?: string;
+  score: number;
+  percentage?: number;
+  feedback?: string;
+  gradedBy?: string;
+  gradedByName?: string;
+  gradedAt: string;
+  updatedAt: string;
+}
+
+export interface StudentAssessmentItem {
+  assessmentId: string;
+  title: string;
+  category: AssessmentCategory;
+  maxScore: number;
+  weightPercentage?: number;
+  score?: number;
+  percentage?: number;
+  feedback?: string;
+  gradedAt?: string;
+  dueDate?: string;
+  status: 'GRADED' | 'PENDING' | 'MISSED';
+}
+
+export interface StudentCoursePerformance {
+  courseId: string;
+  courseTitle: string;
+  subjectId?: string;
+  subjectName?: string;
+  subjectCode?: string;
+  teacherName?: string;
+  classroomName?: string;
+  totalAssessments: number;
+  gradedAssessments: number;
+  pendingAssessments: number;
+  earnedPoints: number;
+  maxPossiblePoints: number;
+  percentage: number;
+  letterGrade: string;
+  assessments: StudentAssessmentItem[];
+}
+
+export interface StudentAcademicPerformanceSummary {
+  studentId: string;
+  studentName: string;
+  studentIdNumber?: string;
+  classroomName?: string;
+  enrolledCoursesCount: number;
+  totalAssessmentsCount: number;
+  completedAssessmentsCount: number;
+  pendingAssessmentsCount: number;
+  overallGpaPercent: number;
+  letterGrade: string;
+  courses: StudentCoursePerformance[];
+}
+
+export interface GradebookMatrixStudentScore {
+  score?: number;
+  maxScore: number;
+  percentage?: number;
+  feedback?: string;
+  gradedAt?: string;
+  status: 'GRADED' | 'PENDING';
+}
+
+export interface GradebookMatrixRow {
+  studentId: string;
+  studentName: string;
+  studentIdNumber?: string;
+  classroomName?: string;
+  scores: Record<string, GradebookMatrixStudentScore>;
+  totalEarned: number;
+  totalMax: number;
+  percentage: number;
+  letterGrade: string;
+}
+
+export interface GradebookMatrix {
+  course: Course;
+  assessments: Array<{
+    id: string;
+    title: string;
+    category: AssessmentCategory;
+    maxScore: number;
+    weightPercentage?: number;
+    dueDate?: string;
+  }>;
+  students: GradebookMatrixRow[];
+  classAveragePercentage: number;
 }
 
 export interface AuditLog {
