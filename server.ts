@@ -112,19 +112,43 @@ export async function createApp() {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  // API Route: Health Check
+  // API Route: Health & Readiness Check
   app.get('/api/health', async (req, res) => {
     try {
-      const { checkPostgresConnection } = await import('./src/db/postgres');
+      const { checkPostgresConnection } = await import('./src/db/postgres.ts');
+      const { getMigrationStatus } = await import('./src/db/migrate.ts');
+      const { getStorageService } = await import('./server/platform/storage/service.ts');
+
       const dbStatus = await checkPostgresConnection();
-      res.json({
-        status: 'ok',
+      const migrationStatus = dbStatus.connected ? await getMigrationStatus() : { migrated: false };
+      const storageHealth = getStorageService().getHealth();
+
+      const isHealthy = process.env.NODE_ENV === 'production'
+        ? dbStatus.connected && migrationStatus.migrated && storageHealth.status === 'READY'
+        : true;
+
+      res.status(isHealthy ? 200 : 503).json({
+        status: isHealthy ? 'ok' : 'degraded',
         service: 'rtiqa-api-gateway',
-        database: dbStatus,
+        environment: process.env.NODE_ENV || 'development',
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+        database: {
+          connected: dbStatus.connected,
+          engine: dbStatus.engine,
+          connectionUrlConfigured: dbStatus.connectionUrlConfigured,
+          migration: migrationStatus,
+          message: dbStatus.message,
+        },
+        storage: storageHealth,
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        status: 'error',
+        service: 'rtiqa-api-gateway',
+        error: err.message,
         timestamp: new Date().toISOString(),
       });
-    } catch {
-      res.json({ status: 'ok', service: 'rtiqa-api-gateway', timestamp: new Date().toISOString() });
     }
   });
 

@@ -12,18 +12,32 @@ import { gradebookRouter } from './routes/gradebookRoutes.ts';
 import { dashboardRouter } from './routes/dashboardRoutes.ts';
 import { aiRouter } from './routes/aiRoutes.ts';
 import { studentRouter } from './routes/studentRoutes.ts';
+import { storageRouter } from './routes/storageRoutes.ts';
+import { getStorageService } from './storage/service.ts';
+import { getMigrationStatus } from '../../src/db/migrate.ts';
 
 export const platformApiRouter = express.Router();
 
-// Health check with PostgreSQL engine status (accessible publicly)
+// Health check with PostgreSQL engine & storage status (accessible publicly)
 platformApiRouter.get('/health', async (req, res) => {
   try {
     const dbStatus = await db.getEngineStatus();
-    res.json({
-      status: 'ok',
+    const migrationStatus = dbStatus.connected ? await getMigrationStatus() : { migrated: false };
+    const storageHealth = getStorageService().getHealth();
+
+    const isHealthy = process.env.NODE_ENV === 'production'
+      ? dbStatus.connected && migrationStatus.migrated && storageHealth.status === 'READY'
+      : true;
+
+    res.status(isHealthy ? 200 : 503).json({
+      status: isHealthy ? 'ok' : 'degraded',
       service: 'rtiqa-platform-api',
       version: '1.0.0',
-      database: dbStatus,
+      database: {
+        ...dbStatus,
+        migration: migrationStatus,
+      },
+      storage: storageHealth,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
@@ -48,5 +62,7 @@ platformApiRouter.use('/gradebook', requireOrg, gradebookRouter);
 platformApiRouter.use('/dashboard', requireOrg, dashboardRouter);
 platformApiRouter.use('/ai', requireOrg, aiRouter);
 platformApiRouter.use('/students', requireOrg, studentRouter);
+platformApiRouter.use('/storage', requireOrg, storageRouter);
+
 
 

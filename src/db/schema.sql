@@ -7,6 +7,13 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
+-- Schema Migrations Tracking
+CREATE TABLE IF NOT EXISTS _schema_migrations (
+    id SERIAL PRIMARY KEY,
+    version VARCHAR(64) UNIQUE NOT NULL,
+    executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
 -- 1. Organizations (Tenants)
 CREATE TABLE IF NOT EXISTS organizations (
     id VARCHAR(64) PRIMARY KEY,
@@ -555,6 +562,30 @@ CREATE TABLE IF NOT EXISTS ai_document_chunks (
 
 CREATE INDEX IF NOT EXISTS idx_ai_chunks_org_doc ON ai_document_chunks(organization_id, document_id);
 
+-- 19. Storage Objects (Multi-Tenant Secure Object Storage Metadata)
+CREATE TABLE IF NOT EXISTS storage_objects (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    object_key TEXT NOT NULL,
+    original_filename VARCHAR(255) NOT NULL,
+    content_type VARCHAR(128) NOT NULL,
+    size_bytes BIGINT NOT NULL,
+    checksum VARCHAR(128),
+    resource_type VARCHAR(64) NOT NULL,
+    resource_id VARCHAR(64) NOT NULL,
+    uploaded_by VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(32) DEFAULT 'PENDING' NOT NULL CHECK (status IN ('PENDING', 'UPLOADED', 'FAILED', 'DELETED')),
+    metadata JSONB DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    deleted_at TIMESTAMPTZ
+);
+
+CREATE INDEX IF NOT EXISTS idx_storage_objects_org_res ON storage_objects(organization_id, resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_storage_objects_key ON storage_objects(object_key);
+CREATE INDEX IF NOT EXISTS idx_storage_objects_uploader ON storage_objects(organization_id, uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_storage_objects_status ON storage_objects(organization_id, status);
+
 -- =====================================================================
 -- Row-Level Security (RLS) Policies & Enforcement
 -- Multi-tenant isolation at the PostgreSQL storage engine level
@@ -580,6 +611,7 @@ ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_document_chunks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE storage_objects ENABLE ROW LEVEL SECURITY;
 
 -- 1. Organizations Policy: Accessible if matching session tenant or if in global/unbound resolution mode
 DROP POLICY IF EXISTS tenant_isolation_org ON organizations;
@@ -773,6 +805,14 @@ DROP POLICY IF EXISTS tenant_isolation_assessment_grades ON assessment_grades;
 CREATE POLICY tenant_isolation_assessment_grades ON assessment_grades
     USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 29. Storage Objects Policy (Multi-Tenant Object Isolation)
+ALTER TABLE storage_objects ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_storage_objects ON storage_objects;
+CREATE POLICY tenant_isolation_storage_objects ON storage_objects
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
 
 
 

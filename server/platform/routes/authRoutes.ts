@@ -24,6 +24,7 @@ import {
   parseOAuthState,
   getGoogleOAuthCredentials,
 } from '../googleAuth.ts';
+import { emailService } from '../emailService.ts';
 import type { UserRole, AuthProviderType, User } from '../types.ts';
 
 export const authRouter = express.Router();
@@ -770,6 +771,18 @@ authRouter.post('/forgot-password', forgotPasswordLimiter, (req: express.Request
       db.createPasswordResetToken(user.id, user.email, tokenHash, 60);
       resetTokenValue = rawToken;
 
+      const org = user.organizationId ? db.getOrganizationById(user.organizationId) : undefined;
+      // Send transactional password reset email asynchronously
+      emailService.sendPasswordResetEmail({
+        to: user.email,
+        recipientName: user.fullName,
+        resetToken: rawToken,
+        tenantSlug: org?.slug,
+        orgName: org?.name,
+      }).catch((err) => {
+        console.error('[Auth] Failed to send password reset email:', err);
+      });
+
       db.logAction(user.organizationId, user.id, user.email, 'REQUEST_PASSWORD_RESET', 'User', user.id, {}, req.ip);
     }
 
@@ -1454,6 +1467,17 @@ authRouter.post(
         { email: normalizedEmail, role, inviteCode },
         req.ip
       );
+
+      // Send transactional invitation email asynchronously
+      emailService.sendSchoolInvitationEmail({
+        to: normalizedEmail,
+        recipientName: fullName ? sanitizeString(fullName) : undefined,
+        inviteCode,
+        role: role as string,
+        orgName: req.organization?.name,
+      }).catch((err) => {
+        console.error('[Auth] Failed to send invitation email:', err);
+      });
 
       return res.json({
         success: true,

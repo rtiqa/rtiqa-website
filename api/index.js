@@ -155,24 +155,8 @@ var init_postgres = __esm({
   }
 });
 
-// server.ts
-import express13 from "express";
-import path from "path";
-
-// server/platform/index.ts
-import express12 from "express";
-
-// server/platform/auth.ts
-import crypto2 from "crypto";
-
-// server/platform/db.ts
-init_postgres();
-
 // server/platform/security.ts
 import crypto from "crypto";
-var HASH_ITERATIONS = 1e4;
-var KEY_LENGTH = 64;
-var DIGEST = "sha512";
 function hashPassword(password) {
   const salt = crypto.randomBytes(16).toString("hex");
   const derivedKey = crypto.pbkdf2Sync(password, salt, HASH_ITERATIONS, KEY_LENGTH, DIGEST).toString("hex");
@@ -232,17 +216,6 @@ function validatePasswordStrength(password) {
   }
   return { isValid: true };
 }
-var rateLimitStore = /* @__PURE__ */ new Map();
-setInterval(() => {
-  const now = Date.now();
-  const cutoff = now - 15 * 60 * 1e3;
-  for (const [key, record] of rateLimitStore.entries()) {
-    record.timestamps = record.timestamps.filter((t) => t > cutoff);
-    if (record.timestamps.length === 0) {
-      rateLimitStore.delete(key);
-    }
-  }
-}, 5 * 60 * 1e3).unref();
 function createRateLimiter(options) {
   const { windowMs, maxRequests, message = "\u062A\u0645 \u062A\u062C\u0627\u0648\u0632 \u0627\u0644\u062D\u062F \u0627\u0644\u0645\u0633\u0645\u0648\u062D \u0644\u0644\u0637\u0644\u0628\u0627\u062A. \u064A\u0631\u062C\u0649 \u0627\u0644\u0645\u062D\u0627\u0648\u0644\u0629 \u0644\u0627\u062D\u0642\u0627\u064B", skipInTests = true } = options;
   return (req, res, next) => {
@@ -283,309 +256,337 @@ function isValidEmail(email) {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return re.test(email.trim().toLowerCase());
 }
+var HASH_ITERATIONS, KEY_LENGTH, DIGEST, rateLimitStore;
+var init_security = __esm({
+  "server/platform/security.ts"() {
+    HASH_ITERATIONS = 1e4;
+    KEY_LENGTH = 64;
+    DIGEST = "sha512";
+    rateLimitStore = /* @__PURE__ */ new Map();
+    setInterval(() => {
+      const now = Date.now();
+      const cutoff = now - 15 * 60 * 1e3;
+      for (const [key, record] of rateLimitStore.entries()) {
+        record.timestamps = record.timestamps.filter((t) => t > cutoff);
+        if (record.timestamps.length === 0) {
+          rateLimitStore.delete(key);
+        }
+      }
+    }, 5 * 60 * 1e3).unref();
+  }
+});
 
 // server/platform/db.ts
-var PlatformDatabase = class {
-  constructor() {
-    this.organizations = /* @__PURE__ */ new Map();
-    this.users = /* @__PURE__ */ new Map();
-    this.academicYears = /* @__PURE__ */ new Map();
-    this.terms = /* @__PURE__ */ new Map();
-    this.gradeLevels = /* @__PURE__ */ new Map();
-    this.classrooms = /* @__PURE__ */ new Map();
-    this.subjects = /* @__PURE__ */ new Map();
-    this.courses = /* @__PURE__ */ new Map();
-    this.lessons = /* @__PURE__ */ new Map();
-    this.assignments = /* @__PURE__ */ new Map();
-    this.submissions = /* @__PURE__ */ new Map();
-    this.attendanceRecords = /* @__PURE__ */ new Map();
-    this.auditLogs = /* @__PURE__ */ new Map();
-    this.invitations = /* @__PURE__ */ new Map();
-    this.organizationMemberships = /* @__PURE__ */ new Map();
-    this.passwordResetTokens = /* @__PURE__ */ new Map();
-    this.emailVerificationTokens = /* @__PURE__ */ new Map();
-    this.phoneVerificationOtps = /* @__PURE__ */ new Map();
-    this.aiConversations = /* @__PURE__ */ new Map();
-    this.aiMessages = /* @__PURE__ */ new Map();
-    this.aiUsageRecords = /* @__PURE__ */ new Map();
-    this.aiDocumentChunks = /* @__PURE__ */ new Map();
-    this.teacherAssignments = /* @__PURE__ */ new Map();
-    this.studentEnrollments = /* @__PURE__ */ new Map();
-    this.parentStudentLinks = /* @__PURE__ */ new Map();
-    this.studentRecords = /* @__PURE__ */ new Map();
-    this.studentBehaviorRecords = /* @__PURE__ */ new Map();
-    this.studentLifecycleEvents = /* @__PURE__ */ new Map();
-    this.seedInitialData();
-  }
-  // --- Engine Status Check ---
-  async getEngineStatus() {
-    return checkPostgresConnection();
-  }
-  // --- Seed realistic Multi-Tenant Data ---
-  seedInitialData() {
-    const schoolAId = "org_horizon_001";
-    const schoolA = {
-      id: schoolAId,
-      slug: "horizon",
-      name: "\u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0623\u0641\u0642 \u0627\u0644\u0630\u0643\u064A\u0629 (Horizon Smart Schools)",
-      legalName: "\u0634\u0631\u0643\u0629 \u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0623\u0641\u0642 \u0644\u0644\u062A\u0639\u0644\u064A\u0645 \u0648\u0627\u0644\u062A\u0631\u0628\u064A\u0629 \u0627\u0644\u0630\u0643\u064A\u0629",
-      countryCode: "SA",
-      timezone: "Asia/Riyadh",
-      locale: "ar",
-      logoUrl: "",
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.organizations.set(schoolAId, schoolA);
-    const schoolBId = "org_elite_002";
-    const schoolB = {
-      id: schoolBId,
-      slug: "elite",
-      name: "\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0627\u0644\u0646\u062E\u0628\u0629 \u0627\u0644\u062F\u0648\u0644\u064A\u0629 (Elite International Academy)",
-      legalName: "\u0634\u0631\u0643\u0629 \u0627\u0644\u0646\u062E\u0628\u0629 \u0627\u0644\u062F\u0648\u0644\u064A\u0629 \u0644\u0644\u062A\u0639\u0644\u064A\u0645 \u0627\u0644\u0645\u062A\u0642\u062F\u0645",
-      countryCode: "SA",
-      timezone: "Asia/Riyadh",
-      locale: "ar",
-      logoUrl: "",
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.organizations.set(schoolBId, schoolB);
-    const yearAId = "ay_horizon_2026";
-    this.academicYears.set(yearAId, {
-      id: yearAId,
-      organizationId: schoolAId,
-      name: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
-      startDate: "2026-08-20",
-      endDate: "2027-06-15",
-      isCurrent: true
-    });
-    const termAId = "term_horizon_t1";
-    this.terms.set(termAId, {
-      id: termAId,
-      organizationId: schoolAId,
-      academicYearId: yearAId,
-      name: "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0627\u0644\u0623\u0648\u0644 (\u0627\u0644\u062E\u0631\u064A\u0641)",
-      startDate: "2026-08-20",
-      endDate: "2026-11-25",
-      isCurrent: true
-    });
-    const termA2Id = "term_horizon_t2";
-    this.terms.set(termA2Id, {
-      id: termA2Id,
-      organizationId: schoolAId,
-      academicYearId: yearAId,
-      name: "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0627\u0644\u062B\u0627\u0646\u064A (\u0627\u0644\u0631\u0628\u064A\u0639)",
-      startDate: "2026-12-05",
-      endDate: "2027-03-10",
-      isCurrent: false
-    });
-    const grade10Id = "grd_horizon_g10";
-    this.gradeLevels.set(grade10Id, {
-      id: grade10Id,
-      organizationId: schoolAId,
-      name: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u062B\u0627\u0646\u0648\u064A)",
-      sequenceOrder: 10
-    });
-    const grade11Id = "grd_horizon_g11";
-    this.gradeLevels.set(grade11Id, {
-      id: grade11Id,
-      organizationId: schoolAId,
-      name: "\u0627\u0644\u0635\u0641 \u0627\u0644\u062D\u0627\u062F\u064A \u0639\u0634\u0631 (\u0627\u0644\u062B\u0627\u0646\u064A \u062B\u0627\u0646\u0648\u064A)",
-      sequenceOrder: 11
-    });
-    const class10AId = "class_horizon_10a";
-    this.classrooms.set(class10AId, {
-      id: class10AId,
-      organizationId: schoolAId,
-      gradeLevelId: grade10Id,
-      name: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
-      capacity: 32
-    });
-    const class10BId = "class_horizon_10b";
-    this.classrooms.set(class10BId, {
-      id: class10BId,
-      organizationId: schoolAId,
-      gradeLevelId: grade10Id,
-      name: "\u0634\u0639\u0628\u0629 10-\u0628 (\u0639\u0627\u0645)",
-      capacity: 30
-    });
-    const mathSubId = "sub_horizon_math";
-    this.subjects.set(mathSubId, {
-      id: mathSubId,
-      organizationId: schoolAId,
-      name: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
-      code: "MATH-101",
-      color: "#10b981",
-      description: "\u0645\u0646\u0647\u062C \u0627\u0644\u062C\u0628\u0631\u060C \u0627\u0644\u062A\u0641\u0627\u0636\u0644 \u0648\u0627\u0644\u062A\u0643\u0627\u0645\u0644 \u0644\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062B\u0627\u0646\u0648\u064A\u0629"
-    });
-    const physicsSubId = "sub_horizon_phys";
-    this.subjects.set(physicsSubId, {
-      id: physicsSubId,
-      organizationId: schoolAId,
-      name: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u062C\u0631\u064A\u0628\u064A\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627",
-      code: "PHYS-101",
-      color: "#3b82f6",
-      description: "\u0642\u0648\u0627\u0646\u064A\u0646 \u0627\u0644\u062D\u0631\u0643\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627 \u0627\u0644\u0643\u0644\u0627\u0633\u064A\u0643\u064A\u0629"
-    });
-    const arabicSubId = "sub_horizon_arab";
-    this.subjects.set(arabicSubId, {
-      id: arabicSubId,
-      organizationId: schoolAId,
-      name: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
-      code: "ARAB-101",
-      color: "#f59e0b",
-      description: "\u0627\u0644\u0628\u0644\u0627\u063A\u0629\u060C \u0627\u0644\u0646\u062D\u0648\u060C \u0648\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0646\u0635\u0648\u0635 \u0627\u0644\u062A\u0631\u0627\u062B\u064A\u0629"
-    });
-    const adminA = {
-      id: "usr_horizon_admin",
-      organizationId: schoolAId,
-      email: "admin@horizon.edu.sa",
-      fullName: "\u062F. \u0639\u0628\u062F \u0627\u0644\u0644\u0647 \u0627\u0644\u0645\u0646\u0635\u0648\u0631 (\u0645\u062F\u064A\u0631 \u0627\u0644\u0645\u062F\u0631\u0633\u0629)",
-      role: "ORG_ADMIN",
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(adminA.id, adminA);
-    const teacherMath = {
-      id: "usr_horizon_teacher",
-      organizationId: schoolAId,
-      email: "teacher@horizon.edu.sa",
-      fullName: "\u0623. \u0623\u062D\u0645\u062F \u0627\u0644\u0634\u0645\u0631\u064A (\u0645\u0639\u0644\u0645 \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A)",
-      role: "TEACHER",
-      teacherSpecialization: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0648\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629",
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(teacherMath.id, teacherMath);
-    const teacherArabic = {
-      id: "usr_horizon_t_sarah",
-      organizationId: schoolAId,
-      email: "teacher2@horizon.edu.sa",
-      fullName: "\u0623. \u0633\u0627\u0631\u0629 \u0627\u0644\u063A\u0627\u0645\u062F\u064A (\u0645\u0639\u0644\u0645\u0629 \u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629)",
-      role: "TEACHER",
-      teacherSpecialization: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629",
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(teacherArabic.id, teacherArabic);
-    const student1 = {
-      id: "usr_horizon_s_omar",
-      organizationId: schoolAId,
-      email: "student@horizon.edu.sa",
-      fullName: "\u0639\u0645\u0631 \u062E\u0627\u0644\u062F \u0627\u0644\u0633\u0639\u064A\u062F",
-      role: "STUDENT",
-      studentIdNumber: "STD-2026-001",
-      classroomId: class10AId,
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(student1.id, student1);
-    const student2 = {
-      id: "usr_horizon_s_noura",
-      organizationId: schoolAId,
-      email: "student2@horizon.edu.sa",
-      fullName: "\u0646\u0648\u0631\u0629 \u0627\u0644\u0639\u062A\u064A\u0628\u064A",
-      role: "STUDENT",
-      studentIdNumber: "STD-2026-002",
-      classroomId: class10AId,
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(student2.id, student2);
-    const student3 = {
-      id: "usr_horizon_s_faisal",
-      organizationId: schoolAId,
-      email: "faisal.m@horizon.edu.sa",
-      fullName: "\u0641\u064A\u0635\u0644 \u0627\u0644\u0645\u0637\u064A\u0631\u064A",
-      role: "STUDENT",
-      studentIdNumber: "STD-2026-003",
-      classroomId: class10AId,
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(student3.id, student3);
-    const student4 = {
-      id: "usr_horizon_s_reem",
-      organizationId: schoolAId,
-      email: "reem.k@horizon.edu.sa",
-      fullName: "\u0631\u064A\u0645 \u0627\u0644\u0642\u062D\u0637\u0627\u0646\u064A",
-      role: "STUDENT",
-      studentIdNumber: "STD-2026-004",
-      classroomId: class10BId,
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(student4.id, student4);
-    const parent1 = {
-      id: "usr_horizon_p_khalid",
-      organizationId: schoolAId,
-      email: "parent@horizon.edu.sa",
-      fullName: "\u062E\u0627\u0644\u062F \u0627\u0644\u0633\u0639\u064A\u062F (\u0648\u0644\u064A \u0623\u0645\u0631)",
-      role: "PARENT",
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(parent1.id, parent1);
-    const courseMath10AId = "crs_horizon_math_10a";
-    this.courses.set(courseMath10AId, {
-      id: courseMath10AId,
-      organizationId: schoolAId,
-      subjectId: mathSubId,
-      termId: termAId,
-      teacherId: teacherMath.id,
-      classroomId: class10AId,
-      title: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
-      description: "\u0634\u0631\u062D \u0634\u0627\u0645\u0644 \u0644\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u062F\u0648\u0627\u0644 \u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u064A\u0629 \u0648\u062D\u0633\u0627\u0628 \u0627\u0644\u0645\u062B\u0644\u062B\u0627\u062A",
-      subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
-      teacherName: teacherMath.fullName,
-      classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)"
-    });
-    const coursePhy10AId = "crs_horizon_phys_10a";
-    this.courses.set(coursePhy10AId, {
-      id: coursePhy10AId,
-      organizationId: schoolAId,
-      subjectId: physicsSubId,
-      termId: termAId,
-      teacherId: teacherMath.id,
-      classroomId: class10AId,
-      title: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
-      description: "\u0645\u0642\u0631\u0631 \u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u0641\u0627\u0639\u0644\u064A \u0648\u0627\u0644\u062A\u062C\u0627\u0631\u0628 \u0627\u0644\u0645\u0639\u0645\u0644\u064A\u0629 \u0627\u0644\u0631\u0642\u0645\u064A\u0629",
-      subjectName: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u062C\u0631\u064A\u0628\u064A\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627",
-      teacherName: teacherMath.fullName,
-      classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)"
-    });
-    const courseArabic10AId = "crs_horizon_arab_10a";
-    this.courses.set(courseArabic10AId, {
-      id: courseArabic10AId,
-      organizationId: schoolAId,
-      subjectId: arabicSubId,
-      termId: termAId,
-      teacherId: teacherArabic.id,
-      classroomId: class10AId,
-      title: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
-      description: "\u0645\u0642\u0631\u0631 \u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 \u0648\u0627\u0644\u0646\u0642\u062F",
-      subjectName: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
-      teacherName: teacherArabic.fullName,
-      classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)"
-    });
-    const lesson1Id = "lsn_horizon_math_01";
-    this.lessons.set(lesson1Id, {
-      id: lesson1Id,
-      organizationId: schoolAId,
-      courseId: courseMath10AId,
-      title: "\u0645\u0642\u062F\u0645\u0629 \u0641\u064A \u0627\u0644\u062F\u0648\u0627\u0644 \u0627\u0644\u0623\u0633\u064A\u0629 \u0648\u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u0627\u062A",
-      contentHtml: `
+var PlatformDatabase, db;
+var init_db = __esm({
+  "server/platform/db.ts"() {
+    init_postgres();
+    init_security();
+    PlatformDatabase = class {
+      constructor() {
+        this.organizations = /* @__PURE__ */ new Map();
+        this.users = /* @__PURE__ */ new Map();
+        this.academicYears = /* @__PURE__ */ new Map();
+        this.terms = /* @__PURE__ */ new Map();
+        this.gradeLevels = /* @__PURE__ */ new Map();
+        this.classrooms = /* @__PURE__ */ new Map();
+        this.subjects = /* @__PURE__ */ new Map();
+        this.courses = /* @__PURE__ */ new Map();
+        this.lessons = /* @__PURE__ */ new Map();
+        this.assignments = /* @__PURE__ */ new Map();
+        this.submissions = /* @__PURE__ */ new Map();
+        this.attendanceSessions = /* @__PURE__ */ new Map();
+        this.attendanceRecords = /* @__PURE__ */ new Map();
+        this.assessments = /* @__PURE__ */ new Map();
+        this.assessmentGrades = /* @__PURE__ */ new Map();
+        this.storageObjects = /* @__PURE__ */ new Map();
+        this.auditLogs = /* @__PURE__ */ new Map();
+        this.invitations = /* @__PURE__ */ new Map();
+        this.organizationMemberships = /* @__PURE__ */ new Map();
+        this.passwordResetTokens = /* @__PURE__ */ new Map();
+        this.emailVerificationTokens = /* @__PURE__ */ new Map();
+        this.phoneVerificationOtps = /* @__PURE__ */ new Map();
+        this.aiConversations = /* @__PURE__ */ new Map();
+        this.aiMessages = /* @__PURE__ */ new Map();
+        this.aiUsageRecords = /* @__PURE__ */ new Map();
+        this.aiDocumentChunks = /* @__PURE__ */ new Map();
+        this.teacherAssignments = /* @__PURE__ */ new Map();
+        this.studentEnrollments = /* @__PURE__ */ new Map();
+        this.parentStudentLinks = /* @__PURE__ */ new Map();
+        this.studentRecords = /* @__PURE__ */ new Map();
+        this.studentBehaviorRecords = /* @__PURE__ */ new Map();
+        this.studentLifecycleEvents = /* @__PURE__ */ new Map();
+        this.seedInitialData();
+      }
+      // --- Engine Status Check ---
+      async getEngineStatus() {
+        return checkPostgresConnection();
+      }
+      // --- Seed realistic Multi-Tenant Data ---
+      seedInitialData() {
+        const schoolAId = "org_horizon_001";
+        const schoolA = {
+          id: schoolAId,
+          slug: "horizon",
+          name: "\u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0623\u0641\u0642 \u0627\u0644\u0630\u0643\u064A\u0629 (Horizon Smart Schools)",
+          legalName: "\u0634\u0631\u0643\u0629 \u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0623\u0641\u0642 \u0644\u0644\u062A\u0639\u0644\u064A\u0645 \u0648\u0627\u0644\u062A\u0631\u0628\u064A\u0629 \u0627\u0644\u0630\u0643\u064A\u0629",
+          countryCode: "SA",
+          timezone: "Asia/Riyadh",
+          locale: "ar",
+          logoUrl: "",
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.organizations.set(schoolAId, schoolA);
+        const schoolBId = "org_elite_002";
+        const schoolB = {
+          id: schoolBId,
+          slug: "elite",
+          name: "\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0627\u0644\u0646\u062E\u0628\u0629 \u0627\u0644\u062F\u0648\u0644\u064A\u0629 (Elite International Academy)",
+          legalName: "\u0634\u0631\u0643\u0629 \u0627\u0644\u0646\u062E\u0628\u0629 \u0627\u0644\u062F\u0648\u0644\u064A\u0629 \u0644\u0644\u062A\u0639\u0644\u064A\u0645 \u0627\u0644\u0645\u062A\u0642\u062F\u0645",
+          countryCode: "SA",
+          timezone: "Asia/Riyadh",
+          locale: "ar",
+          logoUrl: "",
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.organizations.set(schoolBId, schoolB);
+        const yearAId = "ay_horizon_2026";
+        this.academicYears.set(yearAId, {
+          id: yearAId,
+          organizationId: schoolAId,
+          name: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
+          startDate: "2026-08-20",
+          endDate: "2027-06-15",
+          isCurrent: true
+        });
+        const termAId = "term_horizon_t1";
+        this.terms.set(termAId, {
+          id: termAId,
+          organizationId: schoolAId,
+          academicYearId: yearAId,
+          name: "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0627\u0644\u0623\u0648\u0644 (\u0627\u0644\u062E\u0631\u064A\u0641)",
+          startDate: "2026-08-20",
+          endDate: "2026-11-25",
+          isCurrent: true
+        });
+        const termA2Id = "term_horizon_t2";
+        this.terms.set(termA2Id, {
+          id: termA2Id,
+          organizationId: schoolAId,
+          academicYearId: yearAId,
+          name: "\u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0627\u0644\u062B\u0627\u0646\u064A (\u0627\u0644\u0631\u0628\u064A\u0639)",
+          startDate: "2026-12-05",
+          endDate: "2027-03-10",
+          isCurrent: false
+        });
+        const grade10Id = "grd_horizon_g10";
+        this.gradeLevels.set(grade10Id, {
+          id: grade10Id,
+          organizationId: schoolAId,
+          name: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u062B\u0627\u0646\u0648\u064A)",
+          sequenceOrder: 10
+        });
+        const grade11Id = "grd_horizon_g11";
+        this.gradeLevels.set(grade11Id, {
+          id: grade11Id,
+          organizationId: schoolAId,
+          name: "\u0627\u0644\u0635\u0641 \u0627\u0644\u062D\u0627\u062F\u064A \u0639\u0634\u0631 (\u0627\u0644\u062B\u0627\u0646\u064A \u062B\u0627\u0646\u0648\u064A)",
+          sequenceOrder: 11
+        });
+        const class10AId = "class_horizon_10a";
+        this.classrooms.set(class10AId, {
+          id: class10AId,
+          organizationId: schoolAId,
+          gradeLevelId: grade10Id,
+          name: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+          capacity: 32
+        });
+        const class10BId = "class_horizon_10b";
+        this.classrooms.set(class10BId, {
+          id: class10BId,
+          organizationId: schoolAId,
+          gradeLevelId: grade10Id,
+          name: "\u0634\u0639\u0628\u0629 10-\u0628 (\u0639\u0627\u0645)",
+          capacity: 30
+        });
+        const mathSubId = "sub_horizon_math";
+        this.subjects.set(mathSubId, {
+          id: mathSubId,
+          organizationId: schoolAId,
+          name: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+          code: "MATH-101",
+          color: "#10b981",
+          description: "\u0645\u0646\u0647\u062C \u0627\u0644\u062C\u0628\u0631\u060C \u0627\u0644\u062A\u0641\u0627\u0636\u0644 \u0648\u0627\u0644\u062A\u0643\u0627\u0645\u0644 \u0644\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062B\u0627\u0646\u0648\u064A\u0629"
+        });
+        const physicsSubId = "sub_horizon_phys";
+        this.subjects.set(physicsSubId, {
+          id: physicsSubId,
+          organizationId: schoolAId,
+          name: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u062C\u0631\u064A\u0628\u064A\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627",
+          code: "PHYS-101",
+          color: "#3b82f6",
+          description: "\u0642\u0648\u0627\u0646\u064A\u0646 \u0627\u0644\u062D\u0631\u0643\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627 \u0627\u0644\u0643\u0644\u0627\u0633\u064A\u0643\u064A\u0629"
+        });
+        const arabicSubId = "sub_horizon_arab";
+        this.subjects.set(arabicSubId, {
+          id: arabicSubId,
+          organizationId: schoolAId,
+          name: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
+          code: "ARAB-101",
+          color: "#f59e0b",
+          description: "\u0627\u0644\u0628\u0644\u0627\u063A\u0629\u060C \u0627\u0644\u0646\u062D\u0648\u060C \u0648\u0642\u0631\u0627\u0621\u0629 \u0627\u0644\u0646\u0635\u0648\u0635 \u0627\u0644\u062A\u0631\u0627\u062B\u064A\u0629"
+        });
+        const adminA = {
+          id: "usr_horizon_admin",
+          organizationId: schoolAId,
+          email: "admin@horizon.edu.sa",
+          fullName: "\u062F. \u0639\u0628\u062F \u0627\u0644\u0644\u0647 \u0627\u0644\u0645\u0646\u0635\u0648\u0631 (\u0645\u062F\u064A\u0631 \u0627\u0644\u0645\u062F\u0631\u0633\u0629)",
+          role: "ORG_ADMIN",
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(adminA.id, adminA);
+        const teacherMath = {
+          id: "usr_horizon_teacher",
+          organizationId: schoolAId,
+          email: "teacher@horizon.edu.sa",
+          fullName: "\u0623. \u0623\u062D\u0645\u062F \u0627\u0644\u0634\u0645\u0631\u064A (\u0645\u0639\u0644\u0645 \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A)",
+          role: "TEACHER",
+          teacherSpecialization: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0648\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629",
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(teacherMath.id, teacherMath);
+        const teacherArabic = {
+          id: "usr_horizon_t_sarah",
+          organizationId: schoolAId,
+          email: "teacher2@horizon.edu.sa",
+          fullName: "\u0623. \u0633\u0627\u0631\u0629 \u0627\u0644\u063A\u0627\u0645\u062F\u064A (\u0645\u0639\u0644\u0645\u0629 \u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629)",
+          role: "TEACHER",
+          teacherSpecialization: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629",
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(teacherArabic.id, teacherArabic);
+        const student1 = {
+          id: "usr_horizon_s_omar",
+          organizationId: schoolAId,
+          email: "student@horizon.edu.sa",
+          fullName: "\u0639\u0645\u0631 \u062E\u0627\u0644\u062F \u0627\u0644\u0633\u0639\u064A\u062F",
+          role: "STUDENT",
+          studentIdNumber: "STD-2026-001",
+          classroomId: class10AId,
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(student1.id, student1);
+        const student2 = {
+          id: "usr_horizon_s_noura",
+          organizationId: schoolAId,
+          email: "student2@horizon.edu.sa",
+          fullName: "\u0646\u0648\u0631\u0629 \u0627\u0644\u0639\u062A\u064A\u0628\u064A",
+          role: "STUDENT",
+          studentIdNumber: "STD-2026-002",
+          classroomId: class10AId,
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(student2.id, student2);
+        const student3 = {
+          id: "usr_horizon_s_faisal",
+          organizationId: schoolAId,
+          email: "faisal.m@horizon.edu.sa",
+          fullName: "\u0641\u064A\u0635\u0644 \u0627\u0644\u0645\u0637\u064A\u0631\u064A",
+          role: "STUDENT",
+          studentIdNumber: "STD-2026-003",
+          classroomId: class10AId,
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(student3.id, student3);
+        const student4 = {
+          id: "usr_horizon_s_reem",
+          organizationId: schoolAId,
+          email: "reem.k@horizon.edu.sa",
+          fullName: "\u0631\u064A\u0645 \u0627\u0644\u0642\u062D\u0637\u0627\u0646\u064A",
+          role: "STUDENT",
+          studentIdNumber: "STD-2026-004",
+          classroomId: class10BId,
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(student4.id, student4);
+        const parent1 = {
+          id: "usr_horizon_p_khalid",
+          organizationId: schoolAId,
+          email: "parent@horizon.edu.sa",
+          fullName: "\u062E\u0627\u0644\u062F \u0627\u0644\u0633\u0639\u064A\u062F (\u0648\u0644\u064A \u0623\u0645\u0631)",
+          role: "PARENT",
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(parent1.id, parent1);
+        const courseMath10AId = "crs_horizon_math_10a";
+        this.courses.set(courseMath10AId, {
+          id: courseMath10AId,
+          organizationId: schoolAId,
+          subjectId: mathSubId,
+          termId: termAId,
+          teacherId: teacherMath.id,
+          classroomId: class10AId,
+          title: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          description: "\u0634\u0631\u062D \u0634\u0627\u0645\u0644 \u0644\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u062F\u0648\u0627\u0644 \u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u064A\u0629 \u0648\u062D\u0633\u0627\u0628 \u0627\u0644\u0645\u062B\u0644\u062B\u0627\u062A",
+          subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+          teacherName: teacherMath.fullName,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)"
+        });
+        const coursePhy10AId = "crs_horizon_phys_10a";
+        this.courses.set(coursePhy10AId, {
+          id: coursePhy10AId,
+          organizationId: schoolAId,
+          subjectId: physicsSubId,
+          termId: termAId,
+          teacherId: teacherMath.id,
+          classroomId: class10AId,
+          title: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          description: "\u0645\u0642\u0631\u0631 \u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u0641\u0627\u0639\u0644\u064A \u0648\u0627\u0644\u062A\u062C\u0627\u0631\u0628 \u0627\u0644\u0645\u0639\u0645\u0644\u064A\u0629 \u0627\u0644\u0631\u0642\u0645\u064A\u0629",
+          subjectName: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u062C\u0631\u064A\u0628\u064A\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627",
+          teacherName: teacherMath.fullName,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)"
+        });
+        const courseArabic10AId = "crs_horizon_arab_10a";
+        this.courses.set(courseArabic10AId, {
+          id: courseArabic10AId,
+          organizationId: schoolAId,
+          subjectId: arabicSubId,
+          termId: termAId,
+          teacherId: teacherArabic.id,
+          classroomId: class10AId,
+          title: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          description: "\u0645\u0642\u0631\u0631 \u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 \u0648\u0627\u0644\u0646\u0642\u062F",
+          subjectName: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
+          teacherName: teacherArabic.fullName,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)"
+        });
+        const lesson1Id = "lsn_horizon_math_01";
+        this.lessons.set(lesson1Id, {
+          id: lesson1Id,
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          title: "\u0645\u0642\u062F\u0645\u0629 \u0641\u064A \u0627\u0644\u062F\u0648\u0627\u0644 \u0627\u0644\u0623\u0633\u064A\u0629 \u0648\u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u0627\u062A",
+          contentHtml: `
         <h3>\u0645\u0642\u062F\u0645\u0629 \u0641\u064A \u0627\u0644\u062F\u0648\u0627\u0644 \u0627\u0644\u0623\u0633\u064A\u0629</h3>
         <p>\u0641\u064A \u0647\u0630\u0627 \u0627\u0644\u062F\u0631\u0633 \u0633\u0646\u062A\u0639\u0631\u0641 \u0639\u0644\u0649 \u062E\u0635\u0627\u0626\u0635 \u0627\u0644\u062F\u0648\u0627\u0644 \u0627\u0644\u0623\u0633\u064A\u0629\u060C \u0643\u064A\u0641\u064A\u0629 \u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u0623\u0633\u064A\u0629 \u0625\u0644\u0649 \u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u064A\u0629\u060C \u0648\u062A\u0637\u0628\u064A\u0642\u0627\u062A\u0647\u0627 \u0641\u064A \u0627\u0644\u0646\u0645\u0648 \u0627\u0644\u0633\u0643\u0627\u0646\u064A \u0648\u0627\u0644\u062D\u0633\u0627\u0628\u0627\u062A \u0627\u0644\u0645\u0627\u0644\u064A\u0629.</p>
         <h4>\u0627\u0644\u0623\u0647\u062F\u0627\u0641 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629 \u0644\u0644\u062F\u0631\u0633:</h4>
@@ -595,1743 +596,3847 @@ var PlatformDatabase = class {
           <li>\u062D\u0644 \u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u062E\u0637\u064A\u0629 \u0628\u0637\u0631\u064A\u0642\u0629 \u0627\u0644\u062D\u0630\u0641 \u0648\u0627\u0644\u062A\u0639\u0648\u064A\u0636.</li>
         </ul>
       `,
-      mediaUrl: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&auto=format&fit=crop&q=80",
-      attachments: [
-        { name: "\u0645\u0644\u062E\u0635_\u0627\u0644\u062F\u0648\u0627\u0644_\u0627\u0644\u062E\u0637\u064A\u0629.pdf", url: "#", size: "1.4 MB" },
-        { name: "\u062A\u0645\u0627\u0631\u064A\u0646_\u062A\u0637\u0628\u064A\u0642\u064A\u0629_\u0645\u062D\u0644\u0648\u0644\u0629.pdf", url: "#", size: "850 KB" }
-      ],
-      orderIndex: 1,
-      isPublished: true,
-      createdAt: "2026-09-02T08:00:00Z",
-      updatedAt: "2026-09-02T08:00:00Z"
-    });
-    const lesson2Id = "lsn_horizon_math_02";
-    this.lessons.set(lesson2Id, {
-      id: lesson2Id,
-      organizationId: schoolAId,
-      courseId: courseMath10AId,
-      title: "\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u0639\u0645\u0644\u064A\u0627\u062A \u0627\u0644\u062C\u0628\u0631\u064A\u0629 \u0627\u0644\u062E\u0637\u064A\u0629",
-      contentHtml: `
+          mediaUrl: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&auto=format&fit=crop&q=80",
+          attachments: [
+            { name: "\u0645\u0644\u062E\u0635_\u0627\u0644\u062F\u0648\u0627\u0644_\u0627\u0644\u062E\u0637\u064A\u0629.pdf", url: "#", size: "1.4 MB" },
+            { name: "\u062A\u0645\u0627\u0631\u064A\u0646_\u062A\u0637\u0628\u064A\u0642\u064A\u0629_\u0645\u062D\u0644\u0648\u0644\u0629.pdf", url: "#", size: "850 KB" }
+          ],
+          orderIndex: 1,
+          isPublished: true,
+          createdAt: "2026-09-02T08:00:00Z",
+          updatedAt: "2026-09-02T08:00:00Z"
+        });
+        const lesson2Id = "lsn_horizon_math_02";
+        this.lessons.set(lesson2Id, {
+          id: lesson2Id,
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          title: "\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u0639\u0645\u0644\u064A\u0627\u062A \u0627\u0644\u062C\u0628\u0631\u064A\u0629 \u0627\u0644\u062E\u0637\u064A\u0629",
+          contentHtml: `
         <h3>\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u062A\u0637\u0628\u064A\u0642\u0627\u062A\u0647\u0627 \u0641\u064A \u0627\u0644\u062D\u0648\u0633\u0628\u0629</h3>
         <p>\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0629 \u0647\u064A \u062C\u062F\u0648\u0644 \u0645\u0633\u062A\u0637\u064A\u0644 \u0645\u0646 \u0627\u0644\u0623\u0639\u062F\u0627\u062F \u0645\u0631\u062A\u0628\u0629 \u0641\u064A \u0635\u0641\u0648\u0641 \u0648\u0623\u0639\u0645\u062F\u0629. \u062A\u064F\u0633\u062A\u062E\u062F\u0645 \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0643\u0623\u0633\u0627\u0633 \u0644\u0645\u0639\u0627\u0644\u062C\u0629 \u0627\u0644\u0635\u0648\u0631 \u0648\u062E\u0648\u0627\u0631\u0632\u0645\u064A\u0627\u062A \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A.</p>
       `,
-      orderIndex: 2,
-      isPublished: true,
-      createdAt: "2026-09-09T08:00:00Z",
-      updatedAt: "2026-09-09T08:00:00Z"
-    });
-    const assign1Id = "asg_horizon_math_01";
-    this.assignments.set(assign1Id, {
-      id: assign1Id,
-      organizationId: schoolAId,
-      courseId: courseMath10AId,
-      title: "\u0627\u0644\u0648\u0627\u062C\u0628 \u0627\u0644\u0623\u0648\u0644: \u062D\u0644 \u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u0627\u062A \u0627\u0644\u0645\u0631\u0643\u0628\u0629",
-      description: "\u062D\u0644 \u0627\u0644\u0645\u0633\u0627\u0626\u0644 \u0645\u0646 1 \u0625\u0644\u0649 8 \u0641\u064A \u0635\u0641\u062D\u0629 42\u060C \u0645\u0639 \u0643\u062A\u0627\u0628\u0629 \u062E\u0637\u0648\u0627\u062A \u0627\u0644\u062A\u062D\u0648\u064A\u0644 \u0648\u0627\u0644\u062A\u0628\u0633\u064A\u0637 \u0643\u0627\u0645\u0644\u0629.",
-      maxScore: 20,
-      dueDate: "2026-10-15T23:59:00Z",
-      createdAt: "2026-09-03T10:00:00Z"
-    });
-    const assign2Id = "asg_horizon_math_02";
-    this.assignments.set(assign2Id, {
-      id: assign2Id,
-      organizationId: schoolAId,
-      courseId: courseMath10AId,
-      title: "\u0627\u0644\u0645\u0647\u0645\u0629 \u0627\u0644\u0623\u062F\u0627\u0626\u064A\u0629: \u0636\u0631\u0628 \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u062A\u0637\u0628\u064A\u0642\u0627\u062A \u0627\u0644\u0648\u0627\u0642\u0639\u064A\u0629",
-      description: "\u062A\u0635\u0645\u064A\u0645 \u0645\u0633\u0623\u0644\u0629 \u0648\u0627\u0642\u0639\u064A\u0629 \u0648\u062A\u0637\u0628\u064A\u0642 \u0645\u0635\u0641\u0648\u0641\u0629 3x3 \u0644\u062D\u0644\u0647\u0627.",
-      maxScore: 30,
-      dueDate: "2026-10-30T23:59:00Z",
-      createdAt: "2026-09-10T10:00:00Z"
-    });
-    const sub1Id = "sub_omar_01";
-    this.submissions.set(sub1Id, {
-      id: sub1Id,
-      organizationId: schoolAId,
-      assignmentId: assign1Id,
-      studentId: student1.id,
-      studentName: student1.fullName,
-      submissionText: "\u062A\u0645 \u062D\u0644 \u062C\u0645\u064A\u0639 \u0627\u0644\u0645\u0633\u0627\u0626\u0644 \u0627\u0644\u062B\u0645\u0627\u0646\u064A\u0629 \u0648\u062A\u062F\u0648\u064A\u0646 \u062E\u0637\u0648\u0627\u062A \u0627\u0644\u062A\u062D\u0648\u064A\u0644 \u0628\u0627\u0644\u062A\u0641\u0635\u064A\u0644 \u0641\u064A \u0627\u0644\u0645\u0631\u0641\u0642.",
-      fileAttachmentUrl: "\u062D\u0644_\u0639\u0645\u0631_\u0627\u0644\u0633\u0639\u064A\u062F_\u0631\u064A\u0627\u0636\u064A\u0627\u062A.pdf",
-      score: 19.5,
-      teacherFeedback: "\u0625\u062C\u0627\u0628\u0629 \u0646\u0645\u0648\u0630\u062C\u064A\u0629 \u0648\u0645\u0646\u0638\u0645\u0629 \u062C\u062F\u0627\u064B \u064A\u0627 \u0639\u0645\u0631. \u0623\u062D\u0633\u0646\u062A!",
-      submittedAt: "2026-10-14T15:30:00Z",
-      gradedAt: "2026-10-15T10:00:00Z"
-    });
-    const sub2Id = "sub_noura_01";
-    this.submissions.set(sub2Id, {
-      id: sub2Id,
-      organizationId: schoolAId,
-      assignmentId: assign1Id,
-      studentId: student2.id,
-      studentName: student2.fullName,
-      submissionText: "\u0645\u0631\u0641\u0642 \u062D\u0644\u0648\u0644 \u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u0633\u062A\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u0648\u0627\u0644\u0645\u0633\u0623\u0644\u0629 \u0627\u0644\u0625\u0636\u0627\u0641\u064A\u0629.",
-      fileAttachmentUrl: "\u062D\u0644_\u0646\u0648\u0631\u0629_\u0627\u0644\u0641\u0647\u062F_\u0631\u064A\u0627\u0636\u064A\u0627\u062A.pdf",
-      score: 18,
-      teacherFeedback: "\u0639\u0645\u0644 \u0645\u0645\u062A\u0627\u0632\u060C \u0631\u0627\u062C\u0639\u064A \u0641\u0642\u0637 \u0625\u0634\u0627\u0631\u0629 \u0627\u0644\u062D\u062F \u0627\u0644\u0623\u062E\u064A\u0631 \u0641\u064A \u0627\u0644\u0645\u0633\u0623\u0644\u0629 5.",
-      submittedAt: "2026-10-14T18:45:00Z",
-      gradedAt: "2026-10-15T11:20:00Z"
-    });
-    const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-    this.attendanceRecords.set(`att_${courseMath10AId}_${student1.id}_${today}`, {
-      id: `att_${courseMath10AId}_${student1.id}_${today}`,
-      organizationId: schoolAId,
-      courseId: courseMath10AId,
-      classroomId: class10AId,
-      studentId: student1.id,
-      studentName: student1.fullName,
-      recordedBy: teacherMath.id,
-      date: today,
-      status: "PRESENT",
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    this.attendanceRecords.set(`att_${courseMath10AId}_${student2.id}_${today}`, {
-      id: `att_${courseMath10AId}_${student2.id}_${today}`,
-      organizationId: schoolAId,
-      courseId: courseMath10AId,
-      classroomId: class10AId,
-      studentId: student2.id,
-      studentName: student2.fullName,
-      recordedBy: teacherMath.id,
-      date: today,
-      status: "PRESENT",
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    this.attendanceRecords.set(`att_${courseMath10AId}_${student3.id}_${today}`, {
-      id: `att_${courseMath10AId}_${student3.id}_${today}`,
-      organizationId: schoolAId,
-      courseId: courseMath10AId,
-      classroomId: class10AId,
-      studentId: student3.id,
-      studentName: student3.fullName,
-      recordedBy: teacherMath.id,
-      date: today,
-      status: "LATE",
-      notes: "\u062A\u0623\u062E\u0631 10 \u062F\u0642\u0627\u0626\u0642 \u0628\u0639\u0630\u0631 \u0645\u0642\u0628\u0648\u0644",
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    });
-    const adminB = {
-      id: "usr_elite_admin",
-      organizationId: schoolBId,
-      email: "admin@elite.edu.sa",
-      fullName: "Dr. Sarah Jenkins (Elite Admin)",
-      role: "ORG_ADMIN",
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(adminB.id, adminB);
-    const teacherB = {
-      id: "usr_elite_teacher",
-      organizationId: schoolBId,
-      email: "teacher.sara@elite.edu.sa",
-      fullName: "Prof. Marcus Vance (Elite Teacher)",
-      role: "TEACHER",
-      teacherSpecialization: "Advanced Physics & AI",
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(teacherB.id, teacherB);
-    const studentB = {
-      id: "usr_elite_student",
-      organizationId: schoolBId,
-      email: "student@elite.edu.sa",
-      fullName: "Zaid Al-Harbi (Elite Student)",
-      role: "STUDENT",
-      studentIdNumber: "ELT-2026-099",
-      isActive: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.users.set(studentB.id, studentB);
-    const yearBId = "year_elite_1448";
-    this.academicYears.set(yearBId, {
-      id: yearBId,
-      organizationId: schoolBId,
-      name: "Academic Year 2026-2027 (1448H)",
-      startDate: "2026-09-01",
-      endDate: "2027-06-30",
-      isCurrent: true
-    });
-    const termBId = "term_elite_t1";
-    this.terms.set(termBId, {
-      id: termBId,
-      organizationId: schoolBId,
-      academicYearId: yearBId,
-      name: "Trimester 1",
-      startDate: "2026-09-01",
-      endDate: "2026-11-30",
-      isCurrent: true
-    });
-    const gradeBId = "grd_elite_10";
-    this.gradeLevels.set(gradeBId, {
-      id: gradeBId,
-      organizationId: schoolBId,
-      name: "Grade 10 (Advanced)",
-      sequenceOrder: 10
-    });
-    const classBId = "cls_elite_10a";
-    this.classrooms.set(classBId, {
-      id: classBId,
-      organizationId: schoolBId,
-      gradeLevelId: gradeBId,
-      name: "Section 10-Alpha",
-      capacity: 25
-    });
-    const physSubId = "sbj_elite_phys";
-    this.subjects.set(physSubId, {
-      id: physSubId,
-      organizationId: schoolBId,
-      name: "Advanced Physics",
-      code: "PHY-101"
-    });
-    const coursePhys10AId = "crs_elite_phys_10a";
-    this.courses.set(coursePhys10AId, {
-      id: coursePhys10AId,
-      organizationId: schoolBId,
-      subjectId: physSubId,
-      termId: termBId,
-      teacherId: teacherB.id,
-      classroomId: classBId,
-      title: "Advanced Physics - Grade 10",
-      description: "Quantum mechanics and classical kinematics",
-      subjectName: "Advanced Physics",
-      teacherName: teacherB.fullName,
-      classroomName: "Section 10-Alpha"
-    });
-    const taMathAId = "ta_horizon_math_10a";
-    this.teacherAssignments.set(taMathAId, {
-      id: taMathAId,
-      organizationId: schoolAId,
-      teacherId: teacherMath.id,
-      teacherName: teacherMath.fullName,
-      teacherEmail: teacherMath.email,
-      courseId: courseMath10AId,
-      courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631",
-      subjectId: mathSubId,
-      subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
-      classroomId: class10AId,
-      classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
-      academicYearId: yearAId,
-      academicYearName: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
-      role: "PRIMARY_TEACHER",
-      weeklyHours: 5,
-      status: "ACTIVE",
-      createdAt: "2026-08-20T00:00:00Z",
-      updatedAt: "2026-08-20T00:00:00Z"
-    });
-    const taArabAId = "ta_horizon_arab_10a";
-    this.teacherAssignments.set(taArabAId, {
-      id: taArabAId,
-      organizationId: schoolAId,
-      teacherId: teacherArabic.id,
-      teacherName: teacherArabic.fullName,
-      teacherEmail: teacherArabic.email,
-      courseId: courseArabic10AId,
-      courseTitle: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631",
-      subjectId: arabicSubId,
-      subjectName: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
-      classroomId: class10AId,
-      classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
-      academicYearId: yearAId,
-      academicYearName: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
-      role: "PRIMARY_TEACHER",
-      weeklyHours: 4,
-      status: "ACTIVE",
-      createdAt: "2026-08-20T00:00:00Z",
-      updatedAt: "2026-08-20T00:00:00Z"
-    });
-    const studentsListA = [
-      { user: student1, roll: "10A-01" },
-      { user: student2, roll: "10A-02" },
-      { user: student3, roll: "10A-03" },
-      { user: student4, roll: "10A-04" }
-    ];
-    for (const item of studentsListA) {
-      const enrId = `enr_horizon_${item.user.id}`;
-      this.studentEnrollments.set(enrId, {
-        id: enrId,
-        organizationId: schoolAId,
-        studentId: item.user.id,
-        studentName: item.user.fullName,
-        studentEmail: item.user.email,
-        studentIdNumber: item.user.studentIdNumber,
-        classroomId: class10AId,
-        classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
-        gradeLevelId: grade10Id,
-        gradeLevelName: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u0627\u0644\u062B\u0627\u0646\u0648\u064A)",
-        academicYearId: yearAId,
-        academicYearName: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
-        rollNumber: item.roll,
-        status: "ACTIVE",
-        enrolledAt: "2026-08-20T00:00:00Z",
-        updatedAt: "2026-08-20T00:00:00Z"
-      });
-    }
-    const taPhysBId = "ta_elite_phys_10a";
-    this.teacherAssignments.set(taPhysBId, {
-      id: taPhysBId,
-      organizationId: schoolBId,
-      teacherId: teacherB.id,
-      teacherName: teacherB.fullName,
-      teacherEmail: teacherB.email,
-      courseId: coursePhys10AId,
-      courseTitle: "Advanced Physics - Grade 10",
-      subjectId: physSubId,
-      subjectName: "Advanced Physics",
-      classroomId: classBId,
-      classroomName: "Section 10-Alpha",
-      academicYearId: yearBId,
-      academicYearName: "Academic Year 2026-2027 (1448H)",
-      role: "PRIMARY_TEACHER",
-      weeklyHours: 6,
-      status: "ACTIVE",
-      createdAt: "2026-09-01T00:00:00Z",
-      updatedAt: "2026-09-01T00:00:00Z"
-    });
-    const enrBId = `enr_elite_${studentB.id}`;
-    this.studentEnrollments.set(enrBId, {
-      id: enrBId,
-      organizationId: schoolBId,
-      studentId: studentB.id,
-      studentName: studentB.fullName,
-      studentEmail: studentB.email,
-      studentIdNumber: studentB.studentIdNumber,
-      classroomId: classBId,
-      classroomName: "Section 10-Alpha",
-      gradeLevelId: gradeBId,
-      gradeLevelName: "Grade 10 (Advanced)",
-      academicYearId: yearBId,
-      academicYearName: "Academic Year 2026-2027 (1448H)",
-      rollNumber: "ELT-10A-01",
-      status: "ACTIVE",
-      enrolledAt: "2026-09-01T00:00:00Z",
-      updatedAt: "2026-09-01T00:00:00Z"
-    });
-    const stdRec1 = {
-      id: `std_rec_${student1.id}`,
-      organizationId: schoolAId,
-      studentId: student1.id,
-      nationalId: "1098765432",
-      dateOfBirth: "2010-04-15",
-      gender: "MALE",
-      bloodType: "O+",
-      nationality: "\u0633\u0639\u0648\u062F\u064A",
-      admissionDate: "2024-09-01",
-      status: "ACTIVE",
-      medicalConditions: "\u0644\u0627 \u062A\u0648\u062C\u062F \u062D\u0627\u0644\u0627\u062A \u0645\u0632\u0645\u0646\u0629",
-      allergies: "\u062D\u0633\u0627\u0633\u064A\u0629 \u062E\u0641\u064A\u0641\u0629 \u0645\u0646 \u0627\u0644\u0641\u0648\u0644 \u0627\u0644\u0633\u0648\u062F\u0627\u0646\u064A",
-      specialDietaryNeeds: "\u0648\u062C\u0628\u0627\u062A \u062E\u0627\u0644\u064A\u0629 \u0645\u0646 \u0627\u0644\u0645\u0643\u0633\u0631\u0627\u062A",
-      emergencyContactName: "\u062E\u0627\u0644\u062F \u0627\u0644\u0633\u0639\u064A\u062F (\u0627\u0644\u0623\u0628)",
-      emergencyContactPhone: "+966501234567",
-      emergencyContactRelationship: "FATHER",
-      previousSchool: "\u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0631\u0648\u0627\u062F \u0627\u0644\u0646\u0645\u0648\u0630\u062C\u064A\u0629",
-      giftedProgram: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.studentRecords.set(stdRec1.id, stdRec1);
-    const stdRec2 = {
-      id: `std_rec_${student2.id}`,
-      organizationId: schoolAId,
-      studentId: student2.id,
-      nationalId: "1087654321",
-      dateOfBirth: "2010-08-22",
-      gender: "FEMALE",
-      bloodType: "A+",
-      nationality: "\u0633\u0639\u0648\u062F\u064A\u0629",
-      admissionDate: "2024-09-01",
-      status: "ACTIVE",
-      emergencyContactName: "\u0641\u0627\u0637\u0645\u0629 \u0627\u0644\u0639\u062A\u064A\u0628\u064A (\u0627\u0644\u0623\u0645)",
-      emergencyContactPhone: "+966507654321",
-      emergencyContactRelationship: "MOTHER",
-      previousSchool: "\u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0645\u0633\u062A\u0642\u0628\u0644 \u0627\u0644\u0623\u0647\u0644\u064A\u0629",
-      giftedProgram: false,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.studentRecords.set(stdRec2.id, stdRec2);
-    const stdRec3 = {
-      id: `std_rec_${student3.id}`,
-      organizationId: schoolAId,
-      studentId: student3.id,
-      nationalId: "1076543210",
-      dateOfBirth: "2010-11-03",
-      gender: "MALE",
-      bloodType: "B+",
-      nationality: "\u0633\u0639\u0648\u062F\u064A",
-      admissionDate: "2024-09-01",
-      status: "ACTIVE",
-      medicalConditions: "\u0631\u0628\u0648 \u062A\u062D\u0633\u0633\u064A \u062E\u0641\u064A\u0641 \u0639\u0646\u062F \u0645\u0645\u0627\u0631\u0633\u0629 \u0627\u0644\u0645\u062C\u0647\u0648\u062F \u0627\u0644\u0634\u062F\u064A\u062F",
-      allergies: "\u063A\u0628\u0627\u0631 \u0627\u0644\u0637\u0644\u0639 \u0648\u0627\u0644\u0623\u062A\u0631\u0628\u0629",
-      emergencyContactName: "\u0645\u062D\u0645\u062F \u0627\u0644\u0645\u0637\u064A\u0631\u064A (\u0627\u0644\u0623\u0628)",
-      emergencyContactPhone: "+966509988776",
-      emergencyContactRelationship: "FATHER",
-      giftedProgram: false,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.studentRecords.set(stdRec3.id, stdRec3);
-    const stdRec4 = {
-      id: `std_rec_${student4.id}`,
-      organizationId: schoolAId,
-      studentId: student4.id,
-      nationalId: "1065432109",
-      dateOfBirth: "2010-02-18",
-      gender: "FEMALE",
-      bloodType: "AB+",
-      nationality: "\u0633\u0639\u0648\u062F\u064A\u0629",
-      admissionDate: "2024-09-01",
-      status: "ACTIVE",
-      emergencyContactName: "\u0633\u0644\u0637\u0627\u0646 \u0627\u0644\u0642\u062D\u0637\u0627\u0646\u064A (\u0627\u0644\u0623\u0628)",
-      emergencyContactPhone: "+966505544332",
-      emergencyContactRelationship: "FATHER",
-      giftedProgram: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.studentRecords.set(stdRec4.id, stdRec4);
-    const stdRecB = {
-      id: `std_rec_${studentB.id}`,
-      organizationId: schoolBId,
-      studentId: studentB.id,
-      nationalId: "2098765432",
-      dateOfBirth: "2010-06-10",
-      gender: "MALE",
-      bloodType: "O+",
-      nationality: "\u0633\u0639\u0648\u062F\u064A",
-      admissionDate: "2024-09-01",
-      status: "ACTIVE",
-      emergencyContactName: "James Hayes (Father)",
-      emergencyContactPhone: "+966551122334",
-      emergencyContactRelationship: "FATHER",
-      giftedProgram: true,
-      createdAt: "2026-01-01T00:00:00Z",
-      updatedAt: "2026-01-01T00:00:00Z"
-    };
-    this.studentRecords.set(stdRecB.id, stdRecB);
-    const beh1 = {
-      id: `beh_horizon_001`,
-      organizationId: schoolAId,
-      studentId: student1.id,
-      studentName: student1.fullName,
-      type: "MERIT",
-      title: "\u0627\u0644\u062A\u0641\u0648\u0642 \u0641\u064A \u0623\u0648\u0644\u0645\u0628\u064A\u0627\u062F \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0645\u062F\u0631\u0633\u064A",
-      description: "\u062D\u0642\u0642 \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0623\u0648\u0644 \u0639\u0644\u0649 \u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u0645\u062F\u0631\u0633\u0629 \u0641\u064A \u0645\u0633\u0627\u0628\u0642\u0629 \u062D\u0644 \u0627\u0644\u0645\u0633\u0627\u0626\u0644 \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629",
-      points: 10,
-      actionTaken: "\u0645\u0646\u062D \u0634\u0647\u0627\u062F\u0629 \u062A\u0641\u0648\u0642 \u0645\u0639 \u0625\u0634\u0639\u0627\u0631 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631",
-      incidentDate: "2026-09-15",
-      recordedBy: teacherMath.id,
-      recordedByName: teacherMath.fullName,
-      status: "RESOLVED",
-      createdAt: "2026-09-15T10:00:00Z"
-    };
-    this.studentBehaviorRecords.set(beh1.id, beh1);
-    const beh2 = {
-      id: `beh_horizon_002`,
-      organizationId: schoolAId,
-      studentId: student2.id,
-      studentName: student2.fullName,
-      type: "POSITIVE_PRAISE",
-      title: "\u0645\u0634\u0627\u0631\u0643\u0629 \u0645\u062A\u0645\u064A\u0632\u0629 \u0641\u064A \u0627\u0644\u0625\u0630\u0627\u0639\u0629 \u0627\u0644\u0645\u062F\u0631\u0633\u064A\u0629",
-      description: "\u0625\u0644\u0642\u0627\u0621 \u0645\u0645\u064A\u0632 \u0648\u0625\u0639\u062F\u0627\u062F \u0645\u062D\u062A\u0648\u0649 \u062B\u0642\u0627\u0641\u064A \u0647\u0627\u062F\u0641 \u0644\u0644\u0625\u0630\u0627\u0639\u0629 \u0627\u0644\u0645\u062F\u0631\u0633\u064A\u0629 \u0627\u0644\u0635\u0628\u0627\u062D\u064A\u0629",
-      points: 5,
-      actionTaken: "\u062A\u0633\u062C\u064A\u0644 \u0628\u0637\u0627\u0642\u0629 \u062A\u0645\u064A\u0632 \u0633\u0644\u0648\u0643\u064A",
-      incidentDate: "2026-09-20",
-      recordedBy: teacherArabic.id,
-      recordedByName: teacherArabic.fullName,
-      status: "RESOLVED",
-      createdAt: "2026-09-20T08:30:00Z"
-    };
-    this.studentBehaviorRecords.set(beh2.id, beh2);
-    const beh3 = {
-      id: `beh_horizon_003`,
-      organizationId: schoolAId,
-      studentId: student3.id,
-      studentName: student3.fullName,
-      type: "MINOR_INFRACTION",
-      title: "\u062A\u0623\u062E\u0631 \u0645\u062A\u0643\u0631\u0631 \u0639\u0646 \u0627\u0644\u062D\u0635\u0629 \u0627\u0644\u0623\u0648\u0644\u0649",
-      description: "\u062A\u0623\u062E\u0631 3 \u0645\u0631\u0627\u062A \u062E\u0644\u0627\u0644 \u0627\u0644\u0623\u0633\u0628\u0648\u0639 \u062F\u0648\u0646 \u0625\u062D\u0636\u0627\u0631 \u0639\u0630\u0631 \u0645\u0633\u0628\u0642",
-      points: -2,
-      actionTaken: "\u062A\u0646\u0628\u064A\u0647 \u0634\u0641\u0647\u064A \u0648\u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631",
-      incidentDate: "2026-09-28",
-      recordedBy: teacherMath.id,
-      recordedByName: teacherMath.fullName,
-      status: "RESOLVED",
-      createdAt: "2026-09-28T09:00:00Z"
-    };
-    this.studentBehaviorRecords.set(beh3.id, beh3);
-    const lce1 = {
-      id: `lce_horizon_001`,
-      organizationId: schoolAId,
-      studentId: student1.id,
-      studentName: student1.fullName,
-      previousStatus: "ACTIVE",
-      newStatus: "ACTIVE",
-      reason: "\u0627\u0644\u0642\u0628\u0648\u0644 \u0648\u0627\u0644\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0644\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
-      actionBy: adminA.id,
-      actionByName: adminA.fullName,
-      effectiveDate: "2026-08-20",
-      timestamp: "2026-08-20T08:00:00Z"
-    };
-    this.studentLifecycleEvents.set(lce1.id, lce1);
-    const psl1 = {
-      id: `psl_horizon_001`,
-      organizationId: schoolAId,
-      parentId: parent1.id,
-      parentName: parent1.fullName,
-      studentId: student1.id,
-      studentName: student1.fullName,
-      relationship: "FATHER",
-      isEmergencyContact: true,
-      createdAt: "2026-01-01T00:00:00Z"
-    };
-    this.parentStudentLinks.set(psl1.id, psl1);
-    for (const user of Array.from(this.users.values())) {
-      user.emailVerified = true;
-      user.phoneVerified = true;
-      user.authProviders = ["email"];
-      if (!user.passwordHash) {
-        user.passwordHash = hashPassword("Password@2026");
-      }
-      this.addMembership({
-        userId: user.id,
-        organizationId: user.organizationId,
-        role: user.role,
-        isDefault: true,
-        status: "ACTIVE",
-        classroomId: user.classroomId,
-        studentIdNumber: user.studentIdNumber,
-        teacherSpecialization: user.teacherSpecialization
-      });
-    }
-  }
-  // --- Multi-Tenant Query Helpers (Row-Level Security Enforcement) ---
-  // Organizations
-  getOrganizationById(orgId) {
-    return this.organizations.get(orgId);
-  }
-  getOrganizationBySlug(slug) {
-    return Array.from(this.organizations.values()).find((o) => o.slug === slug || o.id === slug);
-  }
-  getAllOrganizations() {
-    return Array.from(this.organizations.values());
-  }
-  createOrganization(data) {
-    const id = `org_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const org = { ...data, id, createdAt: now, updatedAt: now };
-    this.organizations.set(id, org);
-    return org;
-  }
-  // Users (RLS Enforced by tenant organizationId)
-  findUserByEmail(email, organizationId) {
-    const normalized = email.trim().toLowerCase();
-    const all = Array.from(this.users.values());
-    if (organizationId) {
-      return all.find((u) => u.email.toLowerCase() === normalized && u.organizationId === organizationId);
-    }
-    return all.find((u) => u.email.toLowerCase() === normalized);
-  }
-  findUserByPhone(phone, organizationId) {
-    const normalized = phone.trim();
-    const all = Array.from(this.users.values());
-    if (organizationId) {
-      return all.find((u) => u.phone && u.phone.trim() === normalized && u.organizationId === organizationId);
-    }
-    return all.find((u) => u.phone && u.phone.trim() === normalized);
-  }
-  findUserByGoogleId(googleId) {
-    const trimmed = googleId.trim();
-    return Array.from(this.users.values()).find((u) => u.googleId === trimmed);
-  }
-  getUserById(userId, organizationId) {
-    const user = this.users.get(userId);
-    if (!user) return void 0;
-    if (organizationId && user.organizationId !== organizationId) return void 0;
-    return user;
-  }
-  getUsersByOrg(organizationId, role) {
-    return Array.from(this.users.values()).filter((u) => {
-      if (u.organizationId !== organizationId) return false;
-      if (role && u.role !== role) return false;
-      return true;
-    });
-  }
-  createUser(data) {
-    const id = data.id || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const user = {
-      ...data,
-      id,
-      emailVerified: data.emailVerified ?? false,
-      phoneVerified: data.phoneVerified ?? false,
-      authProviders: data.authProviders || (data.email ? ["email"] : []),
-      createdAt: now,
-      updatedAt: now
-    };
-    this.users.set(id, user);
-    if (user.organizationId) {
-      const existingMembership = this.getMembership(user.id, user.organizationId);
-      if (!existingMembership) {
-        this.addMembership({
-          userId: user.id,
-          organizationId: user.organizationId,
-          role: user.role,
-          isDefault: true,
+          orderIndex: 2,
+          isPublished: true,
+          createdAt: "2026-09-09T08:00:00Z",
+          updatedAt: "2026-09-09T08:00:00Z"
+        });
+        const assign1Id = "asg_horizon_math_01";
+        this.assignments.set(assign1Id, {
+          id: assign1Id,
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          title: "\u0627\u0644\u0648\u0627\u062C\u0628 \u0627\u0644\u0623\u0648\u0644: \u062D\u0644 \u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u0627\u062A \u0627\u0644\u0645\u0631\u0643\u0628\u0629",
+          description: "\u062D\u0644 \u0627\u0644\u0645\u0633\u0627\u0626\u0644 \u0645\u0646 1 \u0625\u0644\u0649 8 \u0641\u064A \u0635\u0641\u062D\u0629 42\u060C \u0645\u0639 \u0643\u062A\u0627\u0628\u0629 \u062E\u0637\u0648\u0627\u062A \u0627\u0644\u062A\u062D\u0648\u064A\u0644 \u0648\u0627\u0644\u062A\u0628\u0633\u064A\u0637 \u0643\u0627\u0645\u0644\u0629.",
+          maxScore: 20,
+          dueDate: "2026-10-15T23:59:00Z",
+          createdAt: "2026-09-03T10:00:00Z"
+        });
+        const assign2Id = "asg_horizon_math_02";
+        this.assignments.set(assign2Id, {
+          id: assign2Id,
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          title: "\u0627\u0644\u0645\u0647\u0645\u0629 \u0627\u0644\u0623\u062F\u0627\u0626\u064A\u0629: \u0636\u0631\u0628 \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u062A\u0637\u0628\u064A\u0642\u0627\u062A \u0627\u0644\u0648\u0627\u0642\u0639\u064A\u0629",
+          description: "\u062A\u0635\u0645\u064A\u0645 \u0645\u0633\u0623\u0644\u0629 \u0648\u0627\u0642\u0639\u064A\u0629 \u0648\u062A\u0637\u0628\u064A\u0642 \u0645\u0635\u0641\u0648\u0641\u0629 3x3 \u0644\u062D\u0644\u0647\u0627.",
+          maxScore: 30,
+          dueDate: "2026-10-30T23:59:00Z",
+          createdAt: "2026-09-10T10:00:00Z"
+        });
+        const sub1Id = "sub_omar_01";
+        this.submissions.set(sub1Id, {
+          id: sub1Id,
+          organizationId: schoolAId,
+          assignmentId: assign1Id,
+          studentId: student1.id,
+          studentName: student1.fullName,
+          submissionText: "\u062A\u0645 \u062D\u0644 \u062C\u0645\u064A\u0639 \u0627\u0644\u0645\u0633\u0627\u0626\u0644 \u0627\u0644\u062B\u0645\u0627\u0646\u064A\u0629 \u0648\u062A\u062F\u0648\u064A\u0646 \u062E\u0637\u0648\u0627\u062A \u0627\u0644\u062A\u062D\u0648\u064A\u0644 \u0628\u0627\u0644\u062A\u0641\u0635\u064A\u0644 \u0641\u064A \u0627\u0644\u0645\u0631\u0641\u0642.",
+          fileAttachmentUrl: "\u062D\u0644_\u0639\u0645\u0631_\u0627\u0644\u0633\u0639\u064A\u062F_\u0631\u064A\u0627\u0636\u064A\u0627\u062A.pdf",
+          score: 19.5,
+          teacherFeedback: "\u0625\u062C\u0627\u0628\u0629 \u0646\u0645\u0648\u0630\u062C\u064A\u0629 \u0648\u0645\u0646\u0638\u0645\u0629 \u062C\u062F\u0627\u064B \u064A\u0627 \u0639\u0645\u0631. \u0623\u062D\u0633\u0646\u062A!",
+          submittedAt: "2026-10-14T15:30:00Z",
+          gradedAt: "2026-10-15T10:00:00Z"
+        });
+        const sub2Id = "sub_noura_01";
+        this.submissions.set(sub2Id, {
+          id: sub2Id,
+          organizationId: schoolAId,
+          assignmentId: assign1Id,
+          studentId: student2.id,
+          studentName: student2.fullName,
+          submissionText: "\u0645\u0631\u0641\u0642 \u062D\u0644\u0648\u0644 \u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u0633\u062A\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 \u0648\u0627\u0644\u0645\u0633\u0623\u0644\u0629 \u0627\u0644\u0625\u0636\u0627\u0641\u064A\u0629.",
+          fileAttachmentUrl: "\u062D\u0644_\u0646\u0648\u0631\u0629_\u0627\u0644\u0641\u0647\u062F_\u0631\u064A\u0627\u0636\u064A\u0627\u062A.pdf",
+          score: 18,
+          teacherFeedback: "\u0639\u0645\u0644 \u0645\u0645\u062A\u0627\u0632\u060C \u0631\u0627\u062C\u0639\u064A \u0641\u0642\u0637 \u0625\u0634\u0627\u0631\u0629 \u0627\u0644\u062D\u062F \u0627\u0644\u0623\u062E\u064A\u0631 \u0641\u064A \u0627\u0644\u0645\u0633\u0623\u0644\u0629 5.",
+          submittedAt: "2026-10-14T18:45:00Z",
+          gradedAt: "2026-10-15T11:20:00Z"
+        });
+        const today = (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+        this.attendanceRecords.set(`att_${courseMath10AId}_${student1.id}_${today}`, {
+          id: `att_${courseMath10AId}_${student1.id}_${today}`,
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          classroomId: class10AId,
+          studentId: student1.id,
+          studentName: student1.fullName,
+          recordedBy: teacherMath.id,
+          date: today,
+          status: "PRESENT",
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        this.attendanceRecords.set(`att_${courseMath10AId}_${student2.id}_${today}`, {
+          id: `att_${courseMath10AId}_${student2.id}_${today}`,
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          classroomId: class10AId,
+          studentId: student2.id,
+          studentName: student2.fullName,
+          recordedBy: teacherMath.id,
+          date: today,
+          status: "PRESENT",
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        this.attendanceRecords.set(`att_${courseMath10AId}_${student3.id}_${today}`, {
+          id: `att_${courseMath10AId}_${student3.id}_${today}`,
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          classroomId: class10AId,
+          studentId: student3.id,
+          studentName: student3.fullName,
+          recordedBy: teacherMath.id,
+          date: today,
+          status: "LATE",
+          notes: "\u062A\u0623\u062E\u0631 10 \u062F\u0642\u0627\u0626\u0642 \u0628\u0639\u0630\u0631 \u0645\u0642\u0628\u0648\u0644",
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        const adminB = {
+          id: "usr_elite_admin",
+          organizationId: schoolBId,
+          email: "admin@elite.edu.sa",
+          fullName: "Dr. Sarah Jenkins (Elite Admin)",
+          role: "ORG_ADMIN",
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(adminB.id, adminB);
+        const teacherB = {
+          id: "usr_elite_teacher",
+          organizationId: schoolBId,
+          email: "teacher.sara@elite.edu.sa",
+          fullName: "Prof. Marcus Vance (Elite Teacher)",
+          role: "TEACHER",
+          teacherSpecialization: "Advanced Physics & AI",
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(teacherB.id, teacherB);
+        const studentB = {
+          id: "usr_elite_student",
+          organizationId: schoolBId,
+          email: "student@elite.edu.sa",
+          fullName: "Zaid Al-Harbi (Elite Student)",
+          role: "STUDENT",
+          studentIdNumber: "ELT-2026-099",
+          isActive: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.users.set(studentB.id, studentB);
+        const yearBId = "year_elite_1448";
+        this.academicYears.set(yearBId, {
+          id: yearBId,
+          organizationId: schoolBId,
+          name: "Academic Year 2026-2027 (1448H)",
+          startDate: "2026-09-01",
+          endDate: "2027-06-30",
+          isCurrent: true
+        });
+        const termBId = "term_elite_t1";
+        this.terms.set(termBId, {
+          id: termBId,
+          organizationId: schoolBId,
+          academicYearId: yearBId,
+          name: "Trimester 1",
+          startDate: "2026-09-01",
+          endDate: "2026-11-30",
+          isCurrent: true
+        });
+        const gradeBId = "grd_elite_10";
+        this.gradeLevels.set(gradeBId, {
+          id: gradeBId,
+          organizationId: schoolBId,
+          name: "Grade 10 (Advanced)",
+          sequenceOrder: 10
+        });
+        const classBId = "cls_elite_10a";
+        this.classrooms.set(classBId, {
+          id: classBId,
+          organizationId: schoolBId,
+          gradeLevelId: gradeBId,
+          name: "Section 10-Alpha",
+          capacity: 25
+        });
+        const physSubId = "sbj_elite_phys";
+        this.subjects.set(physSubId, {
+          id: physSubId,
+          organizationId: schoolBId,
+          name: "Advanced Physics",
+          code: "PHY-101"
+        });
+        const coursePhys10AId = "crs_elite_phys_10a";
+        this.courses.set(coursePhys10AId, {
+          id: coursePhys10AId,
+          organizationId: schoolBId,
+          subjectId: physSubId,
+          termId: termBId,
+          teacherId: teacherB.id,
+          classroomId: classBId,
+          title: "Advanced Physics - Grade 10",
+          description: "Quantum mechanics and classical kinematics",
+          subjectName: "Advanced Physics",
+          teacherName: teacherB.fullName,
+          classroomName: "Section 10-Alpha"
+        });
+        const taMathAId = "ta_horizon_math_10a";
+        this.teacherAssignments.set(taMathAId, {
+          id: taMathAId,
+          organizationId: schoolAId,
+          teacherId: teacherMath.id,
+          teacherName: teacherMath.fullName,
+          teacherEmail: teacherMath.email,
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631",
+          subjectId: mathSubId,
+          subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+          classroomId: class10AId,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+          academicYearId: yearAId,
+          academicYearName: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
+          role: "PRIMARY_TEACHER",
+          weeklyHours: 5,
           status: "ACTIVE",
-          classroomId: user.classroomId,
-          studentIdNumber: user.studentIdNumber,
-          teacherSpecialization: user.teacherSpecialization
+          createdAt: "2026-08-20T00:00:00Z",
+          updatedAt: "2026-08-20T00:00:00Z"
+        });
+        const taArabAId = "ta_horizon_arab_10a";
+        this.teacherAssignments.set(taArabAId, {
+          id: taArabAId,
+          organizationId: schoolAId,
+          teacherId: teacherArabic.id,
+          teacherName: teacherArabic.fullName,
+          teacherEmail: teacherArabic.email,
+          courseId: courseArabic10AId,
+          courseTitle: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631",
+          subjectId: arabicSubId,
+          subjectName: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
+          classroomId: class10AId,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+          academicYearId: yearAId,
+          academicYearName: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
+          role: "PRIMARY_TEACHER",
+          weeklyHours: 4,
+          status: "ACTIVE",
+          createdAt: "2026-08-20T00:00:00Z",
+          updatedAt: "2026-08-20T00:00:00Z"
+        });
+        const studentsListA = [
+          { user: student1, roll: "10A-01" },
+          { user: student2, roll: "10A-02" },
+          { user: student3, roll: "10A-03" },
+          { user: student4, roll: "10A-04" }
+        ];
+        for (const item of studentsListA) {
+          const enrId = `enr_horizon_${item.user.id}`;
+          this.studentEnrollments.set(enrId, {
+            id: enrId,
+            organizationId: schoolAId,
+            studentId: item.user.id,
+            studentName: item.user.fullName,
+            studentEmail: item.user.email,
+            studentIdNumber: item.user.studentIdNumber,
+            classroomId: class10AId,
+            classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+            gradeLevelId: grade10Id,
+            gradeLevelName: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u0627\u0644\u062B\u0627\u0646\u0648\u064A)",
+            academicYearId: yearAId,
+            academicYearName: "\u0627\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
+            rollNumber: item.roll,
+            status: "ACTIVE",
+            enrolledAt: "2026-08-20T00:00:00Z",
+            updatedAt: "2026-08-20T00:00:00Z"
+          });
+        }
+        const taPhysBId = "ta_elite_phys_10a";
+        this.teacherAssignments.set(taPhysBId, {
+          id: taPhysBId,
+          organizationId: schoolBId,
+          teacherId: teacherB.id,
+          teacherName: teacherB.fullName,
+          teacherEmail: teacherB.email,
+          courseId: coursePhys10AId,
+          courseTitle: "Advanced Physics - Grade 10",
+          subjectId: physSubId,
+          subjectName: "Advanced Physics",
+          classroomId: classBId,
+          classroomName: "Section 10-Alpha",
+          academicYearId: yearBId,
+          academicYearName: "Academic Year 2026-2027 (1448H)",
+          role: "PRIMARY_TEACHER",
+          weeklyHours: 6,
+          status: "ACTIVE",
+          createdAt: "2026-09-01T00:00:00Z",
+          updatedAt: "2026-09-01T00:00:00Z"
+        });
+        const enrBId = `enr_elite_${studentB.id}`;
+        this.studentEnrollments.set(enrBId, {
+          id: enrBId,
+          organizationId: schoolBId,
+          studentId: studentB.id,
+          studentName: studentB.fullName,
+          studentEmail: studentB.email,
+          studentIdNumber: studentB.studentIdNumber,
+          classroomId: classBId,
+          classroomName: "Section 10-Alpha",
+          gradeLevelId: gradeBId,
+          gradeLevelName: "Grade 10 (Advanced)",
+          academicYearId: yearBId,
+          academicYearName: "Academic Year 2026-2027 (1448H)",
+          rollNumber: "ELT-10A-01",
+          status: "ACTIVE",
+          enrolledAt: "2026-09-01T00:00:00Z",
+          updatedAt: "2026-09-01T00:00:00Z"
+        });
+        const stdRec1 = {
+          id: `std_rec_${student1.id}`,
+          organizationId: schoolAId,
+          studentId: student1.id,
+          nationalId: "1098765432",
+          dateOfBirth: "2010-04-15",
+          gender: "MALE",
+          bloodType: "O+",
+          nationality: "\u0633\u0639\u0648\u062F\u064A",
+          admissionDate: "2024-09-01",
+          status: "ACTIVE",
+          medicalConditions: "\u0644\u0627 \u062A\u0648\u062C\u062F \u062D\u0627\u0644\u0627\u062A \u0645\u0632\u0645\u0646\u0629",
+          allergies: "\u062D\u0633\u0627\u0633\u064A\u0629 \u062E\u0641\u064A\u0641\u0629 \u0645\u0646 \u0627\u0644\u0641\u0648\u0644 \u0627\u0644\u0633\u0648\u062F\u0627\u0646\u064A",
+          specialDietaryNeeds: "\u0648\u062C\u0628\u0627\u062A \u062E\u0627\u0644\u064A\u0629 \u0645\u0646 \u0627\u0644\u0645\u0643\u0633\u0631\u0627\u062A",
+          emergencyContactName: "\u062E\u0627\u0644\u062F \u0627\u0644\u0633\u0639\u064A\u062F (\u0627\u0644\u0623\u0628)",
+          emergencyContactPhone: "+966501234567",
+          emergencyContactRelationship: "FATHER",
+          previousSchool: "\u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0631\u0648\u0627\u062F \u0627\u0644\u0646\u0645\u0648\u0630\u062C\u064A\u0629",
+          giftedProgram: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.studentRecords.set(stdRec1.id, stdRec1);
+        const stdRec2 = {
+          id: `std_rec_${student2.id}`,
+          organizationId: schoolAId,
+          studentId: student2.id,
+          nationalId: "1087654321",
+          dateOfBirth: "2010-08-22",
+          gender: "FEMALE",
+          bloodType: "A+",
+          nationality: "\u0633\u0639\u0648\u062F\u064A\u0629",
+          admissionDate: "2024-09-01",
+          status: "ACTIVE",
+          emergencyContactName: "\u0641\u0627\u0637\u0645\u0629 \u0627\u0644\u0639\u062A\u064A\u0628\u064A (\u0627\u0644\u0623\u0645)",
+          emergencyContactPhone: "+966507654321",
+          emergencyContactRelationship: "MOTHER",
+          previousSchool: "\u0645\u062F\u0627\u0631\u0633 \u0627\u0644\u0645\u0633\u062A\u0642\u0628\u0644 \u0627\u0644\u0623\u0647\u0644\u064A\u0629",
+          giftedProgram: false,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.studentRecords.set(stdRec2.id, stdRec2);
+        const stdRec3 = {
+          id: `std_rec_${student3.id}`,
+          organizationId: schoolAId,
+          studentId: student3.id,
+          nationalId: "1076543210",
+          dateOfBirth: "2010-11-03",
+          gender: "MALE",
+          bloodType: "B+",
+          nationality: "\u0633\u0639\u0648\u062F\u064A",
+          admissionDate: "2024-09-01",
+          status: "ACTIVE",
+          medicalConditions: "\u0631\u0628\u0648 \u062A\u062D\u0633\u0633\u064A \u062E\u0641\u064A\u0641 \u0639\u0646\u062F \u0645\u0645\u0627\u0631\u0633\u0629 \u0627\u0644\u0645\u062C\u0647\u0648\u062F \u0627\u0644\u0634\u062F\u064A\u062F",
+          allergies: "\u063A\u0628\u0627\u0631 \u0627\u0644\u0637\u0644\u0639 \u0648\u0627\u0644\u0623\u062A\u0631\u0628\u0629",
+          emergencyContactName: "\u0645\u062D\u0645\u062F \u0627\u0644\u0645\u0637\u064A\u0631\u064A (\u0627\u0644\u0623\u0628)",
+          emergencyContactPhone: "+966509988776",
+          emergencyContactRelationship: "FATHER",
+          giftedProgram: false,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.studentRecords.set(stdRec3.id, stdRec3);
+        const stdRec4 = {
+          id: `std_rec_${student4.id}`,
+          organizationId: schoolAId,
+          studentId: student4.id,
+          nationalId: "1065432109",
+          dateOfBirth: "2010-02-18",
+          gender: "FEMALE",
+          bloodType: "AB+",
+          nationality: "\u0633\u0639\u0648\u062F\u064A\u0629",
+          admissionDate: "2024-09-01",
+          status: "ACTIVE",
+          emergencyContactName: "\u0633\u0644\u0637\u0627\u0646 \u0627\u0644\u0642\u062D\u0637\u0627\u0646\u064A (\u0627\u0644\u0623\u0628)",
+          emergencyContactPhone: "+966505544332",
+          emergencyContactRelationship: "FATHER",
+          giftedProgram: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.studentRecords.set(stdRec4.id, stdRec4);
+        const stdRecB = {
+          id: `std_rec_${studentB.id}`,
+          organizationId: schoolBId,
+          studentId: studentB.id,
+          nationalId: "2098765432",
+          dateOfBirth: "2010-06-10",
+          gender: "MALE",
+          bloodType: "O+",
+          nationality: "\u0633\u0639\u0648\u062F\u064A",
+          admissionDate: "2024-09-01",
+          status: "ACTIVE",
+          emergencyContactName: "James Hayes (Father)",
+          emergencyContactPhone: "+966551122334",
+          emergencyContactRelationship: "FATHER",
+          giftedProgram: true,
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z"
+        };
+        this.studentRecords.set(stdRecB.id, stdRecB);
+        const beh1 = {
+          id: `beh_horizon_001`,
+          organizationId: schoolAId,
+          studentId: student1.id,
+          studentName: student1.fullName,
+          type: "MERIT",
+          title: "\u0627\u0644\u062A\u0641\u0648\u0642 \u0641\u064A \u0623\u0648\u0644\u0645\u0628\u064A\u0627\u062F \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0645\u062F\u0631\u0633\u064A",
+          description: "\u062D\u0642\u0642 \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0623\u0648\u0644 \u0639\u0644\u0649 \u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u0645\u062F\u0631\u0633\u0629 \u0641\u064A \u0645\u0633\u0627\u0628\u0642\u0629 \u062D\u0644 \u0627\u0644\u0645\u0633\u0627\u0626\u0644 \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629",
+          points: 10,
+          actionTaken: "\u0645\u0646\u062D \u0634\u0647\u0627\u062F\u0629 \u062A\u0641\u0648\u0642 \u0645\u0639 \u0625\u0634\u0639\u0627\u0631 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631",
+          incidentDate: "2026-09-15",
+          recordedBy: teacherMath.id,
+          recordedByName: teacherMath.fullName,
+          status: "RESOLVED",
+          createdAt: "2026-09-15T10:00:00Z"
+        };
+        this.studentBehaviorRecords.set(beh1.id, beh1);
+        const beh2 = {
+          id: `beh_horizon_002`,
+          organizationId: schoolAId,
+          studentId: student2.id,
+          studentName: student2.fullName,
+          type: "POSITIVE_PRAISE",
+          title: "\u0645\u0634\u0627\u0631\u0643\u0629 \u0645\u062A\u0645\u064A\u0632\u0629 \u0641\u064A \u0627\u0644\u0625\u0630\u0627\u0639\u0629 \u0627\u0644\u0645\u062F\u0631\u0633\u064A\u0629",
+          description: "\u0625\u0644\u0642\u0627\u0621 \u0645\u0645\u064A\u0632 \u0648\u0625\u0639\u062F\u0627\u062F \u0645\u062D\u062A\u0648\u0649 \u062B\u0642\u0627\u0641\u064A \u0647\u0627\u062F\u0641 \u0644\u0644\u0625\u0630\u0627\u0639\u0629 \u0627\u0644\u0645\u062F\u0631\u0633\u064A\u0629 \u0627\u0644\u0635\u0628\u0627\u062D\u064A\u0629",
+          points: 5,
+          actionTaken: "\u062A\u0633\u062C\u064A\u0644 \u0628\u0637\u0627\u0642\u0629 \u062A\u0645\u064A\u0632 \u0633\u0644\u0648\u0643\u064A",
+          incidentDate: "2026-09-20",
+          recordedBy: teacherArabic.id,
+          recordedByName: teacherArabic.fullName,
+          status: "RESOLVED",
+          createdAt: "2026-09-20T08:30:00Z"
+        };
+        this.studentBehaviorRecords.set(beh2.id, beh2);
+        const beh3 = {
+          id: `beh_horizon_003`,
+          organizationId: schoolAId,
+          studentId: student3.id,
+          studentName: student3.fullName,
+          type: "MINOR_INFRACTION",
+          title: "\u062A\u0623\u062E\u0631 \u0645\u062A\u0643\u0631\u0631 \u0639\u0646 \u0627\u0644\u062D\u0635\u0629 \u0627\u0644\u0623\u0648\u0644\u0649",
+          description: "\u062A\u0623\u062E\u0631 3 \u0645\u0631\u0627\u062A \u062E\u0644\u0627\u0644 \u0627\u0644\u0623\u0633\u0628\u0648\u0639 \u062F\u0648\u0646 \u0625\u062D\u0636\u0627\u0631 \u0639\u0630\u0631 \u0645\u0633\u0628\u0642",
+          points: -2,
+          actionTaken: "\u062A\u0646\u0628\u064A\u0647 \u0634\u0641\u0647\u064A \u0648\u0627\u0644\u062A\u0648\u0627\u0635\u0644 \u0645\u0639 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631",
+          incidentDate: "2026-09-28",
+          recordedBy: teacherMath.id,
+          recordedByName: teacherMath.fullName,
+          status: "RESOLVED",
+          createdAt: "2026-09-28T09:00:00Z"
+        };
+        this.studentBehaviorRecords.set(beh3.id, beh3);
+        const lce1 = {
+          id: `lce_horizon_001`,
+          organizationId: schoolAId,
+          studentId: student1.id,
+          studentName: student1.fullName,
+          previousStatus: "ACTIVE",
+          newStatus: "ACTIVE",
+          reason: "\u0627\u0644\u0642\u0628\u0648\u0644 \u0648\u0627\u0644\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0644\u0644\u0639\u0627\u0645 \u0627\u0644\u062F\u0631\u0627\u0633\u064A 2026-2027",
+          actionBy: adminA.id,
+          actionByName: adminA.fullName,
+          effectiveDate: "2026-08-20",
+          timestamp: "2026-08-20T08:00:00Z"
+        };
+        this.studentLifecycleEvents.set(lce1.id, lce1);
+        const psl1 = {
+          id: `psl_horizon_001`,
+          organizationId: schoolAId,
+          parentId: parent1.id,
+          parentName: parent1.fullName,
+          studentId: student1.id,
+          studentName: student1.fullName,
+          relationship: "FATHER",
+          isEmergencyContact: true,
+          createdAt: "2026-01-01T00:00:00Z"
+        };
+        this.parentStudentLinks.set(psl1.id, psl1);
+        const sess1Id = "att_sess_horizon_001";
+        this.attendanceSessions.set(sess1Id, {
+          id: sess1Id,
+          organizationId: schoolAId,
+          classroomId: class10AId,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          date: today,
+          periodNumber: 1,
+          title: "\u062C\u0644\u0633\u0629 \u062A\u062D\u0636\u064A\u0631 \u0627\u0644\u062D\u0635\u0629 \u0627\u0644\u0623\u0648\u0644\u0649 - \u0627\u0644\u062C\u0628\u0631 \u0627\u0644\u062E\u0637\u064A",
+          status: "COMPLETED",
+          openedBy: teacherMath.id,
+          openedByName: teacherMath.fullName,
+          presentCount: 2,
+          absentCount: 0,
+          lateCount: 1,
+          excusedCount: 0,
+          totalStudents: 3,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        const attRec1 = this.attendanceRecords.get(`att_${courseMath10AId}_${student1.id}_${today}`);
+        if (attRec1) {
+          attRec1.sessionId = sess1Id;
+          attRec1.classroomName = "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)";
+          attRec1.studentIdNumber = student1.studentIdNumber;
+          attRec1.recordedByName = teacherMath.fullName;
+        }
+        const attRec2 = this.attendanceRecords.get(`att_${courseMath10AId}_${student2.id}_${today}`);
+        if (attRec2) {
+          attRec2.sessionId = sess1Id;
+          attRec2.classroomName = "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)";
+          attRec2.studentIdNumber = student2.studentIdNumber;
+          attRec2.recordedByName = teacherMath.fullName;
+        }
+        const attRec3 = this.attendanceRecords.get(`att_${courseMath10AId}_${student3.id}_${today}`);
+        if (attRec3) {
+          attRec3.sessionId = sess1Id;
+          attRec3.classroomName = "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)";
+          attRec3.studentIdNumber = student3.studentIdNumber;
+          attRec3.recordedByName = teacherMath.fullName;
+        }
+        const histDates = ["2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04", "2026-09-07"];
+        for (let i = 0; i < histDates.length; i++) {
+          const d = histDates[i];
+          const recKey = `att_${courseMath10AId}_${student1.id}_${d}`;
+          this.attendanceRecords.set(recKey, {
+            id: recKey,
+            organizationId: schoolAId,
+            courseId: courseMath10AId,
+            classroomId: class10AId,
+            classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+            studentId: student1.id,
+            studentName: student1.fullName,
+            studentIdNumber: student1.studentIdNumber,
+            recordedBy: teacherMath.id,
+            recordedByName: teacherMath.fullName,
+            date: d,
+            status: i === 3 ? "EXCUSED" : "PRESENT",
+            notes: i === 3 ? "\u0625\u062C\u0627\u0632\u0629 \u0645\u0631\u0636\u064A\u0629 \u0645\u0639\u062A\u0645\u062F\u0629" : void 0,
+            createdAt: `${d}T08:00:00Z`
+          });
+        }
+        const assMathMidterm = {
+          id: "ass_math_midterm_10a",
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          subjectId: mathSubId,
+          subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+          classroomId: class10AId,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+          termId: termAId,
+          title: "\u0627\u062E\u062A\u0628\u0627\u0631 \u0645\u0646\u062A\u0635\u0641 \u0627\u0644\u0641\u0635\u0644 \u0627\u0644\u0623\u0648\u0644 \u0641\u064A \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A",
+          description: "\u064A\u0634\u0645\u0644 \u0648\u062D\u062F\u0627\u062A \u0627\u0644\u062F\u0648\u0627\u0644 \u0648\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u0645\u062A\u062C\u0647\u0627\u062A",
+          category: "MIDTERM",
+          maxScore: 100,
+          weightPercentage: 30,
+          dueDate: "2026-10-15T12:00:00Z",
+          assessmentDate: "2026-10-15",
+          status: "PUBLISHED",
+          createdBy: teacherMath.id,
+          createdByName: teacherMath.fullName,
+          createdAt: "2026-09-01T08:00:00Z",
+          updatedAt: "2026-09-01T08:00:00Z"
+        };
+        this.assessments.set(assMathMidterm.id, assMathMidterm);
+        const assMathQuiz1 = {
+          id: "ass_math_quiz1_10a",
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          subjectId: mathSubId,
+          subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+          classroomId: class10AId,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+          termId: termAId,
+          title: "\u0627\u062E\u062A\u0628\u0627\u0631 \u0642\u0635\u064A\u0631 (1): \u0627\u0644\u062F\u0648\u0627\u0644 \u0648\u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u0627\u062A",
+          description: "\u062A\u0642\u064A\u064A\u0645 \u0633\u0631\u064A\u0639 \u0639\u0644\u0649 \u0641\u0647\u0645 \u0627\u0644\u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u064A",
+          category: "QUIZ",
+          maxScore: 20,
+          weightPercentage: 10,
+          dueDate: "2026-09-25T10:00:00Z",
+          assessmentDate: "2026-09-25",
+          status: "PUBLISHED",
+          createdBy: teacherMath.id,
+          createdByName: teacherMath.fullName,
+          createdAt: "2026-09-05T08:00:00Z",
+          updatedAt: "2026-09-05T08:00:00Z"
+        };
+        this.assessments.set(assMathQuiz1.id, assMathQuiz1);
+        const assMathProject = {
+          id: "ass_math_project_10a",
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          subjectId: mathSubId,
+          subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+          classroomId: class10AId,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+          termId: termAId,
+          title: "\u0645\u0634\u0631\u0648\u0639 \u0627\u0644\u0641\u0635\u0644: \u0627\u0644\u062A\u0637\u0628\u064A\u0642\u0627\u062A \u0627\u0644\u0648\u0627\u0642\u0639\u064A\u0629 \u0644\u0644\u062C\u0628\u0631",
+          description: "\u0628\u062D\u062B \u062C\u0645\u0627\u0639\u064A \u0639\u0646 \u0627\u0633\u062A\u062E\u062F\u0627\u0645 \u0627\u0644\u062E\u0648\u0627\u0631\u0632\u0645\u064A\u0627\u062A \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u064A\u0629 \u0641\u064A \u0627\u0644\u0631\u0633\u0648\u0645 \u0627\u0644\u062D\u0627\u0633\u0648\u0628\u064A\u0629",
+          category: "PROJECT",
+          maxScore: 50,
+          weightPercentage: 20,
+          dueDate: "2026-11-10T23:59:00Z",
+          assessmentDate: "2026-11-10",
+          status: "PUBLISHED",
+          createdBy: teacherMath.id,
+          createdByName: teacherMath.fullName,
+          createdAt: "2026-09-10T08:00:00Z",
+          updatedAt: "2026-09-10T08:00:00Z"
+        };
+        this.assessments.set(assMathProject.id, assMathProject);
+        const assArabExam = {
+          id: "ass_arab_exam_10a",
+          organizationId: schoolAId,
+          courseId: courseArabic10AId,
+          courseTitle: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          subjectId: arabicSubId,
+          subjectName: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
+          classroomId: class10AId,
+          classroomName: "\u0634\u0639\u0628\u0629 10-\u0623 (\u0639\u0644\u0645\u064A)",
+          termId: termAId,
+          title: "\u0627\u062E\u062A\u0628\u0627\u0631 \u0627\u0644\u0646\u062D\u0648 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 \u0627\u0644\u062A\u062D\u0644\u064A\u0644\u064A",
+          description: "\u0625\u0639\u0631\u0627\u0628 \u0646\u0635\u0648\u0635 \u0634\u0639\u0631\u064A\u0629 \u0648\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0627\u0633\u062A\u0639\u0627\u0631\u0629 \u0648\u0627\u0644\u0645\u062C\u0627\u0632",
+          category: "EXAM",
+          maxScore: 100,
+          weightPercentage: 40,
+          dueDate: "2026-10-20T11:00:00Z",
+          assessmentDate: "2026-10-20",
+          status: "PUBLISHED",
+          createdBy: teacherArabic.id,
+          createdByName: teacherArabic.fullName,
+          createdAt: "2026-09-02T08:00:00Z",
+          updatedAt: "2026-09-02T08:00:00Z"
+        };
+        this.assessments.set(assArabExam.id, assArabExam);
+        const gr1_1 = {
+          id: `grd_${assMathMidterm.id}_${student1.id}`,
+          organizationId: schoolAId,
+          assessmentId: assMathMidterm.id,
+          assessmentTitle: assMathMidterm.title,
+          assessmentCategory: assMathMidterm.category,
+          maxScore: assMathMidterm.maxScore,
+          studentId: student1.id,
+          studentName: student1.fullName,
+          studentIdNumber: student1.studentIdNumber,
+          score: 96,
+          percentage: 96,
+          feedback: "\u0623\u062F\u0627\u0621 \u0645\u0645\u062A\u0627\u0632 \u0648\u062A\u062D\u0644\u064A\u0644 \u0631\u064A\u0627\u0636\u064A \u062F\u0642\u064A\u0642 \u062C\u062F\u0627\u064B",
+          gradedBy: teacherMath.id,
+          gradedByName: teacherMath.fullName,
+          gradedAt: "2026-10-16T10:00:00Z",
+          updatedAt: "2026-10-16T10:00:00Z"
+        };
+        this.assessmentGrades.set(gr1_1.id, gr1_1);
+        const gr1_2 = {
+          id: `grd_${assMathQuiz1.id}_${student1.id}`,
+          organizationId: schoolAId,
+          assessmentId: assMathQuiz1.id,
+          assessmentTitle: assMathQuiz1.title,
+          assessmentCategory: assMathQuiz1.category,
+          maxScore: assMathQuiz1.maxScore,
+          studentId: student1.id,
+          studentName: student1.fullName,
+          studentIdNumber: student1.studentIdNumber,
+          score: 19.5,
+          percentage: 97.5,
+          feedback: "\u0625\u062C\u0627\u0628\u0629 \u0646\u0645\u0648\u0630\u062C\u064A\u0629 \u0648\u0633\u0631\u064A\u0639\u0629",
+          gradedBy: teacherMath.id,
+          gradedByName: teacherMath.fullName,
+          gradedAt: "2026-09-26T11:00:00Z",
+          updatedAt: "2026-09-26T11:00:00Z"
+        };
+        this.assessmentGrades.set(gr1_2.id, gr1_2);
+        const gr1_3 = {
+          id: `grd_${assArabExam.id}_${student1.id}`,
+          organizationId: schoolAId,
+          assessmentId: assArabExam.id,
+          assessmentTitle: assArabExam.title,
+          assessmentCategory: assArabExam.category,
+          maxScore: assArabExam.maxScore,
+          studentId: student1.id,
+          studentName: student1.fullName,
+          studentIdNumber: student1.studentIdNumber,
+          score: 93,
+          percentage: 93,
+          feedback: "\u0623\u0633\u0644\u0648\u0628 \u0644\u063A\u0648\u064A \u0631\u0635\u064A\u0646 \u0648\u0625\u0639\u0631\u0627\u0628 \u062F\u0642\u064A\u0642",
+          gradedBy: teacherArabic.id,
+          gradedByName: teacherArabic.fullName,
+          gradedAt: "2026-10-21T09:00:00Z",
+          updatedAt: "2026-10-21T09:00:00Z"
+        };
+        this.assessmentGrades.set(gr1_3.id, gr1_3);
+        const gr2_1 = {
+          id: `grd_${assMathMidterm.id}_${student2.id}`,
+          organizationId: schoolAId,
+          assessmentId: assMathMidterm.id,
+          assessmentTitle: assMathMidterm.title,
+          assessmentCategory: assMathMidterm.category,
+          maxScore: assMathMidterm.maxScore,
+          studentId: student2.id,
+          studentName: student2.fullName,
+          studentIdNumber: student2.studentIdNumber,
+          score: 91,
+          percentage: 91,
+          feedback: "\u0645\u0633\u062A\u0648\u0649 \u0631\u0627\u0626\u0639 \u0648\u0645\u062A\u0642\u0646",
+          gradedBy: teacherMath.id,
+          gradedByName: teacherMath.fullName,
+          gradedAt: "2026-10-16T10:30:00Z",
+          updatedAt: "2026-10-16T10:30:00Z"
+        };
+        this.assessmentGrades.set(gr2_1.id, gr2_1);
+        const gr2_2 = {
+          id: `grd_${assMathQuiz1.id}_${student2.id}`,
+          organizationId: schoolAId,
+          assessmentId: assMathQuiz1.id,
+          assessmentTitle: assMathQuiz1.title,
+          assessmentCategory: assMathQuiz1.category,
+          maxScore: assMathQuiz1.maxScore,
+          studentId: student2.id,
+          studentName: student2.fullName,
+          studentIdNumber: student2.studentIdNumber,
+          score: 18,
+          percentage: 90,
+          feedback: "\u0623\u062D\u0633\u0646\u062A\u0650 \u064A\u0627 \u0646\u0648\u0631\u0629",
+          gradedBy: teacherMath.id,
+          gradedByName: teacherMath.fullName,
+          gradedAt: "2026-09-26T11:30:00Z",
+          updatedAt: "2026-09-26T11:30:00Z"
+        };
+        this.assessmentGrades.set(gr2_2.id, gr2_2);
+        const gr3_1 = {
+          id: `grd_${assMathMidterm.id}_${student3.id}`,
+          organizationId: schoolAId,
+          assessmentId: assMathMidterm.id,
+          assessmentTitle: assMathMidterm.title,
+          assessmentCategory: assMathMidterm.category,
+          maxScore: assMathMidterm.maxScore,
+          studentId: student3.id,
+          studentName: student3.fullName,
+          studentIdNumber: student3.studentIdNumber,
+          score: 82,
+          percentage: 82,
+          feedback: "\u062C\u0647\u062F \u0637\u064A\u0628 \u0645\u0639 \u0627\u0644\u062D\u0627\u062C\u0629 \u0644\u0645\u0632\u064A\u062F \u0645\u0646 \u0627\u0644\u062A\u0645\u0631\u0646 \u0639\u0644\u0649 \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A",
+          gradedBy: teacherMath.id,
+          gradedByName: teacherMath.fullName,
+          gradedAt: "2026-10-16T11:00:00Z",
+          updatedAt: "2026-10-16T11:00:00Z"
+        };
+        this.assessmentGrades.set(gr3_1.id, gr3_1);
+        const assPhysB = {
+          id: "ass_elite_phys_midterm",
+          organizationId: schoolBId,
+          courseId: coursePhys10AId,
+          courseTitle: "Advanced Physics - Grade 10",
+          subjectId: physSubId,
+          subjectName: "Advanced Physics",
+          classroomId: classBId,
+          classroomName: "Section 10-Alpha",
+          termId: termBId,
+          title: "Midterm Exam - Classical & Modern Physics",
+          description: "Kinematics, dynamics, and quantum fundamentals",
+          category: "MIDTERM",
+          maxScore: 100,
+          weightPercentage: 35,
+          dueDate: "2026-10-25T14:00:00Z",
+          assessmentDate: "2026-10-25",
+          status: "PUBLISHED",
+          createdBy: teacherB.id,
+          createdByName: teacherB.fullName,
+          createdAt: "2026-09-05T08:00:00Z",
+          updatedAt: "2026-09-05T08:00:00Z"
+        };
+        this.assessments.set(assPhysB.id, assPhysB);
+        const grB_1 = {
+          id: `grd_${assPhysB.id}_${studentB.id}`,
+          organizationId: schoolBId,
+          assessmentId: assPhysB.id,
+          assessmentTitle: assPhysB.title,
+          assessmentCategory: assPhysB.category,
+          maxScore: assPhysB.maxScore,
+          studentId: studentB.id,
+          studentName: studentB.fullName,
+          studentIdNumber: studentB.studentIdNumber,
+          score: 95,
+          percentage: 95,
+          feedback: "Outstanding analytical rigor",
+          gradedBy: teacherB.id,
+          gradedByName: teacherB.fullName,
+          gradedAt: "2026-10-26T10:00:00Z",
+          updatedAt: "2026-10-26T10:00:00Z"
+        };
+        this.assessmentGrades.set(grB_1.id, grB_1);
+        const sessBId = "att_sess_elite_001";
+        this.attendanceSessions.set(sessBId, {
+          id: sessBId,
+          organizationId: schoolBId,
+          classroomId: classBId,
+          classroomName: "Section 10-Alpha",
+          courseId: coursePhys10AId,
+          courseTitle: "Advanced Physics - Grade 10",
+          date: today,
+          periodNumber: 2,
+          title: "Morning Lab Session Roll Call",
+          status: "COMPLETED",
+          openedBy: teacherB.id,
+          openedByName: teacherB.fullName,
+          presentCount: 1,
+          absentCount: 0,
+          lateCount: 0,
+          excusedCount: 0,
+          totalStudents: 1,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        });
+        const attRecB = {
+          id: `att_${coursePhys10AId}_${studentB.id}_${today}`,
+          organizationId: schoolBId,
+          sessionId: sessBId,
+          courseId: coursePhys10AId,
+          classroomId: classBId,
+          classroomName: "Section 10-Alpha",
+          studentId: studentB.id,
+          studentName: studentB.fullName,
+          studentIdNumber: studentB.studentIdNumber,
+          recordedBy: teacherB.id,
+          recordedByName: teacherB.fullName,
+          date: today,
+          status: "PRESENT",
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.attendanceRecords.set(attRecB.id, attRecB);
+        for (const user of Array.from(this.users.values())) {
+          user.emailVerified = true;
+          user.phoneVerified = true;
+          user.authProviders = ["email"];
+          if (!user.passwordHash) {
+            user.passwordHash = hashPassword("Password@2026");
+          }
+          this.addMembership({
+            userId: user.id,
+            organizationId: user.organizationId,
+            role: user.role,
+            isDefault: true,
+            status: "ACTIVE",
+            classroomId: user.classroomId,
+            studentIdNumber: user.studentIdNumber,
+            teacherSpecialization: user.teacherSpecialization
+          });
+        }
+      }
+      // --- Multi-Tenant Query Helpers (Row-Level Security Enforcement) ---
+      // Organizations
+      getOrganizationById(orgId) {
+        return this.organizations.get(orgId);
+      }
+      getOrganizationBySlug(slug) {
+        return Array.from(this.organizations.values()).find((o) => o.slug === slug || o.id === slug);
+      }
+      getAllOrganizations() {
+        return Array.from(this.organizations.values());
+      }
+      createOrganization(data) {
+        const id = `org_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const org = { ...data, id, createdAt: now, updatedAt: now };
+        this.organizations.set(id, org);
+        return org;
+      }
+      // Users (RLS Enforced by tenant organizationId)
+      findUserByEmail(email, organizationId) {
+        const normalized = email.trim().toLowerCase();
+        const all = Array.from(this.users.values());
+        if (organizationId) {
+          return all.find((u) => u.email.toLowerCase() === normalized && u.organizationId === organizationId);
+        }
+        return all.find((u) => u.email.toLowerCase() === normalized);
+      }
+      findUserByPhone(phone, organizationId) {
+        const normalized = phone.trim();
+        const all = Array.from(this.users.values());
+        if (organizationId) {
+          return all.find((u) => u.phone && u.phone.trim() === normalized && u.organizationId === organizationId);
+        }
+        return all.find((u) => u.phone && u.phone.trim() === normalized);
+      }
+      findUserByGoogleId(googleId) {
+        const trimmed = googleId.trim();
+        return Array.from(this.users.values()).find((u) => u.googleId === trimmed);
+      }
+      getUserById(userId, organizationId) {
+        const user = this.users.get(userId);
+        if (!user) return void 0;
+        if (organizationId && user.organizationId !== organizationId) return void 0;
+        return user;
+      }
+      getUsersByOrg(organizationId, role) {
+        return Array.from(this.users.values()).filter((u) => {
+          if (u.organizationId !== organizationId) return false;
+          if (role && u.role !== role) return false;
+          return true;
         });
       }
-    }
-    return user;
-  }
-  updateUser(id, organizationId, updates = {}) {
-    const user = organizationId ? this.getUserById(id, organizationId) : this.users.get(id);
-    if (!user) return void 0;
-    const updated = { ...user, ...updates, updatedAt: (/* @__PURE__ */ new Date()).toISOString() };
-    this.users.set(id, updated);
-    return updated;
-  }
-  deleteUser(id, organizationId) {
-    const user = this.getUserById(id, organizationId);
-    if (!user) return false;
-    this.users.delete(id);
-    for (const [mId, mem] of this.organizationMemberships.entries()) {
-      if (mem.userId === id) {
-        this.organizationMemberships.delete(mId);
+      createUser(data) {
+        const id = data.id || `usr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const user = {
+          ...data,
+          id,
+          emailVerified: data.emailVerified ?? false,
+          phoneVerified: data.phoneVerified ?? false,
+          authProviders: data.authProviders || (data.email ? ["email"] : []),
+          createdAt: now,
+          updatedAt: now
+        };
+        this.users.set(id, user);
+        if (user.organizationId) {
+          const existingMembership = this.getMembership(user.id, user.organizationId);
+          if (!existingMembership) {
+            this.addMembership({
+              userId: user.id,
+              organizationId: user.organizationId,
+              role: user.role,
+              isDefault: true,
+              status: "ACTIVE",
+              classroomId: user.classroomId,
+              studentIdNumber: user.studentIdNumber,
+              teacherSpecialization: user.teacherSpecialization
+            });
+          }
+        }
+        return user;
       }
-    }
-    return true;
-  }
-  // --- Account Linking & Identity Management ---
-  linkAccountProvider(userId, provider, details) {
-    const user = this.users.get(userId);
-    if (!user) return void 0;
-    const currentProviders = new Set(user.authProviders || []);
-    currentProviders.add(provider);
-    const updates = {
-      authProviders: Array.from(currentProviders)
-    };
-    if (provider === "google" && details?.googleId) {
-      updates.googleId = details.googleId;
-    }
-    if (provider === "phone" && details?.phone) {
-      updates.phone = details.phone;
-      updates.phoneVerified = true;
-    }
-    if (provider === "email" && details?.email) {
-      updates.email = details.email.toLowerCase().trim();
-      updates.emailVerified = true;
-    }
-    return this.updateUser(userId, void 0, updates);
-  }
-  unlinkAccountProvider(userId, provider) {
-    const user = this.users.get(userId);
-    if (!user) return { success: false, error: "USER_NOT_FOUND" };
-    const currentProviders = user.authProviders || ["email"];
-    if (currentProviders.length <= 1) {
-      return { success: false, error: "CANNOT_UNLINK_LAST_PROVIDER", user };
-    }
-    const updatedProviders = currentProviders.filter((p) => p !== provider);
-    const updates = {
-      authProviders: updatedProviders
-    };
-    if (provider === "google") {
-      updates.googleId = void 0;
-    }
-    const updatedUser = this.updateUser(userId, void 0, updates);
-    return { success: true, user: updatedUser };
-  }
-  // --- Organization Memberships (Multi-Tenant User Roles) ---
-  getMembershipsByUserId(userId) {
-    return Array.from(this.organizationMemberships.values()).filter((m) => m.userId === userId && m.status !== "REVOKED").map((m) => {
-      const org = this.getOrganizationById(m.organizationId);
-      return {
-        ...m,
-        organizationName: org?.name,
-        organizationSlug: org?.slug
-      };
-    });
-  }
-  getMembership(userId, organizationId) {
-    return Array.from(this.organizationMemberships.values()).find(
-      (m) => m.userId === userId && m.organizationId === organizationId && m.status !== "REVOKED"
-    );
-  }
-  addMembership(data) {
-    const id = `mem_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const membership = {
-      ...data,
-      id,
-      joinedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.organizationMemberships.set(id, membership);
-    return membership;
-  }
-  createMembership(data) {
-    return this.addMembership(data);
-  }
-  updateMembership(id, updates) {
-    const mem = this.organizationMemberships.get(id);
-    if (!mem) return void 0;
-    const updated = { ...mem, ...updates };
-    this.organizationMemberships.set(id, updated);
-    return updated;
-  }
-  removeMembership(id) {
-    return this.organizationMemberships.delete(id);
-  }
-  // --- Password Reset Tokens ---
-  createPasswordResetToken(userId, email, tokenHash, expiresInMinutes = 60) {
-    this.invalidatePasswordResetTokensForUser(userId);
-    const id = `prt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1e3).toISOString();
-    const token = {
-      id,
-      userId,
-      email: email.toLowerCase().trim(),
-      tokenHash,
-      expiresAt,
-      isUsed: false,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.passwordResetTokens.set(id, token);
-    return token;
-  }
-  getPasswordResetTokenByHash(tokenHash) {
-    return Array.from(this.passwordResetTokens.values()).find(
-      (t) => t.tokenHash === tokenHash && !t.isUsed && new Date(t.expiresAt).getTime() > Date.now()
-    );
-  }
-  markPasswordResetTokenUsed(id) {
-    const token = this.passwordResetTokens.get(id);
-    if (token) {
-      token.isUsed = true;
-      token.usedAt = (/* @__PURE__ */ new Date()).toISOString();
-      this.passwordResetTokens.set(id, token);
-    }
-  }
-  invalidatePasswordResetTokensForUser(userId) {
-    for (const [id, token] of this.passwordResetTokens.entries()) {
-      if (token.userId === userId && !token.isUsed) {
-        token.isUsed = true;
+      updateUser(id, organizationId, updates = {}) {
+        const user = organizationId ? this.getUserById(id, organizationId) : this.users.get(id);
+        if (!user) return void 0;
+        const updated = { ...user, ...updates, updatedAt: (/* @__PURE__ */ new Date()).toISOString() };
+        this.users.set(id, updated);
+        return updated;
+      }
+      deleteUser(id, organizationId) {
+        const user = this.getUserById(id, organizationId);
+        if (!user) return false;
+        this.users.delete(id);
+        for (const [mId, mem] of this.organizationMemberships.entries()) {
+          if (mem.userId === id) {
+            this.organizationMemberships.delete(mId);
+          }
+        }
+        return true;
+      }
+      // --- Account Linking & Identity Management ---
+      linkAccountProvider(userId, provider, details) {
+        const user = this.users.get(userId);
+        if (!user) return void 0;
+        const currentProviders = new Set(user.authProviders || []);
+        currentProviders.add(provider);
+        const updates = {
+          authProviders: Array.from(currentProviders)
+        };
+        if (provider === "google" && details?.googleId) {
+          updates.googleId = details.googleId;
+        }
+        if (provider === "phone" && details?.phone) {
+          updates.phone = details.phone;
+          updates.phoneVerified = true;
+        }
+        if (provider === "email" && details?.email) {
+          updates.email = details.email.toLowerCase().trim();
+          updates.emailVerified = true;
+        }
+        return this.updateUser(userId, void 0, updates);
+      }
+      unlinkAccountProvider(userId, provider) {
+        const user = this.users.get(userId);
+        if (!user) return { success: false, error: "USER_NOT_FOUND" };
+        const currentProviders = user.authProviders || ["email"];
+        if (currentProviders.length <= 1) {
+          return { success: false, error: "CANNOT_UNLINK_LAST_PROVIDER", user };
+        }
+        const updatedProviders = currentProviders.filter((p) => p !== provider);
+        const updates = {
+          authProviders: updatedProviders
+        };
+        if (provider === "google") {
+          updates.googleId = void 0;
+        }
+        const updatedUser = this.updateUser(userId, void 0, updates);
+        return { success: true, user: updatedUser };
+      }
+      // --- Organization Memberships (Multi-Tenant User Roles) ---
+      getMembershipsByUserId(userId) {
+        return Array.from(this.organizationMemberships.values()).filter((m) => m.userId === userId && m.status !== "REVOKED").map((m) => {
+          const org = this.getOrganizationById(m.organizationId);
+          return {
+            ...m,
+            organizationName: org?.name,
+            organizationSlug: org?.slug
+          };
+        });
+      }
+      getMembership(userId, organizationId) {
+        return Array.from(this.organizationMemberships.values()).find(
+          (m) => m.userId === userId && m.organizationId === organizationId && m.status !== "REVOKED"
+        );
+      }
+      addMembership(data) {
+        const id = `mem_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const membership = {
+          ...data,
+          id,
+          joinedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.organizationMemberships.set(id, membership);
+        return membership;
+      }
+      createMembership(data) {
+        return this.addMembership(data);
+      }
+      updateMembership(id, updates) {
+        const mem = this.organizationMemberships.get(id);
+        if (!mem) return void 0;
+        const updated = { ...mem, ...updates };
+        this.organizationMemberships.set(id, updated);
+        return updated;
+      }
+      removeMembership(id) {
+        return this.organizationMemberships.delete(id);
+      }
+      // --- Password Reset Tokens ---
+      createPasswordResetToken(userId, email, tokenHash, expiresInMinutes = 60) {
+        this.invalidatePasswordResetTokensForUser(userId);
+        const id = `prt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1e3).toISOString();
+        const token = {
+          id,
+          userId,
+          email: email.toLowerCase().trim(),
+          tokenHash,
+          expiresAt,
+          isUsed: false,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
         this.passwordResetTokens.set(id, token);
+        return token;
       }
-    }
-  }
-  // --- Email Verification Tokens ---
-  createEmailVerificationToken(userId, email, tokenHash, expiresInMinutes = 24 * 60) {
-    const id = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1e3).toISOString();
-    const token = {
-      id,
-      userId,
-      email: email.toLowerCase().trim(),
-      tokenHash,
-      expiresAt,
-      isUsed: false,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.emailVerificationTokens.set(id, token);
-    return token;
-  }
-  getEmailVerificationTokenByHash(tokenHash) {
-    return Array.from(this.emailVerificationTokens.values()).find(
-      (t) => t.tokenHash === tokenHash && !t.isUsed && new Date(t.expiresAt).getTime() > Date.now()
-    );
-  }
-  markEmailVerificationTokenUsed(id) {
-    const token = this.emailVerificationTokens.get(id);
-    if (token) {
-      token.isUsed = true;
-      token.usedAt = (/* @__PURE__ */ new Date()).toISOString();
-      this.emailVerificationTokens.set(id, token);
-    }
-  }
-  // --- Phone Verification OTPs ---
-  createPhoneOtp(phone, otpHash, userId, expiresInMinutes = 10) {
-    const id = `otp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1e3).toISOString();
-    const record = {
-      id,
-      userId,
-      phone: phone.trim(),
-      otpHash,
-      attemptsCount: 0,
-      maxAttempts: 5,
-      expiresAt,
-      isUsed: false,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.phoneVerificationOtps.set(id, record);
-    return record;
-  }
-  getLatestActivePhoneOtp(phone) {
-    const normalized = phone.trim();
-    const matches = Array.from(this.phoneVerificationOtps.values()).filter((o) => o.phone === normalized && !o.isUsed && new Date(o.expiresAt).getTime() > Date.now()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    return matches[0];
-  }
-  incrementPhoneOtpAttempts(id) {
-    const record = this.phoneVerificationOtps.get(id);
-    if (!record) return 0;
-    record.attemptsCount += 1;
-    if (record.attemptsCount >= record.maxAttempts) {
-      record.isUsed = true;
-    }
-    this.phoneVerificationOtps.set(id, record);
-    return record.attemptsCount;
-  }
-  markPhoneOtpUsed(id) {
-    const record = this.phoneVerificationOtps.get(id);
-    if (record) {
-      record.isUsed = true;
-      record.usedAt = (/* @__PURE__ */ new Date()).toISOString();
-      this.phoneVerificationOtps.set(id, record);
-    }
-  }
-  // Academic Structure
-  getAcademicYears(organizationId) {
-    return Array.from(this.academicYears.values()).filter((y) => y.organizationId === organizationId);
-  }
-  getCurrentAcademicYear(organizationId) {
-    return Array.from(this.academicYears.values()).find((y) => y.organizationId === organizationId && y.isCurrent);
-  }
-  getCoursesByClassroom(classroomId, organizationId) {
-    return Array.from(this.courses.values()).filter(
-      (c) => c.organizationId === organizationId && c.classroomId === classroomId
-    );
-  }
-  getAcademicYearById(id, organizationId) {
-    const item = this.academicYears.get(id);
-    if (!item || item.organizationId !== organizationId) return void 0;
-    return item;
-  }
-  createAcademicYear(data) {
-    const id = `year_${Date.now()}`;
-    const item = { ...data, id };
-    if (item.isCurrent) {
-      for (const [yId, year] of this.academicYears.entries()) {
-        if (year.organizationId === data.organizationId && yId !== id) {
-          year.isCurrent = false;
+      getPasswordResetTokenByHash(tokenHash) {
+        return Array.from(this.passwordResetTokens.values()).find(
+          (t) => t.tokenHash === tokenHash && !t.isUsed && new Date(t.expiresAt).getTime() > Date.now()
+        );
+      }
+      markPasswordResetTokenUsed(id) {
+        const token = this.passwordResetTokens.get(id);
+        if (token) {
+          token.isUsed = true;
+          token.usedAt = (/* @__PURE__ */ new Date()).toISOString();
+          this.passwordResetTokens.set(id, token);
         }
       }
-    }
-    this.academicYears.set(id, item);
-    return item;
-  }
-  updateAcademicYear(id, organizationId, updates) {
-    const item = this.getAcademicYearById(id, organizationId);
-    if (!item) return void 0;
-    if (updates.isCurrent) {
-      for (const [yId, year] of this.academicYears.entries()) {
-        if (year.organizationId === organizationId && yId !== id) {
-          year.isCurrent = false;
+      invalidatePasswordResetTokensForUser(userId) {
+        for (const [id, token] of this.passwordResetTokens.entries()) {
+          if (token.userId === userId && !token.isUsed) {
+            token.isUsed = true;
+            this.passwordResetTokens.set(id, token);
+          }
         }
       }
-    }
-    const updated = { ...item, ...updates };
-    this.academicYears.set(id, updated);
-    return updated;
-  }
-  deleteAcademicYear(id, organizationId) {
-    const item = this.getAcademicYearById(id, organizationId);
-    if (!item) return false;
-    this.academicYears.delete(id);
-    return true;
-  }
-  getTerms(organizationId, academicYearId) {
-    return Array.from(this.terms.values()).filter((t) => {
-      if (t.organizationId !== organizationId) return false;
-      if (academicYearId && t.academicYearId !== academicYearId) return false;
-      return true;
-    });
-  }
-  getTermById(id, organizationId) {
-    const item = this.terms.get(id);
-    if (!item || item.organizationId !== organizationId) return void 0;
-    return item;
-  }
-  createTerm(data) {
-    const id = `term_${Date.now()}`;
-    const item = { ...data, id };
-    if (item.isCurrent) {
-      for (const [tId, term] of this.terms.entries()) {
-        if (term.organizationId === data.organizationId && tId !== id) {
-          term.isCurrent = false;
+      // --- Email Verification Tokens ---
+      createEmailVerificationToken(userId, email, tokenHash, expiresInMinutes = 24 * 60) {
+        const id = `evt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1e3).toISOString();
+        const token = {
+          id,
+          userId,
+          email: email.toLowerCase().trim(),
+          tokenHash,
+          expiresAt,
+          isUsed: false,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.emailVerificationTokens.set(id, token);
+        return token;
+      }
+      getEmailVerificationTokenByHash(tokenHash) {
+        return Array.from(this.emailVerificationTokens.values()).find(
+          (t) => t.tokenHash === tokenHash && !t.isUsed && new Date(t.expiresAt).getTime() > Date.now()
+        );
+      }
+      markEmailVerificationTokenUsed(id) {
+        const token = this.emailVerificationTokens.get(id);
+        if (token) {
+          token.isUsed = true;
+          token.usedAt = (/* @__PURE__ */ new Date()).toISOString();
+          this.emailVerificationTokens.set(id, token);
         }
       }
-    }
-    this.terms.set(id, item);
-    return item;
-  }
-  updateTerm(id, organizationId, updates) {
-    const item = this.getTermById(id, organizationId);
-    if (!item) return void 0;
-    if (updates.isCurrent) {
-      for (const [tId, term] of this.terms.entries()) {
-        if (term.organizationId === organizationId && tId !== id) {
-          term.isCurrent = false;
+      // --- Phone Verification OTPs ---
+      createPhoneOtp(phone, otpHash, userId, expiresInMinutes = 10) {
+        const id = `otp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1e3).toISOString();
+        const record = {
+          id,
+          userId,
+          phone: phone.trim(),
+          otpHash,
+          attemptsCount: 0,
+          maxAttempts: 5,
+          expiresAt,
+          isUsed: false,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.phoneVerificationOtps.set(id, record);
+        return record;
+      }
+      getLatestActivePhoneOtp(phone) {
+        const normalized = phone.trim();
+        const matches = Array.from(this.phoneVerificationOtps.values()).filter((o) => o.phone === normalized && !o.isUsed && new Date(o.expiresAt).getTime() > Date.now()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        return matches[0];
+      }
+      incrementPhoneOtpAttempts(id) {
+        const record = this.phoneVerificationOtps.get(id);
+        if (!record) return 0;
+        record.attemptsCount += 1;
+        if (record.attemptsCount >= record.maxAttempts) {
+          record.isUsed = true;
+        }
+        this.phoneVerificationOtps.set(id, record);
+        return record.attemptsCount;
+      }
+      markPhoneOtpUsed(id) {
+        const record = this.phoneVerificationOtps.get(id);
+        if (record) {
+          record.isUsed = true;
+          record.usedAt = (/* @__PURE__ */ new Date()).toISOString();
+          this.phoneVerificationOtps.set(id, record);
         }
       }
-    }
-    const updated = { ...item, ...updates };
-    this.terms.set(id, updated);
-    return updated;
-  }
-  deleteTerm(id, organizationId) {
-    const item = this.getTermById(id, organizationId);
-    if (!item) return false;
-    this.terms.delete(id);
-    return true;
-  }
-  getGradeLevels(organizationId) {
-    return Array.from(this.gradeLevels.values()).filter((g) => g.organizationId === organizationId).sort((a, b) => a.sequenceOrder - b.sequenceOrder);
-  }
-  getGradeLevelById(id, organizationId) {
-    const gl = this.gradeLevels.get(id);
-    if (!gl || gl.organizationId !== organizationId) return void 0;
-    return gl;
-  }
-  createGradeLevel(data) {
-    const id = `grade_${Date.now()}`;
-    const item = { ...data, id };
-    this.gradeLevels.set(id, item);
-    return item;
-  }
-  updateGradeLevel(id, organizationId, updates) {
-    const gl = this.getGradeLevelById(id, organizationId);
-    if (!gl) return void 0;
-    const updated = { ...gl, ...updates };
-    this.gradeLevels.set(id, updated);
-    return updated;
-  }
-  deleteGradeLevel(id, organizationId) {
-    const gl = this.getGradeLevelById(id, organizationId);
-    if (!gl) return false;
-    this.gradeLevels.delete(id);
-    return true;
-  }
-  getClassrooms(organizationId, gradeLevelId) {
-    return Array.from(this.classrooms.values()).filter((c) => {
-      if (c.organizationId !== organizationId) return false;
-      if (gradeLevelId && c.gradeLevelId !== gradeLevelId) return false;
-      return true;
-    });
-  }
-  getClassroomById(id, organizationId) {
-    const c = this.classrooms.get(id);
-    if (!c || c.organizationId !== organizationId) return void 0;
-    return c;
-  }
-  createClassroom(data) {
-    const id = `class_${Date.now()}`;
-    const item = { ...data, id };
-    this.classrooms.set(id, item);
-    return item;
-  }
-  updateClassroom(id, organizationId, updates) {
-    const c = this.getClassroomById(id, organizationId);
-    if (!c) return void 0;
-    const updated = { ...c, ...updates };
-    this.classrooms.set(id, updated);
-    return updated;
-  }
-  deleteClassroom(id, organizationId) {
-    const c = this.getClassroomById(id, organizationId);
-    if (!c) return false;
-    this.classrooms.delete(id);
-    return true;
-  }
-  getSubjects(organizationId) {
-    return Array.from(this.subjects.values()).filter((s) => s.organizationId === organizationId);
-  }
-  getSubjectById(id, organizationId) {
-    const s = this.subjects.get(id);
-    if (!s || s.organizationId !== organizationId) return void 0;
-    return s;
-  }
-  createSubject(data) {
-    const id = `sub_${Date.now()}`;
-    const item = { ...data, id };
-    this.subjects.set(id, item);
-    return item;
-  }
-  updateSubject(id, organizationId, updates) {
-    const s = this.getSubjectById(id, organizationId);
-    if (!s) return void 0;
-    const updated = { ...s, ...updates };
-    this.subjects.set(id, updated);
-    return updated;
-  }
-  deleteSubject(id, organizationId) {
-    const s = this.getSubjectById(id, organizationId);
-    if (!s) return false;
-    this.subjects.delete(id);
-    return true;
-  }
-  // Courses
-  getCourses(organizationId, teacherId, classroomId) {
-    return Array.from(this.courses.values()).filter((c) => {
-      if (c.organizationId !== organizationId) return false;
-      if (teacherId && c.teacherId !== teacherId) return false;
-      if (classroomId && c.classroomId !== classroomId) return false;
-      return true;
-    });
-  }
-  getCourseById(courseId, organizationId) {
-    const course = this.courses.get(courseId);
-    if (!course || course.organizationId !== organizationId) return void 0;
-    return course;
-  }
-  createCourse(data) {
-    const id = `crs_${Date.now()}`;
-    const subject = data.subjectId ? this.subjects.get(data.subjectId) : void 0;
-    const teacher = data.teacherId ? this.users.get(data.teacherId) : void 0;
-    const classroom = data.classroomId ? this.classrooms.get(data.classroomId) : void 0;
-    const course = {
-      ...data,
-      id,
-      subjectName: subject?.name,
-      teacherName: teacher?.fullName,
-      classroomName: classroom?.name,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.courses.set(id, course);
-    return course;
-  }
-  updateCourse(id, organizationId, updates) {
-    const course = this.getCourseById(id, organizationId);
-    if (!course) return void 0;
-    const subject = updates.subjectId ? this.subjects.get(updates.subjectId) : void 0;
-    const teacher = updates.teacherId ? this.users.get(updates.teacherId) : void 0;
-    const classroom = updates.classroomId ? this.classrooms.get(updates.classroomId) : void 0;
-    const updated = {
-      ...course,
-      ...updates,
-      subjectName: subject ? subject.name : course.subjectName,
-      teacherName: teacher ? teacher.fullName : course.teacherName,
-      classroomName: classroom ? classroom.name : course.classroomName,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.courses.set(id, updated);
-    return updated;
-  }
-  deleteCourse(id, organizationId) {
-    const course = this.getCourseById(id, organizationId);
-    if (!course) return false;
-    this.courses.delete(id);
-    return true;
-  }
-  // --- Teacher Assignments ---
-  getTeacherAssignments(organizationId, filters) {
-    return Array.from(this.teacherAssignments.values()).filter((ta) => {
-      if (ta.organizationId !== organizationId) return false;
-      if (filters?.teacherId && ta.teacherId !== filters.teacherId) return false;
-      if (filters?.courseId && ta.courseId !== filters.courseId) return false;
-      if (filters?.classroomId && ta.classroomId !== filters.classroomId) return false;
-      if (filters?.academicYearId && ta.academicYearId !== filters.academicYearId) return false;
-      if (filters?.subjectId && ta.subjectId !== filters.subjectId) return false;
-      return true;
-    });
-  }
-  getTeacherAssignmentById(id, organizationId) {
-    const ta = this.teacherAssignments.get(id);
-    if (!ta || ta.organizationId !== organizationId) return void 0;
-    return ta;
-  }
-  createTeacherAssignment(data) {
-    const id = `ta_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const teacher = this.getUserById(data.teacherId, data.organizationId);
-    const subject = this.getSubjectById(data.subjectId, data.organizationId);
-    const classroom = this.getClassroomById(data.classroomId, data.organizationId);
-    const course = data.courseId ? this.getCourseById(data.courseId, data.organizationId) : void 0;
-    const year = data.academicYearId ? this.getAcademicYearById(data.academicYearId, data.organizationId) : void 0;
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const assignment = {
-      ...data,
-      id,
-      teacherName: teacher?.fullName,
-      teacherEmail: teacher?.email,
-      subjectName: subject?.name,
-      classroomName: classroom?.name,
-      courseTitle: course?.title,
-      academicYearName: year?.name,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.teacherAssignments.set(id, assignment);
-    return assignment;
-  }
-  updateTeacherAssignment(id, organizationId, updates) {
-    const ta = this.getTeacherAssignmentById(id, organizationId);
-    if (!ta) return void 0;
-    const teacher = updates.teacherId ? this.getUserById(updates.teacherId, organizationId) : void 0;
-    const subject = updates.subjectId ? this.getSubjectById(updates.subjectId, organizationId) : void 0;
-    const classroom = updates.classroomId ? this.getClassroomById(updates.classroomId, organizationId) : void 0;
-    const updated = {
-      ...ta,
-      ...updates,
-      teacherName: teacher ? teacher.fullName : ta.teacherName,
-      teacherEmail: teacher ? teacher.email : ta.teacherEmail,
-      subjectName: subject ? subject.name : ta.subjectName,
-      classroomName: classroom ? classroom.name : ta.classroomName,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.teacherAssignments.set(id, updated);
-    return updated;
-  }
-  deleteTeacherAssignment(id, organizationId) {
-    const ta = this.getTeacherAssignmentById(id, organizationId);
-    if (!ta) return false;
-    this.teacherAssignments.delete(id);
-    return true;
-  }
-  // --- Student Enrollments ---
-  getStudentEnrollments(organizationId, filters) {
-    return Array.from(this.studentEnrollments.values()).filter((enr) => {
-      if (enr.organizationId !== organizationId) return false;
-      if (filters?.classroomId && enr.classroomId !== filters.classroomId) return false;
-      if (filters?.studentId && enr.studentId !== filters.studentId) return false;
-      if (filters?.academicYearId && enr.academicYearId !== filters.academicYearId) return false;
-      if (filters?.status && enr.status !== filters.status) return false;
-      return true;
-    });
-  }
-  getStudentEnrollmentById(id, organizationId) {
-    const enr = this.studentEnrollments.get(id);
-    if (!enr || enr.organizationId !== organizationId) return void 0;
-    return enr;
-  }
-  createStudentEnrollment(data) {
-    const id = `enr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const student = this.getUserById(data.studentId, data.organizationId);
-    const classroom = this.getClassroomById(data.classroomId, data.organizationId);
-    const gradeLevel = classroom ? this.getGradeLevelById(classroom.gradeLevelId, data.organizationId) : void 0;
-    const year = this.getAcademicYearById(data.academicYearId, data.organizationId);
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const enrollment = {
-      ...data,
-      id,
-      studentName: student?.fullName,
-      studentEmail: student?.email,
-      studentIdNumber: student?.studentIdNumber,
-      classroomName: classroom?.name,
-      gradeLevelId: classroom?.gradeLevelId,
-      gradeLevelName: gradeLevel?.name,
-      academicYearName: year?.name,
-      enrolledAt: now,
-      updatedAt: now
-    };
-    this.studentEnrollments.set(id, enrollment);
-    if (student && data.classroomId) {
-      this.updateUser(student.id, data.organizationId, { classroomId: data.classroomId });
-    }
-    return enrollment;
-  }
-  updateStudentEnrollment(id, organizationId, updates) {
-    const enr = this.getStudentEnrollmentById(id, organizationId);
-    if (!enr) return void 0;
-    const classroom = updates.classroomId ? this.getClassroomById(updates.classroomId, organizationId) : void 0;
-    const gradeLevel = classroom ? this.getGradeLevelById(classroom.gradeLevelId, organizationId) : void 0;
-    const updated = {
-      ...enr,
-      ...updates,
-      classroomName: classroom ? classroom.name : enr.classroomName,
-      gradeLevelId: classroom ? classroom.gradeLevelId : enr.gradeLevelId,
-      gradeLevelName: gradeLevel ? gradeLevel.name : enr.gradeLevelName,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.studentEnrollments.set(id, updated);
-    return updated;
-  }
-  deleteStudentEnrollment(id, organizationId) {
-    const enr = this.getStudentEnrollmentById(id, organizationId);
-    if (!enr) return false;
-    this.studentEnrollments.delete(id);
-    return true;
-  }
-  // --- Parent Student Links ---
-  getParentStudentLinks(organizationId, filters) {
-    return Array.from(this.parentStudentLinks.values()).filter((link) => {
-      if (link.organizationId !== organizationId) return false;
-      if (filters?.parentId && link.parentId !== filters.parentId) return false;
-      if (filters?.studentId && link.studentId !== filters.studentId) return false;
-      return true;
-    });
-  }
-  createParentStudentLink(data) {
-    const id = `psl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const parent = this.getUserById(data.parentId, data.organizationId);
-    const student = this.getUserById(data.studentId, data.organizationId);
-    const link = {
-      ...data,
-      id,
-      parentName: parent?.fullName,
-      studentName: student?.fullName,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.parentStudentLinks.set(id, link);
-    return link;
-  }
-  deleteParentStudentLink(id, organizationId) {
-    const link = this.parentStudentLinks.get(id);
-    if (!link || link.organizationId !== organizationId) return false;
-    this.parentStudentLinks.delete(id);
-    return true;
-  }
-  // --- Student Records (Full SIS Profile, Demographics, Medical & Emergency) ---
-  getStudentRecords(organizationId, filters) {
-    return Array.from(this.studentRecords.values()).filter((rec) => {
-      if (rec.organizationId !== organizationId) return false;
-      if (filters?.status && rec.status !== filters.status) return false;
-      if (filters?.studentId && rec.studentId !== filters.studentId) return false;
-      if (filters?.search) {
-        const q = filters.search.toLowerCase().trim();
-        const user = this.getUserById(rec.studentId, organizationId);
-        const matchName = user?.fullName.toLowerCase().includes(q);
-        const matchEmail = user?.email.toLowerCase().includes(q);
-        const matchNationalId = rec.nationalId.toLowerCase().includes(q);
-        const matchStdId = user?.studentIdNumber?.toLowerCase().includes(q);
-        if (!matchName && !matchEmail && !matchNationalId && !matchStdId) return false;
+      // Academic Structure
+      getAcademicYears(organizationId) {
+        return Array.from(this.academicYears.values()).filter((y) => y.organizationId === organizationId);
       }
-      return true;
-    });
-  }
-  getStudentRecordById(id, organizationId) {
-    const rec = this.studentRecords.get(id);
-    if (!rec || rec.organizationId !== organizationId) return void 0;
-    return rec;
-  }
-  getStudentRecordByStudentId(studentId, organizationId) {
-    return Array.from(this.studentRecords.values()).find(
-      (rec) => rec.organizationId === organizationId && rec.studentId === studentId
-    );
-  }
-  getStudentRecordByNationalId(nationalId, organizationId) {
-    return Array.from(this.studentRecords.values()).find(
-      (rec) => rec.organizationId === organizationId && rec.nationalId === nationalId
-    );
-  }
-  createStudentRecord(data) {
-    const id = `std_rec_${data.studentId}`;
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const record = {
-      ...data,
-      id,
-      createdAt: now,
-      updatedAt: now
-    };
-    this.studentRecords.set(id, record);
-    return record;
-  }
-  updateStudentRecord(studentId, organizationId, updates) {
-    const rec = this.getStudentRecordByStudentId(studentId, organizationId);
-    if (!rec) return void 0;
-    const updated = {
-      ...rec,
-      ...updates,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.studentRecords.set(rec.id, updated);
-    return updated;
-  }
-  deleteStudentRecord(studentId, organizationId) {
-    const rec = this.getStudentRecordByStudentId(studentId, organizationId);
-    if (!rec) return false;
-    this.studentRecords.delete(rec.id);
-    return true;
-  }
-  // --- Student Behavior & Merit Records ---
-  getStudentBehaviorRecords(organizationId, filters) {
-    return Array.from(this.studentBehaviorRecords.values()).filter((beh) => {
-      if (beh.organizationId !== organizationId) return false;
-      if (filters?.studentId && beh.studentId !== filters.studentId) return false;
-      if (filters?.type && beh.type !== filters.type) return false;
-      if (filters?.status && beh.status !== filters.status) return false;
-      return true;
-    }).sort((a, b) => new Date(b.incidentDate).getTime() - new Date(a.incidentDate).getTime());
-  }
-  getStudentBehaviorRecordById(id, organizationId) {
-    const beh = this.studentBehaviorRecords.get(id);
-    if (!beh || beh.organizationId !== organizationId) return void 0;
-    return beh;
-  }
-  createStudentBehaviorRecord(data) {
-    const id = `beh_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const student = this.getUserById(data.studentId, data.organizationId);
-    const recordedByUser = this.getUserById(data.recordedBy, data.organizationId);
-    const record = {
-      ...data,
-      id,
-      studentName: student?.fullName,
-      recordedByName: recordedByUser?.fullName,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.studentBehaviorRecords.set(id, record);
-    return record;
-  }
-  updateStudentBehaviorRecord(id, organizationId, updates) {
-    const beh = this.getStudentBehaviorRecordById(id, organizationId);
-    if (!beh) return void 0;
-    const updated = {
-      ...beh,
-      ...updates
-    };
-    this.studentBehaviorRecords.set(id, updated);
-    return updated;
-  }
-  deleteStudentBehaviorRecord(id, organizationId) {
-    const beh = this.getStudentBehaviorRecordById(id, organizationId);
-    if (!beh) return false;
-    this.studentBehaviorRecords.delete(id);
-    return true;
-  }
-  // --- Student Lifecycle Events ---
-  getStudentLifecycleEvents(organizationId, studentId) {
-    return Array.from(this.studentLifecycleEvents.values()).filter((ev) => {
-      if (ev.organizationId !== organizationId) return false;
-      if (studentId && ev.studentId !== studentId) return false;
-      return true;
-    }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  }
-  createStudentLifecycleEvent(data) {
-    const id = `lce_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const student = this.getUserById(data.studentId, data.organizationId);
-    const actionUser = this.getUserById(data.actionBy, data.organizationId);
-    const event = {
-      ...data,
-      id,
-      studentName: student?.fullName,
-      actionByName: actionUser?.fullName,
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.studentLifecycleEvents.set(id, event);
-    return event;
-  }
-  // --- Comprehensive Student Dossier (Holistic SIS Record) ---
-  getStudentDossier(studentId, organizationId) {
-    const student = this.getUserById(studentId, organizationId);
-    if (!student || student.role !== "STUDENT") return null;
-    const record = this.getStudentRecordByStudentId(studentId, organizationId);
-    const enrollments = this.getStudentEnrollments(organizationId, { studentId });
-    const currentEnrollment = enrollments.find((e) => e.status === "ACTIVE") || enrollments[0];
-    const parents = this.getParentStudentLinks(organizationId, { studentId });
-    const behaviorRecords = this.getStudentBehaviorRecords(organizationId, { studentId });
-    const behaviorPointsTotal = behaviorRecords.reduce((acc, r) => acc + (r.points || 0), 0);
-    const studentAttendance = Array.from(this.attendanceRecords.values()).filter(
-      (a) => a.organizationId === organizationId && a.studentId === studentId
-    );
-    const totalDays = studentAttendance.length;
-    const presentDays = studentAttendance.filter((a) => a.status === "PRESENT").length;
-    const absentDays = studentAttendance.filter((a) => a.status === "ABSENT").length;
-    const lateDays = studentAttendance.filter((a) => a.status === "LATE").length;
-    const excusedDays = studentAttendance.filter((a) => a.status === "EXCUSED").length;
-    const attendanceRate = totalDays > 0 ? Math.round((presentDays + lateDays + excusedDays) / totalDays * 100) : 100;
-    const submissions = this.getSubmissionsByStudent(studentId, organizationId);
-    const courses = student.classroomId ? this.getCoursesByClassroom(student.classroomId, organizationId) : [];
-    let scoreSum = 0;
-    let gradedCount = 0;
-    for (const sub of submissions) {
-      if (typeof sub.score === "number") {
-        const assignment = this.getAssignmentById(sub.assignmentId, organizationId);
-        const maxScore = assignment?.maxScore || 100;
-        scoreSum += sub.score / maxScore * 100;
-        gradedCount++;
+      getCurrentAcademicYear(organizationId) {
+        return Array.from(this.academicYears.values()).find((y) => y.organizationId === organizationId && y.isCurrent);
       }
-    }
-    const averageScore = gradedCount > 0 ? Math.round(scoreSum / gradedCount) : 92;
-    const lifecycleHistory = this.getStudentLifecycleEvents(organizationId, studentId);
-    return {
-      student,
-      record,
-      enrollments,
-      currentEnrollment,
-      parents,
-      behaviorRecords,
-      behaviorPointsTotal,
-      attendanceStats: {
-        totalDays,
-        presentDays,
-        absentDays,
-        lateDays,
-        excusedDays,
-        attendanceRate
-      },
-      academicStats: {
-        enrolledCoursesCount: courses.length,
-        submissionsCount: submissions.length,
-        averageScore
-      },
-      lifecycleHistory
-    };
-  }
-  // Lessons
-  getLessonsByCourse(courseId, organizationId) {
-    return Array.from(this.lessons.values()).filter((l) => l.organizationId === organizationId && l.courseId === courseId).sort((a, b) => a.orderIndex - b.orderIndex);
-  }
-  getLessonById(lessonId, organizationId) {
-    const lesson = this.lessons.get(lessonId);
-    if (!lesson || lesson.organizationId !== organizationId) return void 0;
-    return lesson;
-  }
-  createLesson(data) {
-    const id = `les_${Date.now()}`;
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const lesson = { ...data, id, createdAt: now, updatedAt: now };
-    this.lessons.set(id, lesson);
-    return lesson;
-  }
-  updateLesson(id, organizationId, updates) {
-    const lesson = this.getLessonById(id, organizationId);
-    if (!lesson) return void 0;
-    const updated = { ...lesson, ...updates, updatedAt: (/* @__PURE__ */ new Date()).toISOString() };
-    this.lessons.set(id, updated);
-    return updated;
-  }
-  deleteLesson(id, organizationId) {
-    const lesson = this.getLessonById(id, organizationId);
-    if (!lesson) return false;
-    this.lessons.delete(id);
-    return true;
-  }
-  // Assignments
-  getAssignmentsByCourse(courseId, organizationId) {
-    return Array.from(this.assignments.values()).filter(
-      (a) => a.organizationId === organizationId && a.courseId === courseId
-    );
-  }
-  getAssignmentsByOrg(organizationId) {
-    return Array.from(this.assignments.values()).filter((a) => a.organizationId === organizationId);
-  }
-  getAssignmentById(id, organizationId) {
-    const asg = this.assignments.get(id);
-    if (!asg || asg.organizationId !== organizationId) return void 0;
-    return asg;
-  }
-  createAssignment(data) {
-    const id = `asg_${Date.now()}`;
-    const asg = { ...data, id, createdAt: (/* @__PURE__ */ new Date()).toISOString() };
-    this.assignments.set(id, asg);
-    return asg;
-  }
-  // Submissions
-  getSubmissionsByAssignment(assignmentId, organizationId) {
-    return Array.from(this.submissions.values()).filter(
-      (s) => s.organizationId === organizationId && s.assignmentId === assignmentId
-    );
-  }
-  getSubmissionByStudent(assignmentId, studentId, organizationId) {
-    return Array.from(this.submissions.values()).find(
-      (s) => s.organizationId === organizationId && s.assignmentId === assignmentId && s.studentId === studentId
-    );
-  }
-  getSubmissionsByStudent(studentId, organizationId) {
-    return Array.from(this.submissions.values()).filter(
-      (s) => s.organizationId === organizationId && s.studentId === studentId
-    );
-  }
-  submitAssignment(data) {
-    const existing = this.getSubmissionByStudent(data.assignmentId, data.studentId, data.organizationId);
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const student = this.getUserById(data.studentId, data.organizationId);
-    if (existing) {
-      const updated = {
-        ...existing,
-        submissionText: data.submissionText,
-        fileAttachmentUrl: data.fileAttachmentUrl,
-        submittedAt: now
-      };
-      this.submissions.set(existing.id, updated);
-      return updated;
-    }
-    const id = `sub_${Date.now()}`;
-    const sub = {
-      ...data,
-      id,
-      studentName: student?.fullName,
-      submittedAt: now
-    };
-    this.submissions.set(id, sub);
-    return sub;
-  }
-  gradeSubmission(submissionId, organizationId, score, teacherFeedback) {
-    const sub = this.submissions.get(submissionId);
-    if (!sub || sub.organizationId !== organizationId) return void 0;
-    const updated = {
-      ...sub,
-      score,
-      teacherFeedback,
-      gradedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.submissions.set(submissionId, updated);
-    return updated;
-  }
-  // Attendance
-  getAttendance(organizationId, courseId, classroomId, date) {
-    return Array.from(this.attendanceRecords.values()).filter((r) => {
-      if (r.organizationId !== organizationId) return false;
-      if (courseId && r.courseId !== courseId) return false;
-      if (classroomId && r.classroomId !== classroomId) return false;
-      if (date && r.date !== date) return false;
-      return true;
-    });
-  }
-  recordAttendanceBatch(organizationId, records) {
-    const saved = [];
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    for (const rec of records) {
-      const key = `att_${rec.courseId || rec.classroomId}_${rec.studentId}_${rec.date}`;
-      const student = this.getUserById(rec.studentId, organizationId);
-      const entry = {
-        ...rec,
-        id: key,
-        organizationId,
-        studentName: student?.fullName,
-        createdAt: now
-      };
-      this.attendanceRecords.set(key, entry);
-      saved.push(entry);
-    }
-    return saved;
-  }
-  // Audit Logging
-  logAction(organizationId, userId, userEmail, action, resourceType, resourceId, details, ipAddress) {
-    const id = `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const log = {
-      id,
-      organizationId,
-      userId,
-      userEmail,
-      action,
-      resourceType,
-      resourceId,
-      details,
-      ipAddress,
-      timestamp: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.auditLogs.set(id, log);
-    return log;
-  }
-  getAuditLogs(organizationId, limit = 50) {
-    return Array.from(this.auditLogs.values()).filter((l) => l.organizationId === organizationId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, limit);
-  }
-  // --- Invitations Management ---
-  createInvitation(data) {
-    const id = `inv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const classroom = data.classroomId ? this.classrooms.get(data.classroomId) : void 0;
-    const creator = data.createdBy ? this.users.get(data.createdBy) : void 0;
-    const inv = {
-      id,
-      ...data,
-      classroomName: classroom?.name,
-      createdByName: creator?.fullName,
-      isUsed: false,
-      createdAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-    this.invitations.set(id, inv);
-    return inv;
-  }
-  getInvitationByCode(code) {
-    const normalized = code.trim().toUpperCase();
-    for (const inv of this.invitations.values()) {
-      if (inv.inviteCode.toUpperCase() === normalized) {
+      getCoursesByClassroom(classroomId, organizationId) {
+        return Array.from(this.courses.values()).filter(
+          (c) => c.organizationId === organizationId && c.classroomId === classroomId
+        );
+      }
+      getAcademicYearById(id, organizationId) {
+        const item = this.academicYears.get(id);
+        if (!item || item.organizationId !== organizationId) return void 0;
+        return item;
+      }
+      createAcademicYear(data) {
+        const id = `year_${Date.now()}`;
+        const item = { ...data, id };
+        if (item.isCurrent) {
+          for (const [yId, year] of this.academicYears.entries()) {
+            if (year.organizationId === data.organizationId && yId !== id) {
+              year.isCurrent = false;
+            }
+          }
+        }
+        this.academicYears.set(id, item);
+        return item;
+      }
+      updateAcademicYear(id, organizationId, updates) {
+        const item = this.getAcademicYearById(id, organizationId);
+        if (!item) return void 0;
+        if (updates.isCurrent) {
+          for (const [yId, year] of this.academicYears.entries()) {
+            if (year.organizationId === organizationId && yId !== id) {
+              year.isCurrent = false;
+            }
+          }
+        }
+        const updated = { ...item, ...updates };
+        this.academicYears.set(id, updated);
+        return updated;
+      }
+      deleteAcademicYear(id, organizationId) {
+        const item = this.getAcademicYearById(id, organizationId);
+        if (!item) return false;
+        this.academicYears.delete(id);
+        return true;
+      }
+      getTerms(organizationId, academicYearId) {
+        return Array.from(this.terms.values()).filter((t) => {
+          if (t.organizationId !== organizationId) return false;
+          if (academicYearId && t.academicYearId !== academicYearId) return false;
+          return true;
+        });
+      }
+      getTermById(id, organizationId) {
+        const item = this.terms.get(id);
+        if (!item || item.organizationId !== organizationId) return void 0;
+        return item;
+      }
+      createTerm(data) {
+        const id = `term_${Date.now()}`;
+        const item = { ...data, id };
+        if (item.isCurrent) {
+          for (const [tId, term] of this.terms.entries()) {
+            if (term.organizationId === data.organizationId && tId !== id) {
+              term.isCurrent = false;
+            }
+          }
+        }
+        this.terms.set(id, item);
+        return item;
+      }
+      updateTerm(id, organizationId, updates) {
+        const item = this.getTermById(id, organizationId);
+        if (!item) return void 0;
+        if (updates.isCurrent) {
+          for (const [tId, term] of this.terms.entries()) {
+            if (term.organizationId === organizationId && tId !== id) {
+              term.isCurrent = false;
+            }
+          }
+        }
+        const updated = { ...item, ...updates };
+        this.terms.set(id, updated);
+        return updated;
+      }
+      deleteTerm(id, organizationId) {
+        const item = this.getTermById(id, organizationId);
+        if (!item) return false;
+        this.terms.delete(id);
+        return true;
+      }
+      getGradeLevels(organizationId) {
+        return Array.from(this.gradeLevels.values()).filter((g) => g.organizationId === organizationId).sort((a, b) => a.sequenceOrder - b.sequenceOrder);
+      }
+      getGradeLevelById(id, organizationId) {
+        const gl = this.gradeLevels.get(id);
+        if (!gl || gl.organizationId !== organizationId) return void 0;
+        return gl;
+      }
+      createGradeLevel(data) {
+        const id = `grade_${Date.now()}`;
+        const item = { ...data, id };
+        this.gradeLevels.set(id, item);
+        return item;
+      }
+      updateGradeLevel(id, organizationId, updates) {
+        const gl = this.getGradeLevelById(id, organizationId);
+        if (!gl) return void 0;
+        const updated = { ...gl, ...updates };
+        this.gradeLevels.set(id, updated);
+        return updated;
+      }
+      deleteGradeLevel(id, organizationId) {
+        const gl = this.getGradeLevelById(id, organizationId);
+        if (!gl) return false;
+        this.gradeLevels.delete(id);
+        return true;
+      }
+      getClassrooms(organizationId, gradeLevelId) {
+        return Array.from(this.classrooms.values()).filter((c) => {
+          if (c.organizationId !== organizationId) return false;
+          if (gradeLevelId && c.gradeLevelId !== gradeLevelId) return false;
+          return true;
+        });
+      }
+      getClassroomById(id, organizationId) {
+        const c = this.classrooms.get(id);
+        if (!c || c.organizationId !== organizationId) return void 0;
+        return c;
+      }
+      createClassroom(data) {
+        const id = `class_${Date.now()}`;
+        const item = { ...data, id };
+        this.classrooms.set(id, item);
+        return item;
+      }
+      updateClassroom(id, organizationId, updates) {
+        const c = this.getClassroomById(id, organizationId);
+        if (!c) return void 0;
+        const updated = { ...c, ...updates };
+        this.classrooms.set(id, updated);
+        return updated;
+      }
+      deleteClassroom(id, organizationId) {
+        const c = this.getClassroomById(id, organizationId);
+        if (!c) return false;
+        this.classrooms.delete(id);
+        return true;
+      }
+      getSubjects(organizationId) {
+        return Array.from(this.subjects.values()).filter((s) => s.organizationId === organizationId);
+      }
+      getSubjectById(id, organizationId) {
+        const s = this.subjects.get(id);
+        if (!s || s.organizationId !== organizationId) return void 0;
+        return s;
+      }
+      createSubject(data) {
+        const id = `sub_${Date.now()}`;
+        const item = { ...data, id };
+        this.subjects.set(id, item);
+        return item;
+      }
+      updateSubject(id, organizationId, updates) {
+        const s = this.getSubjectById(id, organizationId);
+        if (!s) return void 0;
+        const updated = { ...s, ...updates };
+        this.subjects.set(id, updated);
+        return updated;
+      }
+      deleteSubject(id, organizationId) {
+        const s = this.getSubjectById(id, organizationId);
+        if (!s) return false;
+        this.subjects.delete(id);
+        return true;
+      }
+      // Courses
+      getCourses(organizationId, teacherId, classroomId) {
+        return Array.from(this.courses.values()).filter((c) => {
+          if (c.organizationId !== organizationId) return false;
+          if (teacherId && c.teacherId !== teacherId) return false;
+          if (classroomId && c.classroomId !== classroomId) return false;
+          return true;
+        });
+      }
+      getCourseById(courseId, organizationId) {
+        const course = this.courses.get(courseId);
+        if (!course || course.organizationId !== organizationId) return void 0;
+        return course;
+      }
+      createCourse(data) {
+        const id = `crs_${Date.now()}`;
+        const subject = data.subjectId ? this.subjects.get(data.subjectId) : void 0;
+        const teacher = data.teacherId ? this.users.get(data.teacherId) : void 0;
+        const classroom = data.classroomId ? this.classrooms.get(data.classroomId) : void 0;
+        const course = {
+          ...data,
+          id,
+          subjectName: subject?.name,
+          teacherName: teacher?.fullName,
+          classroomName: classroom?.name,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.courses.set(id, course);
+        return course;
+      }
+      updateCourse(id, organizationId, updates) {
+        const course = this.getCourseById(id, organizationId);
+        if (!course) return void 0;
+        const subject = updates.subjectId ? this.subjects.get(updates.subjectId) : void 0;
+        const teacher = updates.teacherId ? this.users.get(updates.teacherId) : void 0;
+        const classroom = updates.classroomId ? this.classrooms.get(updates.classroomId) : void 0;
+        const updated = {
+          ...course,
+          ...updates,
+          subjectName: subject ? subject.name : course.subjectName,
+          teacherName: teacher ? teacher.fullName : course.teacherName,
+          classroomName: classroom ? classroom.name : course.classroomName,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.courses.set(id, updated);
+        return updated;
+      }
+      deleteCourse(id, organizationId) {
+        const course = this.getCourseById(id, organizationId);
+        if (!course) return false;
+        this.courses.delete(id);
+        return true;
+      }
+      // --- Teacher Assignments ---
+      getTeacherAssignments(organizationId, filters) {
+        return Array.from(this.teacherAssignments.values()).filter((ta) => {
+          if (ta.organizationId !== organizationId) return false;
+          if (filters?.teacherId && ta.teacherId !== filters.teacherId) return false;
+          if (filters?.courseId && ta.courseId !== filters.courseId) return false;
+          if (filters?.classroomId && ta.classroomId !== filters.classroomId) return false;
+          if (filters?.academicYearId && ta.academicYearId !== filters.academicYearId) return false;
+          if (filters?.subjectId && ta.subjectId !== filters.subjectId) return false;
+          return true;
+        });
+      }
+      getTeacherAssignmentById(id, organizationId) {
+        const ta = this.teacherAssignments.get(id);
+        if (!ta || ta.organizationId !== organizationId) return void 0;
+        return ta;
+      }
+      createTeacherAssignment(data) {
+        const id = `ta_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const teacher = this.getUserById(data.teacherId, data.organizationId);
+        const subject = this.getSubjectById(data.subjectId, data.organizationId);
+        const classroom = this.getClassroomById(data.classroomId, data.organizationId);
+        const course = data.courseId ? this.getCourseById(data.courseId, data.organizationId) : void 0;
+        const year = data.academicYearId ? this.getAcademicYearById(data.academicYearId, data.organizationId) : void 0;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const assignment = {
+          ...data,
+          id,
+          teacherName: teacher?.fullName,
+          teacherEmail: teacher?.email,
+          subjectName: subject?.name,
+          classroomName: classroom?.name,
+          courseTitle: course?.title,
+          academicYearName: year?.name,
+          createdAt: now,
+          updatedAt: now
+        };
+        this.teacherAssignments.set(id, assignment);
+        return assignment;
+      }
+      updateTeacherAssignment(id, organizationId, updates) {
+        const ta = this.getTeacherAssignmentById(id, organizationId);
+        if (!ta) return void 0;
+        const teacher = updates.teacherId ? this.getUserById(updates.teacherId, organizationId) : void 0;
+        const subject = updates.subjectId ? this.getSubjectById(updates.subjectId, organizationId) : void 0;
+        const classroom = updates.classroomId ? this.getClassroomById(updates.classroomId, organizationId) : void 0;
+        const updated = {
+          ...ta,
+          ...updates,
+          teacherName: teacher ? teacher.fullName : ta.teacherName,
+          teacherEmail: teacher ? teacher.email : ta.teacherEmail,
+          subjectName: subject ? subject.name : ta.subjectName,
+          classroomName: classroom ? classroom.name : ta.classroomName,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.teacherAssignments.set(id, updated);
+        return updated;
+      }
+      deleteTeacherAssignment(id, organizationId) {
+        const ta = this.getTeacherAssignmentById(id, organizationId);
+        if (!ta) return false;
+        this.teacherAssignments.delete(id);
+        return true;
+      }
+      // --- Student Enrollments ---
+      getStudentEnrollments(organizationId, filters) {
+        return Array.from(this.studentEnrollments.values()).filter((enr) => {
+          if (enr.organizationId !== organizationId) return false;
+          if (filters?.classroomId && enr.classroomId !== filters.classroomId) return false;
+          if (filters?.studentId && enr.studentId !== filters.studentId) return false;
+          if (filters?.academicYearId && enr.academicYearId !== filters.academicYearId) return false;
+          if (filters?.status && enr.status !== filters.status) return false;
+          return true;
+        });
+      }
+      getStudentEnrollmentById(id, organizationId) {
+        const enr = this.studentEnrollments.get(id);
+        if (!enr || enr.organizationId !== organizationId) return void 0;
+        return enr;
+      }
+      createStudentEnrollment(data) {
+        const id = `enr_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const student = this.getUserById(data.studentId, data.organizationId);
+        const classroom = this.getClassroomById(data.classroomId, data.organizationId);
+        const gradeLevel = classroom ? this.getGradeLevelById(classroom.gradeLevelId, data.organizationId) : void 0;
+        const year = this.getAcademicYearById(data.academicYearId, data.organizationId);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const enrollment = {
+          ...data,
+          id,
+          studentName: student?.fullName,
+          studentEmail: student?.email,
+          studentIdNumber: student?.studentIdNumber,
+          classroomName: classroom?.name,
+          gradeLevelId: classroom?.gradeLevelId,
+          gradeLevelName: gradeLevel?.name,
+          academicYearName: year?.name,
+          enrolledAt: now,
+          updatedAt: now
+        };
+        this.studentEnrollments.set(id, enrollment);
+        if (student && data.classroomId) {
+          this.updateUser(student.id, data.organizationId, { classroomId: data.classroomId });
+        }
+        return enrollment;
+      }
+      updateStudentEnrollment(id, organizationId, updates) {
+        const enr = this.getStudentEnrollmentById(id, organizationId);
+        if (!enr) return void 0;
+        const classroom = updates.classroomId ? this.getClassroomById(updates.classroomId, organizationId) : void 0;
+        const gradeLevel = classroom ? this.getGradeLevelById(classroom.gradeLevelId, organizationId) : void 0;
+        const updated = {
+          ...enr,
+          ...updates,
+          classroomName: classroom ? classroom.name : enr.classroomName,
+          gradeLevelId: classroom ? classroom.gradeLevelId : enr.gradeLevelId,
+          gradeLevelName: gradeLevel ? gradeLevel.name : enr.gradeLevelName,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.studentEnrollments.set(id, updated);
+        return updated;
+      }
+      deleteStudentEnrollment(id, organizationId) {
+        const enr = this.getStudentEnrollmentById(id, organizationId);
+        if (!enr) return false;
+        this.studentEnrollments.delete(id);
+        return true;
+      }
+      getStudentsByClassroom(classroomId, organizationId) {
+        const enrollments = this.getStudentEnrollments(organizationId, { classroomId, status: "ACTIVE" });
+        const students = [];
+        for (const enr of enrollments) {
+          const u = this.getUserById(enr.studentId, organizationId);
+          if (u) students.push(u);
+        }
+        const directUsers = Array.from(this.users.values()).filter(
+          (u) => u.organizationId === organizationId && u.role === "STUDENT" && u.classroomId === classroomId
+        );
+        for (const du of directUsers) {
+          if (!students.some((s) => s.id === du.id)) {
+            students.push(du);
+          }
+        }
+        return students;
+      }
+      // --- Parent Student Links ---
+      getParentStudentLinks(organizationId, filters) {
+        return Array.from(this.parentStudentLinks.values()).filter((link) => {
+          if (link.organizationId !== organizationId) return false;
+          if (filters?.parentId && link.parentId !== filters.parentId) return false;
+          if (filters?.studentId && link.studentId !== filters.studentId) return false;
+          return true;
+        });
+      }
+      createParentStudentLink(data) {
+        const id = `psl_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const parent = this.getUserById(data.parentId, data.organizationId);
+        const student = this.getUserById(data.studentId, data.organizationId);
+        const link = {
+          ...data,
+          id,
+          parentName: parent?.fullName,
+          studentName: student?.fullName,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.parentStudentLinks.set(id, link);
+        return link;
+      }
+      deleteParentStudentLink(id, organizationId) {
+        const link = this.parentStudentLinks.get(id);
+        if (!link || link.organizationId !== organizationId) return false;
+        this.parentStudentLinks.delete(id);
+        return true;
+      }
+      // --- Student Records (Full SIS Profile, Demographics, Medical & Emergency) ---
+      getStudentRecords(organizationId, filters) {
+        return Array.from(this.studentRecords.values()).filter((rec) => {
+          if (rec.organizationId !== organizationId) return false;
+          if (filters?.status && rec.status !== filters.status) return false;
+          if (filters?.studentId && rec.studentId !== filters.studentId) return false;
+          if (filters?.search) {
+            const q = filters.search.toLowerCase().trim();
+            const user = this.getUserById(rec.studentId, organizationId);
+            const matchName = user?.fullName.toLowerCase().includes(q);
+            const matchEmail = user?.email.toLowerCase().includes(q);
+            const matchNationalId = rec.nationalId.toLowerCase().includes(q);
+            const matchStdId = user?.studentIdNumber?.toLowerCase().includes(q);
+            if (!matchName && !matchEmail && !matchNationalId && !matchStdId) return false;
+          }
+          return true;
+        });
+      }
+      getStudentRecordById(id, organizationId) {
+        const rec = this.studentRecords.get(id);
+        if (!rec || rec.organizationId !== organizationId) return void 0;
+        return rec;
+      }
+      getStudentRecordByStudentId(studentId, organizationId) {
+        return Array.from(this.studentRecords.values()).find(
+          (rec) => rec.organizationId === organizationId && rec.studentId === studentId
+        );
+      }
+      getStudentRecordByNationalId(nationalId, organizationId) {
+        return Array.from(this.studentRecords.values()).find(
+          (rec) => rec.organizationId === organizationId && rec.nationalId === nationalId
+        );
+      }
+      createStudentRecord(data) {
+        const id = `std_rec_${data.studentId}`;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const record = {
+          ...data,
+          id,
+          createdAt: now,
+          updatedAt: now
+        };
+        this.studentRecords.set(id, record);
+        return record;
+      }
+      updateStudentRecord(studentId, organizationId, updates) {
+        const rec = this.getStudentRecordByStudentId(studentId, organizationId);
+        if (!rec) return void 0;
+        const updated = {
+          ...rec,
+          ...updates,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.studentRecords.set(rec.id, updated);
+        return updated;
+      }
+      deleteStudentRecord(studentId, organizationId) {
+        const rec = this.getStudentRecordByStudentId(studentId, organizationId);
+        if (!rec) return false;
+        this.studentRecords.delete(rec.id);
+        return true;
+      }
+      // --- Student Behavior & Merit Records ---
+      getStudentBehaviorRecords(organizationId, filters) {
+        return Array.from(this.studentBehaviorRecords.values()).filter((beh) => {
+          if (beh.organizationId !== organizationId) return false;
+          if (filters?.studentId && beh.studentId !== filters.studentId) return false;
+          if (filters?.type && beh.type !== filters.type) return false;
+          if (filters?.status && beh.status !== filters.status) return false;
+          return true;
+        }).sort((a, b) => new Date(b.incidentDate).getTime() - new Date(a.incidentDate).getTime());
+      }
+      getStudentBehaviorRecordById(id, organizationId) {
+        const beh = this.studentBehaviorRecords.get(id);
+        if (!beh || beh.organizationId !== organizationId) return void 0;
+        return beh;
+      }
+      createStudentBehaviorRecord(data) {
+        const id = `beh_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const student = this.getUserById(data.studentId, data.organizationId);
+        const recordedByUser = this.getUserById(data.recordedBy, data.organizationId);
+        const record = {
+          ...data,
+          id,
+          studentName: student?.fullName,
+          recordedByName: recordedByUser?.fullName,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.studentBehaviorRecords.set(id, record);
+        return record;
+      }
+      updateStudentBehaviorRecord(id, organizationId, updates) {
+        const beh = this.getStudentBehaviorRecordById(id, organizationId);
+        if (!beh) return void 0;
+        const updated = {
+          ...beh,
+          ...updates
+        };
+        this.studentBehaviorRecords.set(id, updated);
+        return updated;
+      }
+      deleteStudentBehaviorRecord(id, organizationId) {
+        const beh = this.getStudentBehaviorRecordById(id, organizationId);
+        if (!beh) return false;
+        this.studentBehaviorRecords.delete(id);
+        return true;
+      }
+      // --- Student Lifecycle Events ---
+      getStudentLifecycleEvents(organizationId, studentId) {
+        return Array.from(this.studentLifecycleEvents.values()).filter((ev) => {
+          if (ev.organizationId !== organizationId) return false;
+          if (studentId && ev.studentId !== studentId) return false;
+          return true;
+        }).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      }
+      createStudentLifecycleEvent(data) {
+        const id = `lce_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const student = this.getUserById(data.studentId, data.organizationId);
+        const actionUser = this.getUserById(data.actionBy, data.organizationId);
+        const event = {
+          ...data,
+          id,
+          studentName: student?.fullName,
+          actionByName: actionUser?.fullName,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.studentLifecycleEvents.set(id, event);
+        return event;
+      }
+      // --- Comprehensive Student Dossier (Holistic SIS Record) ---
+      getStudentDossier(studentId, organizationId) {
+        const student = this.getUserById(studentId, organizationId);
+        if (!student || student.role !== "STUDENT") return null;
+        const record = this.getStudentRecordByStudentId(studentId, organizationId);
+        const enrollments = this.getStudentEnrollments(organizationId, { studentId });
+        const currentEnrollment = enrollments.find((e) => e.status === "ACTIVE") || enrollments[0];
+        const parents = this.getParentStudentLinks(organizationId, { studentId });
+        const behaviorRecords = this.getStudentBehaviorRecords(organizationId, { studentId });
+        const behaviorPointsTotal = behaviorRecords.reduce((acc, r) => acc + (r.points || 0), 0);
+        const studentAttendance = Array.from(this.attendanceRecords.values()).filter(
+          (a) => a.organizationId === organizationId && a.studentId === studentId
+        );
+        const totalDays = studentAttendance.length;
+        const presentDays = studentAttendance.filter((a) => a.status === "PRESENT").length;
+        const absentDays = studentAttendance.filter((a) => a.status === "ABSENT").length;
+        const lateDays = studentAttendance.filter((a) => a.status === "LATE").length;
+        const excusedDays = studentAttendance.filter((a) => a.status === "EXCUSED").length;
+        const attendanceRate = totalDays > 0 ? Math.round((presentDays + lateDays + excusedDays) / totalDays * 100) : 100;
+        const submissions = this.getSubmissionsByStudent(studentId, organizationId);
+        const courses = student.classroomId ? this.getCoursesByClassroom(student.classroomId, organizationId) : [];
+        let scoreSum = 0;
+        let gradedCount = 0;
+        for (const sub of submissions) {
+          if (typeof sub.score === "number") {
+            const assignment = this.getAssignmentById(sub.assignmentId, organizationId);
+            const maxScore = assignment?.maxScore || 100;
+            scoreSum += sub.score / maxScore * 100;
+            gradedCount++;
+          }
+        }
+        const averageScore = gradedCount > 0 ? Math.round(scoreSum / gradedCount) : 92;
+        const lifecycleHistory = this.getStudentLifecycleEvents(organizationId, studentId);
+        return {
+          student,
+          record,
+          enrollments,
+          currentEnrollment,
+          parents,
+          behaviorRecords,
+          behaviorPointsTotal,
+          attendanceStats: {
+            totalDays,
+            presentDays,
+            absentDays,
+            lateDays,
+            excusedDays,
+            attendanceRate
+          },
+          academicStats: {
+            enrolledCoursesCount: courses.length,
+            submissionsCount: submissions.length,
+            averageScore
+          },
+          lifecycleHistory
+        };
+      }
+      // Lessons
+      getLessonsByCourse(courseId, organizationId) {
+        return Array.from(this.lessons.values()).filter((l) => l.organizationId === organizationId && l.courseId === courseId).sort((a, b) => a.orderIndex - b.orderIndex);
+      }
+      getLessonById(lessonId, organizationId) {
+        const lesson = this.lessons.get(lessonId);
+        if (!lesson || lesson.organizationId !== organizationId) return void 0;
+        return lesson;
+      }
+      createLesson(data) {
+        const id = `les_${Date.now()}`;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const lesson = { ...data, id, createdAt: now, updatedAt: now };
+        this.lessons.set(id, lesson);
+        return lesson;
+      }
+      updateLesson(id, organizationId, updates) {
+        const lesson = this.getLessonById(id, organizationId);
+        if (!lesson) return void 0;
+        const updated = { ...lesson, ...updates, updatedAt: (/* @__PURE__ */ new Date()).toISOString() };
+        this.lessons.set(id, updated);
+        return updated;
+      }
+      deleteLesson(id, organizationId) {
+        const lesson = this.getLessonById(id, organizationId);
+        if (!lesson) return false;
+        this.lessons.delete(id);
+        return true;
+      }
+      // Assignments
+      getAssignmentsByCourse(courseId, organizationId) {
+        return Array.from(this.assignments.values()).filter(
+          (a) => a.organizationId === organizationId && a.courseId === courseId
+        );
+      }
+      getAssignmentsByOrg(organizationId) {
+        return Array.from(this.assignments.values()).filter((a) => a.organizationId === organizationId);
+      }
+      getAssignmentById(id, organizationId) {
+        const asg = this.assignments.get(id);
+        if (!asg || asg.organizationId !== organizationId) return void 0;
+        return asg;
+      }
+      createAssignment(data) {
+        const id = `asg_${Date.now()}`;
+        const asg = { ...data, id, createdAt: (/* @__PURE__ */ new Date()).toISOString() };
+        this.assignments.set(id, asg);
+        return asg;
+      }
+      // Submissions
+      getSubmissionsByAssignment(assignmentId, organizationId) {
+        return Array.from(this.submissions.values()).filter(
+          (s) => s.organizationId === organizationId && s.assignmentId === assignmentId
+        );
+      }
+      getSubmissionByStudent(assignmentId, studentId, organizationId) {
+        return Array.from(this.submissions.values()).find(
+          (s) => s.organizationId === organizationId && s.assignmentId === assignmentId && s.studentId === studentId
+        );
+      }
+      getSubmissionsByStudent(studentId, organizationId) {
+        return Array.from(this.submissions.values()).filter(
+          (s) => s.organizationId === organizationId && s.studentId === studentId
+        );
+      }
+      submitAssignment(data) {
+        const existing = this.getSubmissionByStudent(data.assignmentId, data.studentId, data.organizationId);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const student = this.getUserById(data.studentId, data.organizationId);
+        if (existing) {
+          const updated = {
+            ...existing,
+            submissionText: data.submissionText,
+            fileAttachmentUrl: data.fileAttachmentUrl,
+            submittedAt: now
+          };
+          this.submissions.set(existing.id, updated);
+          return updated;
+        }
+        const id = `sub_${Date.now()}`;
+        const sub = {
+          ...data,
+          id,
+          studentName: student?.fullName,
+          submittedAt: now
+        };
+        this.submissions.set(id, sub);
+        return sub;
+      }
+      gradeSubmission(submissionId, organizationId, score, teacherFeedback) {
+        const sub = this.submissions.get(submissionId);
+        if (!sub || sub.organizationId !== organizationId) return void 0;
+        const updated = {
+          ...sub,
+          score,
+          teacherFeedback,
+          gradedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.submissions.set(submissionId, updated);
+        return updated;
+      }
+      // --- Attendance Sessions & Roll Calls ---
+      async syncAcademicDataFromPostgres(organizationId) {
+        const pool2 = getPostgresPool();
+        if (!pool2) return;
+        try {
+          let sessionsQuery = "SELECT * FROM attendance_sessions";
+          const sessionsParams = [];
+          if (organizationId) {
+            sessionsQuery += " WHERE organization_id = $1";
+            sessionsParams.push(organizationId);
+          }
+          const sessRes = await pool2.query(sessionsQuery, sessionsParams);
+          for (const row of sessRes.rows) {
+            const classroom = this.getClassroomById(row.classroom_id, row.organization_id);
+            const course = row.course_id ? this.getCourseById(row.course_id, row.organization_id) : void 0;
+            const openedUser = this.getUserById(row.opened_by, row.organization_id);
+            const session = {
+              id: row.id,
+              organizationId: row.organization_id,
+              classroomId: row.classroom_id,
+              classroomName: classroom?.name,
+              courseId: row.course_id || void 0,
+              courseTitle: course?.title,
+              date: row.date ? new Date(row.date).toISOString().split("T")[0] : row.date,
+              periodNumber: row.period_number || void 0,
+              title: row.title || void 0,
+              status: row.status,
+              openedBy: row.opened_by,
+              openedByName: openedUser?.fullName,
+              presentCount: Number(row.present_count) || 0,
+              absentCount: Number(row.absent_count) || 0,
+              lateCount: Number(row.late_count) || 0,
+              excusedCount: Number(row.excused_count) || 0,
+              totalStudents: Number(row.total_students) || 0,
+              createdAt: row.created_at?.toISOString ? row.created_at.toISOString() : row.created_at || (/* @__PURE__ */ new Date()).toISOString(),
+              updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : row.updated_at || (/* @__PURE__ */ new Date()).toISOString()
+            };
+            this.attendanceSessions.set(session.id, session);
+          }
+          let recordsQuery = "SELECT * FROM attendance_records";
+          const recordsParams = [];
+          if (organizationId) {
+            recordsQuery += " WHERE organization_id = $1";
+            recordsParams.push(organizationId);
+          }
+          const recsRes = await pool2.query(recordsQuery, recordsParams);
+          for (const row of recsRes.rows) {
+            const student = this.getUserById(row.student_id, row.organization_id);
+            const classroom = this.getClassroomById(row.classroom_id, row.organization_id);
+            const recordedUser = row.recorded_by ? this.getUserById(row.recorded_by, row.organization_id) : void 0;
+            const record = {
+              id: row.id,
+              organizationId: row.organization_id,
+              sessionId: row.session_id || void 0,
+              courseId: row.course_id || void 0,
+              classroomId: row.classroom_id,
+              classroomName: classroom?.name,
+              studentId: row.student_id,
+              studentName: student?.fullName,
+              studentIdNumber: student?.studentIdNumber,
+              recordedBy: row.recorded_by || void 0,
+              recordedByName: recordedUser?.fullName,
+              date: row.date ? new Date(row.date).toISOString().split("T")[0] : row.date,
+              status: row.status,
+              notes: row.notes || void 0,
+              createdAt: row.created_at?.toISOString ? row.created_at.toISOString() : row.created_at || (/* @__PURE__ */ new Date()).toISOString(),
+              updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : row.updated_at || (/* @__PURE__ */ new Date()).toISOString()
+            };
+            this.attendanceRecords.set(record.id, record);
+          }
+          let assessmentsQuery = "SELECT * FROM assessments";
+          const assessmentsParams = [];
+          if (organizationId) {
+            assessmentsQuery += " WHERE organization_id = $1";
+            assessmentsParams.push(organizationId);
+          }
+          const assRes = await pool2.query(assessmentsQuery, assessmentsParams);
+          for (const row of assRes.rows) {
+            const course = this.getCourseById(row.course_id, row.organization_id);
+            const subject = row.subject_id ? this.getSubjectById(row.subject_id, row.organization_id) : course ? this.getSubjectById(course.subjectId, row.organization_id) : void 0;
+            const classroom = row.classroom_id ? this.getClassroomById(row.classroom_id, row.organization_id) : course?.classroomId ? this.getClassroomById(course.classroomId, row.organization_id) : void 0;
+            const term = row.term_id ? this.getTermById(row.term_id, row.organization_id) : course?.termId ? this.getTermById(course.termId, row.organization_id) : void 0;
+            const creator = row.created_by ? this.getUserById(row.created_by, row.organization_id) : void 0;
+            const assessment = {
+              id: row.id,
+              organizationId: row.organization_id,
+              courseId: row.course_id,
+              courseTitle: course?.title,
+              subjectId: row.subject_id || course?.subjectId,
+              subjectName: subject?.name || course?.subjectName,
+              classroomId: row.classroom_id || course?.classroomId,
+              classroomName: classroom?.name || course?.classroomName,
+              termId: row.term_id || course?.termId,
+              termName: term?.name,
+              academicYearId: row.academic_year_id || void 0,
+              title: row.title,
+              description: row.description || void 0,
+              category: row.category,
+              maxScore: Number(row.max_score) || 100,
+              weightPercentage: Number(row.weight_percentage) || 100,
+              dueDate: row.due_date?.toISOString ? row.due_date.toISOString() : row.due_date,
+              assessmentDate: row.assessment_date ? new Date(row.assessment_date).toISOString().split("T")[0] : row.assessment_date,
+              status: row.status,
+              createdBy: row.created_by || void 0,
+              createdByName: creator?.fullName,
+              createdAt: row.created_at?.toISOString ? row.created_at.toISOString() : row.created_at || (/* @__PURE__ */ new Date()).toISOString(),
+              updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : row.updated_at || (/* @__PURE__ */ new Date()).toISOString()
+            };
+            this.assessments.set(assessment.id, assessment);
+          }
+          let gradesQuery = "SELECT * FROM assessment_grades";
+          const gradesParams = [];
+          if (organizationId) {
+            gradesQuery += " WHERE organization_id = $1";
+            gradesParams.push(organizationId);
+          }
+          const gradesRes = await pool2.query(gradesQuery, gradesParams);
+          for (const row of gradesRes.rows) {
+            const student = this.getUserById(row.student_id, row.organization_id);
+            const assessment = this.getAssessmentById(row.assessment_id, row.organization_id);
+            const grader = row.graded_by ? this.getUserById(row.graded_by, row.organization_id) : void 0;
+            const maxScore = assessment?.maxScore || 100;
+            const score = Number(row.score) || 0;
+            const percentage = maxScore > 0 ? Number((score / maxScore * 100).toFixed(2)) : 0;
+            const grade = {
+              id: row.id,
+              organizationId: row.organization_id,
+              assessmentId: row.assessment_id,
+              assessmentTitle: assessment?.title,
+              studentId: row.student_id,
+              studentName: student?.fullName,
+              studentIdNumber: student?.studentIdNumber,
+              score,
+              maxScore,
+              percentage,
+              feedback: row.feedback || void 0,
+              gradedBy: row.graded_by || void 0,
+              gradedByName: grader?.fullName,
+              gradedAt: row.graded_at?.toISOString ? row.graded_at.toISOString() : row.graded_at || (/* @__PURE__ */ new Date()).toISOString(),
+              updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : row.updated_at || (/* @__PURE__ */ new Date()).toISOString()
+            };
+            this.assessmentGrades.set(grade.id, grade);
+          }
+        } catch (err) {
+          if (process.env.NODE_ENV === "production") {
+            throw err;
+          }
+          console.error("[PostgreSQL Academic Sync Warning]:", err.message);
+        }
+      }
+      persistAttendanceSessionToPostgres(session) {
+        const pool2 = getPostgresPool();
+        if (!pool2) {
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("PostgreSQL is required in production environment.");
+          }
+          return;
+        }
+        pool2.query(
+          `INSERT INTO attendance_sessions (
+        id, organization_id, classroom_id, course_id, date, period_number, title, status, opened_by, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      ON CONFLICT (id) DO UPDATE SET
+        classroom_id = EXCLUDED.classroom_id,
+        course_id = EXCLUDED.course_id,
+        date = EXCLUDED.date,
+        period_number = EXCLUDED.period_number,
+        title = EXCLUDED.title,
+        status = EXCLUDED.status,
+        updated_at = EXCLUDED.updated_at;`,
+          [
+            session.id,
+            session.organizationId,
+            session.classroomId,
+            session.courseId || null,
+            session.date,
+            session.periodNumber || 1,
+            session.title || null,
+            session.status,
+            session.openedBy,
+            session.createdAt,
+            session.updatedAt
+          ]
+        ).catch((err) => {
+          if (process.env.NODE_ENV === "production") {
+            console.error("[PostgreSQL Critical Error]: Failed to persist attendance session", err);
+            throw err;
+          }
+          console.error("[PostgreSQL Session Persist Warning]:", err.message);
+        });
+      }
+      deleteAttendanceSessionFromPostgres(id, organizationId) {
+        const pool2 = getPostgresPool();
+        if (!pool2) {
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("PostgreSQL is required in production environment.");
+          }
+          return;
+        }
+        pool2.query("DELETE FROM attendance_sessions WHERE id = $1 AND organization_id = $2", [id, organizationId]).catch((err) => {
+          if (process.env.NODE_ENV === "production") {
+            throw err;
+          }
+          console.error("[PostgreSQL Delete Session Warning]:", err.message);
+        });
+      }
+      persistAttendanceRecordToPostgres(rec) {
+        const pool2 = getPostgresPool();
+        if (!pool2) {
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("PostgreSQL is required in production environment.");
+          }
+          return;
+        }
+        pool2.query(
+          `INSERT INTO attendance_records (
+        id, organization_id, session_id, course_id, classroom_id, student_id, recorded_by, date, status, notes, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      ON CONFLICT (id) DO UPDATE SET
+        session_id = EXCLUDED.session_id,
+        status = EXCLUDED.status,
+        notes = EXCLUDED.notes,
+        recorded_by = EXCLUDED.recorded_by,
+        updated_at = EXCLUDED.updated_at;`,
+          [
+            rec.id,
+            rec.organizationId,
+            rec.sessionId || null,
+            rec.courseId || null,
+            rec.classroomId,
+            rec.studentId,
+            rec.recordedBy || null,
+            rec.date,
+            rec.status,
+            rec.notes || null,
+            rec.createdAt,
+            rec.updatedAt
+          ]
+        ).catch((err) => {
+          if (process.env.NODE_ENV === "production") {
+            console.error("[PostgreSQL Critical Error]: Failed to persist attendance record", err);
+            throw err;
+          }
+          console.error("[PostgreSQL Record Persist Warning]:", err.message);
+        });
+      }
+      persistAssessmentToPostgres(assessment) {
+        const pool2 = getPostgresPool();
+        if (!pool2) {
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("PostgreSQL is required in production environment.");
+          }
+          return;
+        }
+        pool2.query(
+          `INSERT INTO assessments (
+        id, organization_id, course_id, subject_id, classroom_id, term_id, academic_year_id,
+        title, description, category, max_score, weight_percentage, due_date, assessment_date,
+        status, created_by, created_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        description = EXCLUDED.description,
+        category = EXCLUDED.category,
+        max_score = EXCLUDED.max_score,
+        weight_percentage = EXCLUDED.weight_percentage,
+        due_date = EXCLUDED.due_date,
+        assessment_date = EXCLUDED.assessment_date,
+        status = EXCLUDED.status,
+        updated_at = EXCLUDED.updated_at;`,
+          [
+            assessment.id,
+            assessment.organizationId,
+            assessment.courseId,
+            assessment.subjectId || null,
+            assessment.classroomId || null,
+            assessment.termId || null,
+            assessment.academicYearId || null,
+            assessment.title,
+            assessment.description || null,
+            assessment.category,
+            assessment.maxScore,
+            assessment.weightPercentage,
+            assessment.dueDate || null,
+            assessment.assessmentDate || null,
+            assessment.status,
+            assessment.createdBy || null,
+            assessment.createdAt,
+            assessment.updatedAt
+          ]
+        ).catch((err) => {
+          if (process.env.NODE_ENV === "production") {
+            console.error("[PostgreSQL Critical Error]: Failed to persist assessment", err);
+            throw err;
+          }
+          console.error("[PostgreSQL Assessment Persist Warning]:", err.message);
+        });
+      }
+      deleteAssessmentFromPostgres(id, organizationId) {
+        const pool2 = getPostgresPool();
+        if (!pool2) {
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("PostgreSQL is required in production environment.");
+          }
+          return;
+        }
+        pool2.query("DELETE FROM assessments WHERE id = $1 AND organization_id = $2", [id, organizationId]).catch((err) => {
+          if (process.env.NODE_ENV === "production") {
+            throw err;
+          }
+          console.error("[PostgreSQL Delete Assessment Warning]:", err.message);
+        });
+      }
+      persistAssessmentGradeToPostgres(grade) {
+        const pool2 = getPostgresPool();
+        if (!pool2) {
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("PostgreSQL is required in production environment.");
+          }
+          return;
+        }
+        pool2.query(
+          `INSERT INTO assessment_grades (
+        id, organization_id, assessment_id, student_id, score, feedback, graded_by, graded_at, updated_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (id) DO UPDATE SET
+        score = EXCLUDED.score,
+        feedback = EXCLUDED.feedback,
+        graded_by = EXCLUDED.graded_by,
+        graded_at = EXCLUDED.graded_at,
+        updated_at = EXCLUDED.updated_at;`,
+          [
+            grade.id,
+            grade.organizationId,
+            grade.assessmentId,
+            grade.studentId,
+            grade.score,
+            grade.feedback || null,
+            grade.gradedBy || null,
+            grade.gradedAt,
+            grade.updatedAt
+          ]
+        ).catch((err) => {
+          if (process.env.NODE_ENV === "production") {
+            console.error("[PostgreSQL Critical Error]: Failed to persist assessment grade", err);
+            throw err;
+          }
+          console.error("[PostgreSQL Grade Persist Warning]:", err.message);
+        });
+      }
+      deleteAssessmentGradeFromPostgres(id, organizationId) {
+        const pool2 = getPostgresPool();
+        if (!pool2) {
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("PostgreSQL is required in production environment.");
+          }
+          return;
+        }
+        pool2.query("DELETE FROM assessment_grades WHERE id = $1 AND organization_id = $2", [id, organizationId]).catch((err) => {
+          if (process.env.NODE_ENV === "production") {
+            throw err;
+          }
+          console.error("[PostgreSQL Delete Grade Warning]:", err.message);
+        });
+      }
+      getAttendanceSessions(organizationId, filters) {
+        return Array.from(this.attendanceSessions.values()).filter((s) => {
+          if (s.organizationId !== organizationId) return false;
+          if (filters?.classroomId && s.classroomId !== filters.classroomId) return false;
+          if (filters?.courseId && s.courseId !== filters.courseId) return false;
+          if (filters?.date && s.date !== filters.date) return false;
+          if (filters?.status && s.status !== filters.status) return false;
+          return true;
+        }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      }
+      getAttendanceSessionById(id, organizationId) {
+        const s = this.attendanceSessions.get(id);
+        if (!s || s.organizationId !== organizationId) return void 0;
+        return s;
+      }
+      createAttendanceSession(data) {
+        const id = `att_sess_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const classroom = this.getClassroomById(data.classroomId, data.organizationId);
+        const course = data.courseId ? this.getCourseById(data.courseId, data.organizationId) : void 0;
+        const openedUser = this.getUserById(data.openedBy, data.organizationId);
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const session = {
+          ...data,
+          id,
+          classroomName: classroom?.name,
+          courseTitle: course?.title,
+          openedByName: openedUser?.fullName,
+          presentCount: data.presentCount || 0,
+          absentCount: data.absentCount || 0,
+          lateCount: data.lateCount || 0,
+          excusedCount: data.excusedCount || 0,
+          totalStudents: data.totalStudents || 0,
+          createdAt: now,
+          updatedAt: now
+        };
+        this.attendanceSessions.set(id, session);
+        this.persistAttendanceSessionToPostgres(session);
+        return session;
+      }
+      updateAttendanceSession(id, organizationId, updates) {
+        const s = this.getAttendanceSessionById(id, organizationId);
+        if (!s) return void 0;
+        const updated = {
+          ...s,
+          ...updates,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.attendanceSessions.set(id, updated);
+        this.persistAttendanceSessionToPostgres(updated);
+        return updated;
+      }
+      deleteAttendanceSession(id, organizationId) {
+        const s = this.getAttendanceSessionById(id, organizationId);
+        if (!s) return false;
+        this.attendanceSessions.delete(id);
+        this.deleteAttendanceSessionFromPostgres(id, organizationId);
+        for (const [recId, rec] of this.attendanceRecords.entries()) {
+          if (rec.organizationId === organizationId && rec.sessionId === id) {
+            this.attendanceRecords.delete(recId);
+          }
+        }
+        return true;
+      }
+      // --- Attendance Records ---
+      getAttendanceRecords(organizationId, filters) {
+        return Array.from(this.attendanceRecords.values()).filter((r) => {
+          if (r.organizationId !== organizationId) return false;
+          if (filters?.sessionId && r.sessionId !== filters.sessionId) return false;
+          if (filters?.courseId && r.courseId !== filters.courseId) return false;
+          if (filters?.classroomId && r.classroomId !== filters.classroomId) return false;
+          if (filters?.studentId && r.studentId !== filters.studentId) return false;
+          if (filters?.date && r.date !== filters.date) return false;
+          if (filters?.status && r.status !== filters.status) return false;
+          return true;
+        });
+      }
+      // Legacy alias
+      getAttendance(organizationId, courseId, classroomId, date) {
+        return this.getAttendanceRecords(organizationId, { courseId, classroomId, date });
+      }
+      getAttendanceRecordById(id, organizationId) {
+        const r = this.attendanceRecords.get(id);
+        if (!r || r.organizationId !== organizationId) return void 0;
+        return r;
+      }
+      recordAttendanceBatch(organizationId, records, sessionId) {
+        const saved = [];
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        let present = 0;
+        let absent = 0;
+        let late = 0;
+        let excused = 0;
+        for (const rec of records) {
+          const key = `att_${rec.courseId || rec.classroomId}_${rec.studentId}_${rec.date}`;
+          const student = this.getUserById(rec.studentId, organizationId);
+          const classroom = this.getClassroomById(rec.classroomId, organizationId);
+          const recordedUser = rec.recordedBy ? this.getUserById(rec.recordedBy, organizationId) : void 0;
+          const entry = {
+            ...rec,
+            id: key,
+            organizationId,
+            sessionId: sessionId || rec.sessionId,
+            studentName: student?.fullName || rec.studentName,
+            studentIdNumber: student?.studentIdNumber || rec.studentIdNumber,
+            classroomName: classroom?.name || rec.classroomName,
+            recordedByName: recordedUser?.fullName || rec.recordedByName,
+            createdAt: now,
+            updatedAt: now
+          };
+          this.attendanceRecords.set(key, entry);
+          this.persistAttendanceRecordToPostgres(entry);
+          saved.push(entry);
+          if (rec.status === "PRESENT") present++;
+          else if (rec.status === "ABSENT") absent++;
+          else if (rec.status === "LATE") late++;
+          else if (rec.status === "EXCUSED") excused++;
+        }
+        const activeSessionId = sessionId || records[0]?.sessionId;
+        if (activeSessionId) {
+          const session = this.getAttendanceSessionById(activeSessionId, organizationId);
+          if (session) {
+            session.presentCount = present;
+            session.absentCount = absent;
+            session.lateCount = late;
+            session.excusedCount = excused;
+            session.totalStudents = records.length;
+            session.updatedAt = now;
+            this.attendanceSessions.set(activeSessionId, session);
+            this.persistAttendanceSessionToPostgres(session);
+          }
+        }
+        return saved;
+      }
+      updateAttendanceRecord(id, organizationId, updates) {
+        const r = this.getAttendanceRecordById(id, organizationId);
+        if (!r) return void 0;
+        const updated = {
+          ...r,
+          ...updates,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.attendanceRecords.set(id, updated);
+        this.persistAttendanceRecordToPostgres(updated);
+        return updated;
+      }
+      getAttendanceSummaryForStudent(studentId, organizationId) {
+        const records = this.getAttendanceRecords(organizationId, { studentId });
+        const totalDays = records.length;
+        const presentDays = records.filter((r) => r.status === "PRESENT").length;
+        const absentDays = records.filter((r) => r.status === "ABSENT").length;
+        const lateDays = records.filter((r) => r.status === "LATE").length;
+        const excusedDays = records.filter((r) => r.status === "EXCUSED").length;
+        const attendanceRate = totalDays > 0 ? Math.round((presentDays + lateDays + excusedDays) / totalDays * 100) : 100;
+        return {
+          studentId,
+          totalDays,
+          total: totalDays,
+          presentDays,
+          present: presentDays,
+          absentDays,
+          absent: absentDays,
+          lateDays,
+          late: lateDays,
+          excusedDays,
+          excused: excusedDays,
+          attendanceRate,
+          records: records.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        };
+      }
+      // --- Assessments (Academic Evaluations & Gradebook) ---
+      getAssessments(organizationId, filters) {
+        return Array.from(this.assessments.values()).filter((a) => {
+          if (a.organizationId !== organizationId) return false;
+          if (filters?.courseId && a.courseId !== filters.courseId) return false;
+          if (filters?.classroomId && a.classroomId !== filters.classroomId) return false;
+          if (filters?.termId && a.termId !== filters.termId) return false;
+          if (filters?.category && a.category !== filters.category) return false;
+          if (filters?.status && a.status !== filters.status) return false;
+          return true;
+        }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+      getAssessmentById(id, organizationId) {
+        const a = this.assessments.get(id);
+        if (!a || a.organizationId !== organizationId) return void 0;
+        return a;
+      }
+      createAssessment(data) {
+        const id = `ass_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const course = this.getCourseById(data.courseId, data.organizationId);
+        const subject = data.subjectId ? this.getSubjectById(data.subjectId, data.organizationId) : course ? this.getSubjectById(course.subjectId, data.organizationId) : void 0;
+        const classroom = data.classroomId ? this.getClassroomById(data.classroomId, data.organizationId) : course?.classroomId ? this.getClassroomById(course.classroomId, data.organizationId) : void 0;
+        const term = data.termId ? this.getTermById(data.termId, data.organizationId) : course?.termId ? this.getTermById(course.termId, data.organizationId) : void 0;
+        const creator = data.createdBy ? this.getUserById(data.createdBy, data.organizationId) : void 0;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const assessment = {
+          ...data,
+          id,
+          courseTitle: course?.title,
+          subjectId: subject?.id || course?.subjectId,
+          subjectName: subject?.name || course?.subjectName,
+          classroomId: classroom?.id || course?.classroomId,
+          classroomName: classroom?.name || course?.classroomName,
+          termId: term?.id || course?.termId,
+          termName: term?.name,
+          createdByName: creator?.fullName,
+          createdAt: now,
+          updatedAt: now
+        };
+        this.assessments.set(id, assessment);
+        this.persistAssessmentToPostgres(assessment);
+        return assessment;
+      }
+      updateAssessment(id, organizationId, updates) {
+        const a = this.getAssessmentById(id, organizationId);
+        if (!a) return void 0;
+        const updated = {
+          ...a,
+          ...updates,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.assessments.set(id, updated);
+        this.persistAssessmentToPostgres(updated);
+        return updated;
+      }
+      deleteAssessment(id, organizationId) {
+        const a = this.getAssessmentById(id, organizationId);
+        if (!a) return false;
+        this.assessments.delete(id);
+        this.deleteAssessmentFromPostgres(id, organizationId);
+        for (const [gid, gr] of this.assessmentGrades.entries()) {
+          if (gr.organizationId === organizationId && gr.assessmentId === id) {
+            this.assessmentGrades.delete(gid);
+            this.deleteAssessmentGradeFromPostgres(gid, organizationId);
+          }
+        }
+        return true;
+      }
+      // --- Assessment Grades ---
+      getAssessmentGrades(organizationId, filters) {
+        return Array.from(this.assessmentGrades.values()).filter((g) => {
+          if (g.organizationId !== organizationId) return false;
+          if (filters?.assessmentId && g.assessmentId !== filters.assessmentId) return false;
+          if (filters?.studentId && g.studentId !== filters.studentId) return false;
+          return true;
+        });
+      }
+      getAssessmentGradeById(id, organizationId) {
+        const g = this.assessmentGrades.get(id);
+        if (!g || g.organizationId !== organizationId) return void 0;
+        return g;
+      }
+      deleteAssessmentGrade(id, organizationId) {
+        const g = this.getAssessmentGradeById(id, organizationId);
+        if (!g) return false;
+        this.assessmentGrades.delete(id);
+        this.deleteAssessmentGradeFromPostgres(id, organizationId);
+        return true;
+      }
+      getAssessmentGradeByStudentAndAssessment(assessmentId, studentId, organizationId) {
+        return Array.from(this.assessmentGrades.values()).find(
+          (g) => g.organizationId === organizationId && g.assessmentId === assessmentId && g.studentId === studentId
+        );
+      }
+      recordAssessmentGrade(data) {
+        const assessment = this.getAssessmentById(data.assessmentId, data.organizationId);
+        const student = this.getUserById(data.studentId, data.organizationId);
+        const grader = data.gradedBy ? this.getUserById(data.gradedBy, data.organizationId) : void 0;
+        const maxScore = assessment?.maxScore || data.maxScore || 100;
+        const percentage = Number((data.score / maxScore * 100).toFixed(2));
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const existing = this.getAssessmentGradeByStudentAndAssessment(
+          data.assessmentId,
+          data.studentId,
+          data.organizationId
+        );
+        if (existing) {
+          const updated = {
+            ...existing,
+            score: data.score,
+            percentage,
+            feedback: data.feedback !== void 0 ? data.feedback : existing.feedback,
+            gradedBy: data.gradedBy || existing.gradedBy,
+            gradedByName: grader?.fullName || existing.gradedByName,
+            updatedAt: now
+          };
+          this.assessmentGrades.set(existing.id, updated);
+          this.persistAssessmentGradeToPostgres(updated);
+          return updated;
+        }
+        const id = `grd_${data.assessmentId}_${data.studentId}`;
+        const grade = {
+          ...data,
+          id,
+          assessmentTitle: assessment?.title,
+          assessmentCategory: assessment?.category,
+          maxScore,
+          percentage,
+          studentName: student?.fullName,
+          studentIdNumber: student?.studentIdNumber,
+          gradedByName: grader?.fullName,
+          gradedAt: now,
+          updatedAt: now
+        };
+        this.assessmentGrades.set(id, grade);
+        this.persistAssessmentGradeToPostgres(grade);
+        return grade;
+      }
+      recordAssessmentGradesBatch(organizationId, grades) {
+        const recorded = [];
+        for (const g of grades) {
+          recorded.push(this.recordAssessmentGrade({ ...g, organizationId }));
+        }
+        return recorded;
+      }
+      // --- Gradebook Matrix Calculation (Course-Level Holistic Gradebook) ---
+      getGradebookMatrix(courseId, organizationId) {
+        const course = this.getCourseById(courseId, organizationId);
+        if (!course) return void 0;
+        const assessments = this.getAssessments(organizationId, { courseId });
+        const assignments = this.getAssignmentsByCourse(courseId, organizationId);
+        const evalItems = [
+          ...assessments.map((a) => ({
+            id: a.id,
+            title: a.title,
+            category: a.category,
+            maxScore: a.maxScore,
+            weightPercentage: a.weightPercentage,
+            dueDate: a.dueDate,
+            isAssignment: false
+          })),
+          ...assignments.map((asg) => ({
+            id: asg.id,
+            title: asg.title,
+            category: "ASSIGNMENT",
+            maxScore: asg.maxScore || 100,
+            weightPercentage: 0,
+            dueDate: asg.dueDate,
+            isAssignment: true
+          }))
+        ];
+        let students = [];
+        if (course.classroomId) {
+          students = this.getStudentsByClassroom(course.classroomId, organizationId);
+        } else {
+          students = this.getUsersByOrg(organizationId, "STUDENT");
+        }
+        let classTotalEarned = 0;
+        let classTotalMax = 0;
+        const matrixRows = students.map((student) => {
+          const scoresRecord = {};
+          let studentEarned = 0;
+          let studentMax = 0;
+          for (const item of evalItems) {
+            if (item.isAssignment) {
+              const sub = this.getSubmissionsByAssignment(item.id, organizationId).find((s) => s.studentId === student.id);
+              if (sub && sub.score !== void 0) {
+                const percentage2 = item.maxScore > 0 ? Number((sub.score / item.maxScore * 100).toFixed(2)) : 0;
+                scoresRecord[item.id] = {
+                  score: sub.score,
+                  maxScore: item.maxScore,
+                  percentage: percentage2,
+                  feedback: sub.teacherFeedback,
+                  gradedAt: sub.submittedAt,
+                  status: "GRADED"
+                };
+                studentEarned += sub.score;
+                studentMax += item.maxScore;
+              } else {
+                scoresRecord[item.id] = {
+                  maxScore: item.maxScore,
+                  status: "PENDING"
+                };
+              }
+            } else {
+              const grade = this.getAssessmentGradeByStudentAndAssessment(item.id, student.id, organizationId);
+              if (grade) {
+                scoresRecord[item.id] = {
+                  score: grade.score,
+                  maxScore: item.maxScore,
+                  percentage: grade.percentage,
+                  feedback: grade.feedback,
+                  gradedAt: grade.gradedAt,
+                  status: "GRADED"
+                };
+                studentEarned += grade.score;
+                studentMax += item.maxScore;
+              } else {
+                scoresRecord[item.id] = {
+                  maxScore: item.maxScore,
+                  status: "PENDING"
+                };
+              }
+            }
+          }
+          const percentage = studentMax > 0 ? Number((studentEarned / studentMax * 100).toFixed(1)) : 0;
+          classTotalEarned += studentEarned;
+          classTotalMax += studentMax;
+          const letterGrade = this.computeLetterGrade(percentage);
+          return {
+            studentId: student.id,
+            studentName: student.fullName,
+            studentIdNumber: student.studentIdNumber,
+            classroomName: course.classroomName,
+            scores: scoresRecord,
+            totalEarned: Number(studentEarned.toFixed(1)),
+            totalMax: studentMax,
+            percentage,
+            averagePercent: percentage,
+            letterGrade
+          };
+        });
+        const classAveragePercentage = classTotalMax > 0 ? Number((classTotalEarned / classTotalMax * 100).toFixed(1)) : 0;
+        return {
+          course,
+          assessments: evalItems.map((a) => ({
+            id: a.id,
+            title: a.title,
+            category: a.category,
+            maxScore: a.maxScore,
+            weightPercentage: a.weightPercentage,
+            dueDate: a.dueDate
+          })),
+          students: matrixRows,
+          matrix: matrixRows,
+          classAveragePercentage
+        };
+      }
+      // --- Student Academic Performance Summary (Student & Parent Views) ---
+      getStudentAcademicPerformance(studentId, organizationId) {
+        const student = this.getUserById(studentId, organizationId);
+        const classroomName = student?.classroomId ? this.getClassroomById(student.classroomId, organizationId)?.name : void 0;
+        let courses = [];
+        if (student?.classroomId) {
+          courses = this.getCoursesByClassroom(student.classroomId, organizationId);
+        } else {
+          courses = this.getCourses(organizationId);
+        }
+        let overallEarned = 0;
+        let overallMax = 0;
+        let totalAssessmentsCount = 0;
+        let completedAssessmentsCount = 0;
+        let pendingAssessmentsCount = 0;
+        const coursePerformances = courses.map((c) => {
+          const assessments = this.getAssessments(organizationId, { courseId: c.id });
+          const assignments = this.getAssignmentsByCourse(c.id, organizationId);
+          const evalItems = [
+            ...assessments.map((a) => ({
+              id: a.id,
+              title: a.title,
+              category: a.category,
+              maxScore: a.maxScore,
+              weightPercentage: a.weightPercentage,
+              dueDate: a.dueDate,
+              isAssignment: false
+            })),
+            ...assignments.map((asg) => ({
+              id: asg.id,
+              title: asg.title,
+              category: "ASSIGNMENT",
+              maxScore: asg.maxScore || 100,
+              weightPercentage: 0,
+              dueDate: asg.dueDate,
+              isAssignment: true
+            }))
+          ];
+          let cEarned = 0;
+          let cMax = 0;
+          let cGradedCount = 0;
+          let cPendingCount = 0;
+          const items = evalItems.map((evalItem) => {
+            totalAssessmentsCount++;
+            let isGraded = false;
+            let score;
+            let feedback;
+            let gradedAt;
+            if (evalItem.isAssignment) {
+              const sub = this.getSubmissionsByAssignment(evalItem.id, organizationId).find((s) => s.studentId === studentId);
+              if (sub && sub.score !== void 0) {
+                isGraded = true;
+                score = sub.score;
+                feedback = sub.teacherFeedback;
+                gradedAt = sub.submittedAt;
+              }
+            } else {
+              const grade = this.getAssessmentGradeByStudentAndAssessment(evalItem.id, studentId, organizationId);
+              if (grade) {
+                isGraded = true;
+                score = grade.score;
+                feedback = grade.feedback;
+                gradedAt = grade.gradedAt;
+              }
+            }
+            if (isGraded && score !== void 0) {
+              completedAssessmentsCount++;
+              cGradedCount++;
+              cEarned += score;
+              cMax += evalItem.maxScore;
+              const percentage = evalItem.maxScore > 0 ? Number((score / evalItem.maxScore * 100).toFixed(2)) : 0;
+              return {
+                assessmentId: evalItem.id,
+                title: evalItem.title,
+                category: evalItem.category,
+                maxScore: evalItem.maxScore,
+                weightPercentage: evalItem.weightPercentage,
+                score,
+                percentage,
+                feedback,
+                gradedAt,
+                dueDate: evalItem.dueDate,
+                status: "GRADED"
+              };
+            } else {
+              pendingAssessmentsCount++;
+              cPendingCount++;
+              const isOverdue = evalItem.dueDate && new Date(evalItem.dueDate).getTime() < Date.now();
+              return {
+                assessmentId: evalItem.id,
+                title: evalItem.title,
+                category: evalItem.category,
+                maxScore: evalItem.maxScore,
+                weightPercentage: evalItem.weightPercentage,
+                dueDate: evalItem.dueDate,
+                status: isOverdue ? "MISSED" : "PENDING"
+              };
+            }
+          });
+          overallEarned += cEarned;
+          overallMax += cMax;
+          const cPercent = cMax > 0 ? Number((cEarned / cMax * 100).toFixed(1)) : 0;
+          const letterGrade2 = this.computeLetterGrade(cPercent);
+          return {
+            courseId: c.id,
+            courseTitle: c.title,
+            subjectId: c.subjectId,
+            subjectName: c.subjectName,
+            teacherName: c.teacherName,
+            classroomName: c.classroomName,
+            totalAssessments: evalItems.length,
+            gradedAssessments: cGradedCount,
+            pendingAssessments: cPendingCount,
+            earnedPoints: Number(cEarned.toFixed(1)),
+            earned: Number(cEarned.toFixed(1)),
+            maxPossiblePoints: cMax,
+            max: cMax,
+            percentage: cPercent,
+            average: cPercent,
+            letterGrade: letterGrade2,
+            assessments: items
+          };
+        });
+        const overallGpaPercent = overallMax > 0 ? Number((overallEarned / overallMax * 100).toFixed(1)) : 0;
+        const letterGrade = this.computeLetterGrade(overallGpaPercent);
+        return {
+          studentId,
+          studentName: student?.fullName || "\u0627\u0644\u0637\u0627\u0644\u0628",
+          studentIdNumber: student?.studentIdNumber,
+          classroomName,
+          enrolledCoursesCount: courses.length,
+          totalAssessmentsCount,
+          completedAssessmentsCount,
+          pendingAssessmentsCount,
+          overallGpaPercent,
+          letterGrade,
+          courses: coursePerformances,
+          breakdown: coursePerformances
+        };
+      }
+      computeLetterGrade(percentage) {
+        if (percentage >= 95) return "A+";
+        if (percentage >= 90) return "A";
+        if (percentage >= 85) return "B+";
+        if (percentage >= 80) return "B";
+        if (percentage >= 75) return "C+";
+        if (percentage >= 70) return "C";
+        if (percentage >= 60) return "D";
+        if (percentage > 0) return "F";
+        return "N/A";
+      }
+      // Audit Logging
+      logAction(organizationId, userId, userEmail, action, resourceType, resourceId, details, ipAddress) {
+        const id = `log_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const log = {
+          id,
+          organizationId,
+          userId,
+          userEmail,
+          action,
+          resourceType,
+          resourceId,
+          details,
+          ipAddress,
+          timestamp: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.auditLogs.set(id, log);
+        return log;
+      }
+      getAuditLogs(organizationId, limit = 50) {
+        return Array.from(this.auditLogs.values()).filter((l) => l.organizationId === organizationId).sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, limit);
+      }
+      // --- Invitations Management ---
+      createInvitation(data) {
+        const id = `inv_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const classroom = data.classroomId ? this.classrooms.get(data.classroomId) : void 0;
+        const creator = data.createdBy ? this.users.get(data.createdBy) : void 0;
+        const inv = {
+          id,
+          ...data,
+          classroomName: classroom?.name,
+          createdByName: creator?.fullName,
+          isUsed: false,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.invitations.set(id, inv);
         return inv;
       }
-    }
-    return void 0;
-  }
-  getPendingInvitationsByEmail(email) {
-    const normalized = email.toLowerCase().trim();
-    const now = Date.now();
-    return Array.from(this.invitations.values()).filter((inv) => inv.email.toLowerCase().trim() === normalized && !inv.isUsed && new Date(inv.expiresAt).getTime() > now).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
-  getInvitationsByOrg(organizationId) {
-    return Array.from(this.invitations.values()).filter((inv) => inv.organizationId === organizationId).map((inv) => {
-      const classroom = inv.classroomId ? this.classrooms.get(inv.classroomId) : void 0;
-      const creator = inv.createdBy ? this.users.get(inv.createdBy) : void 0;
-      return {
-        ...inv,
-        classroomName: classroom?.name || inv.classroomName,
-        createdByName: creator?.fullName || inv.createdByName
-      };
-    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
-  revokeInvitation(id, organizationId) {
-    const inv = this.invitations.get(id);
-    if (!inv || inv.organizationId !== organizationId) return false;
-    return this.invitations.delete(id);
-  }
-  markInvitationUsed(id, organizationId) {
-    const inv = this.invitations.get(id);
-    if (!inv || inv.organizationId !== organizationId) return false;
-    inv.isUsed = true;
-    inv.usedAt = (/* @__PURE__ */ new Date()).toISOString();
-    this.invitations.set(id, inv);
-    return true;
-  }
-  // ==========================================
-  // Rtiqa AI Engine Database Methods (Multi-Tenant)
-  // ==========================================
-  // --- AI Conversations ---
-  getAIConversations(organizationId, userId) {
-    return Array.from(this.aiConversations.values()).filter((c) => c.organizationId === organizationId && (!userId || c.userId === userId)).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  }
-  getAIConversationById(id, organizationId, userId) {
-    const conv = this.aiConversations.get(id);
-    if (!conv || conv.organizationId !== organizationId) return null;
-    if (userId && conv.userId !== userId) return null;
-    return conv;
-  }
-  createAIConversation(conv) {
-    this.aiConversations.set(conv.id, conv);
-    return conv;
-  }
-  updateAIConversation(id, organizationId, updates) {
-    const conv = this.getAIConversationById(id, organizationId);
-    if (!conv) return null;
-    const updated = {
-      ...conv,
-      ...updates,
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+      getInvitationByCode(code) {
+        const normalized = code.trim().toUpperCase();
+        for (const inv of this.invitations.values()) {
+          if (inv.inviteCode.toUpperCase() === normalized) {
+            return inv;
+          }
+        }
+        return void 0;
+      }
+      getPendingInvitationsByEmail(email) {
+        const normalized = email.toLowerCase().trim();
+        const now = Date.now();
+        return Array.from(this.invitations.values()).filter((inv) => inv.email.toLowerCase().trim() === normalized && !inv.isUsed && new Date(inv.expiresAt).getTime() > now).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+      getInvitationsByOrg(organizationId) {
+        return Array.from(this.invitations.values()).filter((inv) => inv.organizationId === organizationId).map((inv) => {
+          const classroom = inv.classroomId ? this.classrooms.get(inv.classroomId) : void 0;
+          const creator = inv.createdBy ? this.users.get(inv.createdBy) : void 0;
+          return {
+            ...inv,
+            classroomName: classroom?.name || inv.classroomName,
+            createdByName: creator?.fullName || inv.createdByName
+          };
+        }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+      revokeInvitation(id, organizationId) {
+        const inv = this.invitations.get(id);
+        if (!inv || inv.organizationId !== organizationId) return false;
+        return this.invitations.delete(id);
+      }
+      markInvitationUsed(id, organizationId) {
+        const inv = this.invitations.get(id);
+        if (!inv || inv.organizationId !== organizationId) return false;
+        inv.isUsed = true;
+        inv.usedAt = (/* @__PURE__ */ new Date()).toISOString();
+        this.invitations.set(id, inv);
+        return true;
+      }
+      // ==========================================
+      // Rtiqa AI Engine Database Methods (Multi-Tenant)
+      // ==========================================
+      // --- AI Conversations ---
+      getAIConversations(organizationId, userId) {
+        return Array.from(this.aiConversations.values()).filter((c) => c.organizationId === organizationId && (!userId || c.userId === userId)).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      }
+      getAIConversationById(id, organizationId, userId) {
+        const conv = this.aiConversations.get(id);
+        if (!conv || conv.organizationId !== organizationId) return null;
+        if (userId && conv.userId !== userId) return null;
+        return conv;
+      }
+      createAIConversation(conv) {
+        this.aiConversations.set(conv.id, conv);
+        return conv;
+      }
+      updateAIConversation(id, organizationId, updates) {
+        const conv = this.getAIConversationById(id, organizationId);
+        if (!conv) return null;
+        const updated = {
+          ...conv,
+          ...updates,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.aiConversations.set(id, updated);
+        return updated;
+      }
+      deleteAIConversation(id, organizationId, userId) {
+        const conv = this.getAIConversationById(id, organizationId, userId);
+        if (!conv) return false;
+        this.aiConversations.delete(id);
+        for (const [msgId, msg] of this.aiMessages.entries()) {
+          if (msg.conversationId === id) {
+            this.aiMessages.delete(msgId);
+          }
+        }
+        return true;
+      }
+      // --- AI Messages ---
+      getAIMessages(conversationId, organizationId) {
+        const conv = this.getAIConversationById(conversationId, organizationId);
+        if (!conv) return [];
+        return Array.from(this.aiMessages.values()).filter((m) => m.conversationId === conversationId && m.organizationId === organizationId).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+      }
+      createAIMessage(msg) {
+        this.aiMessages.set(msg.id, msg);
+        const conv = this.aiConversations.get(msg.conversationId);
+        if (conv) {
+          conv.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
+          this.aiConversations.set(conv.id, conv);
+        }
+        return msg;
+      }
+      // --- AI Usage & Quotas ---
+      recordAIUsage(usage) {
+        this.aiUsageRecords.set(usage.id, usage);
+        return usage;
+      }
+      getAIUsage(organizationId, userId) {
+        return Array.from(this.aiUsageRecords.values()).filter((u) => u.organizationId === organizationId && (!userId || u.userId === userId)).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+      getAIUsageSummary(organizationId) {
+        const records = this.getAIUsage(organizationId);
+        const monthlyQuotaTokens = 1e6;
+        let totalInputTokens = 0;
+        let totalOutputTokens = 0;
+        let totalCostUsd = 0;
+        const featureBreakdown = {};
+        for (const r of records) {
+          totalInputTokens += r.inputTokens || 0;
+          totalOutputTokens += r.outputTokens || 0;
+          totalCostUsd += Number(r.estimatedCost) || 0;
+          const feat = r.featureName || "other";
+          if (!featureBreakdown[feat]) {
+            featureBreakdown[feat] = { requests: 0, tokens: 0, cost: 0 };
+          }
+          featureBreakdown[feat].requests += 1;
+          featureBreakdown[feat].tokens += (r.inputTokens || 0) + (r.outputTokens || 0);
+          featureBreakdown[feat].cost += Number(r.estimatedCost) || 0;
+        }
+        const totalTokens = totalInputTokens + totalOutputTokens;
+        const usedQuotaPercentage = Math.min(100, Math.round(totalTokens / monthlyQuotaTokens * 100));
+        return {
+          organizationId,
+          totalTokens,
+          totalInputTokens,
+          totalOutputTokens,
+          totalCostUsd: Number(totalCostUsd.toFixed(6)),
+          monthlyQuotaTokens,
+          usedQuotaPercentage,
+          requestsCount: records.length,
+          featureBreakdown
+        };
+      }
+      // --- AI Document Chunks (RAG Foundation) ---
+      createAIDocumentChunk(chunk) {
+        this.aiDocumentChunks.set(chunk.id, chunk);
+        return chunk;
+      }
+      getAIDocumentChunks(organizationId, documentId) {
+        return Array.from(this.aiDocumentChunks.values()).filter((c) => c.organizationId === organizationId && (!documentId || c.documentId === documentId)).sort((a, b) => a.chunkIndex - b.chunkIndex);
+      }
+      // ==========================================
+      // Object Storage Metadata Methods (Multi-Tenant)
+      // ==========================================
+      createStorageObject(data) {
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const obj = {
+          ...data,
+          id: data.id || `obj_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+          createdAt: data.createdAt || now,
+          updatedAt: data.updatedAt || now
+        };
+        this.storageObjects.set(obj.id, obj);
+        this.persistStorageObjectToPostgres(obj);
+        return obj;
+      }
+      getStorageObjectById(id, organizationId) {
+        const obj = this.storageObjects.get(id);
+        if (!obj || obj.organizationId !== organizationId) return void 0;
+        return obj;
+      }
+      getStorageObjectsByResource(resourceType, resourceId, organizationId) {
+        return Array.from(this.storageObjects.values()).filter(
+          (o) => o.organizationId === organizationId && o.resourceType === resourceType && o.resourceId === resourceId && o.status !== "DELETED"
+        ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+      getStorageObjectsByOrg(organizationId) {
+        return Array.from(this.storageObjects.values()).filter((o) => o.organizationId === organizationId && o.status !== "DELETED").sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+      updateStorageObject(id, organizationId, updates) {
+        const obj = this.getStorageObjectById(id, organizationId);
+        if (!obj) return void 0;
+        const updated = {
+          ...obj,
+          ...updates,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.storageObjects.set(id, updated);
+        this.persistStorageObjectToPostgres(updated);
+        return updated;
+      }
+      deleteStorageObject(id, organizationId, hardDelete = false) {
+        const obj = this.getStorageObjectById(id, organizationId);
+        if (!obj) return false;
+        if (hardDelete) {
+          this.storageObjects.delete(id);
+          this.deleteStorageObjectFromPostgres(id, organizationId, true);
+        } else {
+          const now = (/* @__PURE__ */ new Date()).toISOString();
+          const updated = {
+            ...obj,
+            status: "DELETED",
+            deletedAt: now,
+            updatedAt: now
+          };
+          this.storageObjects.set(id, updated);
+          this.persistStorageObjectToPostgres(updated);
+        }
+        return true;
+      }
+      persistStorageObjectToPostgres(obj) {
+        const pool2 = getPostgresPool();
+        if (!pool2) {
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("PostgreSQL is required in production environment.");
+          }
+          return;
+        }
+        pool2.query(
+          `INSERT INTO storage_objects (
+        id, organization_id, object_key, original_filename, content_type, size_bytes,
+        checksum, resource_type, resource_id, uploaded_by, status, metadata,
+        created_at, updated_at, deleted_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      ON CONFLICT (id) DO UPDATE SET
+        object_key = EXCLUDED.object_key,
+        original_filename = EXCLUDED.original_filename,
+        content_type = EXCLUDED.content_type,
+        size_bytes = EXCLUDED.size_bytes,
+        checksum = EXCLUDED.checksum,
+        resource_type = EXCLUDED.resource_type,
+        resource_id = EXCLUDED.resource_id,
+        status = EXCLUDED.status,
+        metadata = EXCLUDED.metadata,
+        updated_at = EXCLUDED.updated_at,
+        deleted_at = EXCLUDED.deleted_at;`,
+          [
+            obj.id,
+            obj.organizationId,
+            obj.objectKey,
+            obj.originalFilename,
+            obj.contentType,
+            obj.sizeBytes,
+            obj.checksum || null,
+            obj.resourceType,
+            obj.resourceId,
+            obj.uploadedBy,
+            obj.status,
+            JSON.stringify(obj.metadata || {}),
+            obj.createdAt,
+            obj.updatedAt,
+            obj.deletedAt || null
+          ]
+        ).catch((err) => {
+          if (process.env.NODE_ENV === "production") {
+            console.error("[PostgreSQL Critical Error]: Failed to persist storage object", err);
+            throw err;
+          }
+          console.error("[PostgreSQL Storage Object Persist Warning]:", err.message);
+        });
+      }
+      deleteStorageObjectFromPostgres(id, organizationId, hardDelete = false) {
+        const pool2 = getPostgresPool();
+        if (!pool2) {
+          if (process.env.NODE_ENV === "production") {
+            throw new Error("PostgreSQL is required in production environment.");
+          }
+          return;
+        }
+        if (hardDelete) {
+          pool2.query("DELETE FROM storage_objects WHERE id = $1 AND organization_id = $2", [id, organizationId]).catch((err) => {
+            if (process.env.NODE_ENV === "production") throw err;
+            console.error("[PostgreSQL Delete Storage Object Warning]:", err.message);
+          });
+        } else {
+          pool2.query(
+            "UPDATE storage_objects SET status = 'DELETED', deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND organization_id = $2",
+            [id, organizationId]
+          ).catch((err) => {
+            if (process.env.NODE_ENV === "production") throw err;
+            console.error("[PostgreSQL Soft Delete Storage Object Warning]:", err.message);
+          });
+        }
+      }
+      async syncStorageObjectsFromPostgres(organizationId) {
+        const pool2 = getPostgresPool();
+        if (!pool2) return;
+        try {
+          let query = "SELECT * FROM storage_objects";
+          const params = [];
+          if (organizationId) {
+            query += " WHERE organization_id = $1";
+            params.push(organizationId);
+          }
+          const res = await pool2.query(query, params);
+          for (const row of res.rows) {
+            const obj = {
+              id: row.id,
+              organizationId: row.organization_id,
+              objectKey: row.object_key,
+              originalFilename: row.original_filename,
+              contentType: row.content_type,
+              sizeBytes: Number(row.size_bytes) || 0,
+              checksum: row.checksum || void 0,
+              resourceType: row.resource_type,
+              resourceId: row.resource_id,
+              uploadedBy: row.uploaded_by,
+              status: row.status,
+              metadata: row.metadata || {},
+              createdAt: row.created_at?.toISOString ? row.created_at.toISOString() : row.created_at || (/* @__PURE__ */ new Date()).toISOString(),
+              updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : row.updated_at || (/* @__PURE__ */ new Date()).toISOString(),
+              deletedAt: row.deleted_at?.toISOString ? row.deleted_at.toISOString() : row.deleted_at || void 0
+            };
+            this.storageObjects.set(obj.id, obj);
+          }
+        } catch (err) {
+          if (process.env.NODE_ENV === "production") throw err;
+          console.error("[PostgreSQL Storage Sync Warning]:", err.message);
+        }
+      }
+      // Reset database state (useful for automated tests)
+      resetData() {
+        this.organizations.clear();
+        this.users.clear();
+        this.academicYears.clear();
+        this.terms.clear();
+        this.gradeLevels.clear();
+        this.classrooms.clear();
+        this.subjects.clear();
+        this.courses.clear();
+        this.lessons.clear();
+        this.assignments.clear();
+        this.submissions.clear();
+        this.attendanceSessions.clear();
+        this.attendanceRecords.clear();
+        this.assessments.clear();
+        this.assessmentGrades.clear();
+        this.storageObjects.clear();
+        this.auditLogs.clear();
+        this.invitations.clear();
+        this.organizationMemberships.clear();
+        this.passwordResetTokens.clear();
+        this.emailVerificationTokens.clear();
+        this.phoneVerificationOtps.clear();
+        this.aiConversations.clear();
+        this.aiMessages.clear();
+        this.aiUsageRecords.clear();
+        this.aiDocumentChunks.clear();
+        this.teacherAssignments.clear();
+        this.studentEnrollments.clear();
+        this.parentStudentLinks.clear();
+        this.studentRecords.clear();
+        this.studentBehaviorRecords.clear();
+        this.studentLifecycleEvents.clear();
+        this.seedInitialData();
+      }
+      // Verification helpers
+      isSubjectInOrg(subjectId, orgId) {
+        const s = this.subjects.get(subjectId);
+        return Boolean(s && s.organizationId === orgId);
+      }
+      isTermInOrg(termId, orgId) {
+        const t = this.terms.get(termId);
+        return Boolean(t && t.organizationId === orgId);
+      }
+      isClassroomInOrg(classroomId, orgId) {
+        const c = this.classrooms.get(classroomId);
+        return Boolean(c && c.organizationId === orgId);
+      }
+      isGradeLevelInOrg(gradeId, orgId) {
+        const g = this.gradeLevels.get(gradeId);
+        return Boolean(g && g.organizationId === orgId);
+      }
+      isAcademicYearInOrg(yearId, orgId) {
+        const y = this.academicYears.get(yearId);
+        return Boolean(y && y.organizationId === orgId);
+      }
     };
-    this.aiConversations.set(id, updated);
-    return updated;
+    db = new PlatformDatabase();
   }
-  deleteAIConversation(id, organizationId, userId) {
-    const conv = this.getAIConversationById(id, organizationId, userId);
-    if (!conv) return false;
-    this.aiConversations.delete(id);
-    for (const [msgId, msg] of this.aiMessages.entries()) {
-      if (msg.conversationId === id) {
-        this.aiMessages.delete(msgId);
+});
+
+// server/platform/storage/s3Provider.ts
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  DeleteObjectCommand
+} from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+var S3StorageProvider;
+var init_s3Provider = __esm({
+  "server/platform/storage/s3Provider.ts"() {
+    S3StorageProvider = class {
+      constructor(config) {
+        this.bucket = config.bucket;
+        const s3ClientConfig = {
+          region: config.region || "us-east-1"
+        };
+        if (config.endpoint && config.endpoint.trim() !== "") {
+          s3ClientConfig.endpoint = config.endpoint.trim();
+        }
+        if (config.forcePathStyle !== void 0) {
+          s3ClientConfig.forcePathStyle = config.forcePathStyle;
+        }
+        if (config.accessKeyId && config.secretAccessKey) {
+          s3ClientConfig.credentials = {
+            accessKeyId: config.accessKeyId,
+            secretAccessKey: config.secretAccessKey
+          };
+        }
+        this.client = new S3Client(s3ClientConfig);
       }
-    }
-    return true;
-  }
-  // --- AI Messages ---
-  getAIMessages(conversationId, organizationId) {
-    const conv = this.getAIConversationById(conversationId, organizationId);
-    if (!conv) return [];
-    return Array.from(this.aiMessages.values()).filter((m) => m.conversationId === conversationId && m.organizationId === organizationId).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-  }
-  createAIMessage(msg) {
-    this.aiMessages.set(msg.id, msg);
-    const conv = this.aiConversations.get(msg.conversationId);
-    if (conv) {
-      conv.updatedAt = (/* @__PURE__ */ new Date()).toISOString();
-      this.aiConversations.set(conv.id, conv);
-    }
-    return msg;
-  }
-  // --- AI Usage & Quotas ---
-  recordAIUsage(usage) {
-    this.aiUsageRecords.set(usage.id, usage);
-    return usage;
-  }
-  getAIUsage(organizationId, userId) {
-    return Array.from(this.aiUsageRecords.values()).filter((u) => u.organizationId === organizationId && (!userId || u.userId === userId)).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }
-  getAIUsageSummary(organizationId) {
-    const records = this.getAIUsage(organizationId);
-    const monthlyQuotaTokens = 1e6;
-    let totalInputTokens = 0;
-    let totalOutputTokens = 0;
-    let totalCostUsd = 0;
-    const featureBreakdown = {};
-    for (const r of records) {
-      totalInputTokens += r.inputTokens || 0;
-      totalOutputTokens += r.outputTokens || 0;
-      totalCostUsd += Number(r.estimatedCost) || 0;
-      const feat = r.featureName || "other";
-      if (!featureBreakdown[feat]) {
-        featureBreakdown[feat] = { requests: 0, tokens: 0, cost: 0 };
+      async createPresignedUploadUrl(key, contentType, expiresInSeconds) {
+        const command = new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          ContentType: contentType
+        });
+        return getSignedUrl(this.client, command, {
+          expiresIn: expiresInSeconds
+        });
       }
-      featureBreakdown[feat].requests += 1;
-      featureBreakdown[feat].tokens += (r.inputTokens || 0) + (r.outputTokens || 0);
-      featureBreakdown[feat].cost += Number(r.estimatedCost) || 0;
-    }
-    const totalTokens = totalInputTokens + totalOutputTokens;
-    const usedQuotaPercentage = Math.min(100, Math.round(totalTokens / monthlyQuotaTokens * 100));
+      async createPresignedDownloadUrl(key, expiresInSeconds, dispositionFilename) {
+        const params = {
+          Bucket: this.bucket,
+          Key: key
+        };
+        if (dispositionFilename) {
+          const encodedFilename = encodeURIComponent(dispositionFilename);
+          params.ResponseContentDisposition = `attachment; filename="${dispositionFilename.replace(/"/g, "")}"; filename*=UTF-8''${encodedFilename}`;
+        }
+        const command = new GetObjectCommand(params);
+        return getSignedUrl(this.client, command, {
+          expiresIn: expiresInSeconds
+        });
+      }
+      async headObject(key) {
+        try {
+          const command = new HeadObjectCommand({
+            Bucket: this.bucket,
+            Key: key
+          });
+          const response = await this.client.send(command);
+          return {
+            exists: true,
+            sizeBytes: response.ContentLength,
+            contentType: response.ContentType,
+            etag: response.ETag,
+            lastModified: response.LastModified
+          };
+        } catch (err) {
+          if (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
+            return { exists: false };
+          }
+          throw err;
+        }
+      }
+      async deleteObject(key) {
+        try {
+          const command = new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: key
+          });
+          await this.client.send(command);
+          return true;
+        } catch (err) {
+          console.error(`[S3StorageProvider] Failed to delete object ${key}:`, err.message);
+          return false;
+        }
+      }
+    };
+  }
+});
+
+// server/platform/storage/mockProvider.ts
+var MockStorageProvider;
+var init_mockProvider = __esm({
+  "server/platform/storage/mockProvider.ts"() {
+    MockStorageProvider = class {
+      constructor(endpoint = "https://storage-mock.rtiqa.internal") {
+        this.objects = /* @__PURE__ */ new Map();
+        this.baseEndpoint = endpoint;
+      }
+      async createPresignedUploadUrl(key, contentType, expiresInSeconds) {
+        const expiresAt = Date.now() + expiresInSeconds * 1e3;
+        const url = new URL(`${this.baseEndpoint}/upload/${encodeURIComponent(key)}`);
+        url.searchParams.set("X-Amz-Expires", expiresInSeconds.toString());
+        url.searchParams.set("X-Amz-Signature", "mock_signature_test_token_123");
+        url.searchParams.set("X-Amz-Date", (/* @__PURE__ */ new Date()).toISOString());
+        url.searchParams.set("contentType", contentType);
+        url.searchParams.set("exp", expiresAt.toString());
+        this.objects.set(key, {
+          sizeBytes: 1024,
+          contentType,
+          etag: '"mock-etag-hash-987654321"',
+          lastModified: /* @__PURE__ */ new Date()
+        });
+        return url.toString();
+      }
+      async createPresignedDownloadUrl(key, expiresInSeconds, dispositionFilename) {
+        const expiresAt = Date.now() + expiresInSeconds * 1e3;
+        const url = new URL(`${this.baseEndpoint}/download/${encodeURIComponent(key)}`);
+        url.searchParams.set("X-Amz-Expires", expiresInSeconds.toString());
+        url.searchParams.set("X-Amz-Signature", "mock_download_signature_456");
+        url.searchParams.set("exp", expiresAt.toString());
+        if (dispositionFilename) {
+          url.searchParams.set("filename", dispositionFilename);
+        }
+        return url.toString();
+      }
+      async headObject(key) {
+        const obj = this.objects.get(key);
+        if (!obj) {
+          return { exists: false };
+        }
+        return {
+          exists: true,
+          sizeBytes: obj.sizeBytes,
+          contentType: obj.contentType,
+          etag: obj.etag,
+          lastModified: obj.lastModified
+        };
+      }
+      async deleteObject(key) {
+        return this.objects.delete(key);
+      }
+      // Test helper: manually simulate external upload
+      simulateUpload(key, sizeBytes, contentType) {
+        this.objects.set(key, {
+          sizeBytes,
+          contentType,
+          etag: `"mock-etag-${Date.now()}"`,
+          lastModified: /* @__PURE__ */ new Date()
+        });
+      }
+    };
+  }
+});
+
+// server/platform/storage/service.ts
+var service_exports = {};
+__export(service_exports, {
+  StorageService: () => StorageService,
+  getStorageService: () => getStorageService,
+  resetStorageServiceForTesting: () => resetStorageServiceForTesting
+});
+import crypto4 from "crypto";
+function getStorageService() {
+  if (!globalStorageService) {
+    globalStorageService = new StorageService();
+  }
+  return globalStorageService;
+}
+function resetStorageServiceForTesting(customConfig, customProvider) {
+  globalStorageService = new StorageService(customConfig, customProvider);
+  return globalStorageService;
+}
+var ALLOWED_CONTENT_TYPES, MAX_FILE_SIZES, StorageService, globalStorageService;
+var init_service = __esm({
+  "server/platform/storage/service.ts"() {
+    init_s3Provider();
+    init_mockProvider();
+    init_db();
+    ALLOWED_CONTENT_TYPES = {
+      avatar: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+      student_document: [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ],
+      assignment_attachment: [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "text/plain",
+        "application/zip"
+      ],
+      assignment_submission: [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "text/plain",
+        "application/zip"
+      ],
+      curriculum_document: [
+        "application/pdf",
+        "image/jpeg",
+        "image/png",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain",
+        "application/zip"
+      ],
+      report_card: ["application/pdf"],
+      general_asset: [
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/svg+xml",
+        "application/pdf"
+      ]
+    };
+    MAX_FILE_SIZES = {
+      avatar: 5 * 1024 * 1024,
+      // 5 MB
+      student_document: 25 * 1024 * 1024,
+      // 25 MB
+      assignment_attachment: 50 * 1024 * 1024,
+      // 50 MB
+      assignment_submission: 50 * 1024 * 1024,
+      // 50 MB
+      curriculum_document: 100 * 1024 * 1024,
+      // 100 MB
+      report_card: 20 * 1024 * 1024,
+      // 20 MB
+      general_asset: 20 * 1024 * 1024
+      // 20 MB
+    };
+    StorageService = class {
+      constructor(customConfig, customProvider) {
+        this.config = this.resolveConfig(customConfig);
+        if (process.env.NODE_ENV === "production") {
+          this.assertProductionStorageConfig(this.config);
+        }
+        if (customProvider) {
+          this.provider = customProvider;
+        } else if (this.config.provider === "memory" || process.env.NODE_ENV === "test") {
+          this.provider = new MockStorageProvider(this.config.endpoint);
+        } else {
+          this.provider = new S3StorageProvider(this.config);
+        }
+      }
+      resolveConfig(custom) {
+        const isProduction = process.env.NODE_ENV === "production";
+        const isTest = process.env.NODE_ENV === "test";
+        const providerType = custom?.provider !== void 0 ? custom.provider : process.env.STORAGE_PROVIDER || (isTest ? "memory" : isProduction ? "s3" : "memory");
+        return {
+          provider: providerType,
+          endpoint: custom?.endpoint !== void 0 ? custom.endpoint : process.env.S3_ENDPOINT,
+          region: custom?.region !== void 0 ? custom.region : process.env.S3_REGION || "us-east-1",
+          bucket: custom?.bucket !== void 0 ? custom.bucket : process.env.S3_BUCKET || "rtiqa-storage",
+          accessKeyId: custom?.accessKeyId !== void 0 ? custom.accessKeyId : process.env.S3_ACCESS_KEY_ID,
+          secretAccessKey: custom?.secretAccessKey !== void 0 ? custom.secretAccessKey : process.env.S3_SECRET_ACCESS_KEY,
+          forcePathStyle: custom?.forcePathStyle !== void 0 ? custom.forcePathStyle : process.env.S3_FORCE_PATH_STYLE === "true",
+          presignedUrlTtlSeconds: custom?.presignedUrlTtlSeconds || (process.env.STORAGE_URL_TTL ? parseInt(process.env.STORAGE_URL_TTL, 10) : 900),
+          // 15 min default
+          maxUploadSizeBytes: custom?.maxUploadSizeBytes || (process.env.STORAGE_MAX_BYTES ? parseInt(process.env.STORAGE_MAX_BYTES, 10) : 52428800)
+          // 50MB default
+        };
+      }
+      assertProductionStorageConfig(config) {
+        if (process.env.NODE_ENV !== "production") return;
+        if (!config.bucket || config.bucket.trim() === "") {
+          throw new Error(
+            "[FATAL STORAGE CONFIG ERROR]: S3_BUCKET is missing in production environment. A valid object storage bucket must be configured."
+          );
+        }
+        if (config.provider === "memory") {
+          throw new Error(
+            "[FATAL STORAGE CONFIG ERROR]: Memory storage provider is strictly forbidden in production. Production must use S3/R2/MinIO object storage."
+          );
+        }
+        if (!config.accessKeyId || !config.secretAccessKey) {
+          console.warn(
+            "[StorageService] Warning: S3_ACCESS_KEY_ID or S3_SECRET_ACCESS_KEY not provided; assuming cloud container IAM role authentication."
+          );
+        }
+      }
+      /**
+       * Sanitizes a client-provided filename, stripping directory traversal and malicious characters.
+       */
+      sanitizeFilename(filename) {
+        if (!filename || typeof filename !== "string") return "file.bin";
+        let cleaned = filename.replace(/[/\\]/g, "_").replace(/\.\./g, "_").trim();
+        cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, "");
+        if (cleaned.length > 128) {
+          const extIdx = cleaned.lastIndexOf(".");
+          if (extIdx !== -1 && extIdx > cleaned.length - 10) {
+            const ext = cleaned.substring(extIdx);
+            cleaned = cleaned.substring(0, 120) + ext;
+          } else {
+            cleaned = cleaned.substring(0, 128);
+          }
+        }
+        return cleaned || "file.bin";
+      }
+      /**
+       * Builds an immutable, tenant-scoped object key.
+       * Format: {organizationId}/{resourceType}/{resourceId}/{safeObjectId}_{sanitizedFilename}
+       */
+      generateObjectKey(organizationId, resourceType, resourceId, storageObjectId, filename) {
+        const safeOrg = organizationId.replace(/[^a-zA-Z0-9_-]/g, "_");
+        const safeType = resourceType.replace(/[^a-zA-Z0-9_-]/g, "_");
+        const safeResId = resourceId.replace(/[^a-zA-Z0-9_-]/g, "_");
+        const safeFilename = this.sanitizeFilename(filename);
+        return `${safeOrg}/${safeType}/${safeResId}/${storageObjectId}_${safeFilename}`;
+      }
+      /**
+       * Validates content type against allowed whitelist for the resource type.
+       */
+      validateContentType(resourceType, contentType) {
+        const allowed = ALLOWED_CONTENT_TYPES[resourceType] || [];
+        const normalized = (contentType || "").trim().toLowerCase().split(";")[0];
+        return allowed.includes(normalized);
+      }
+      /**
+       * Validates file size against limits for the resource type.
+       */
+      validateFileSize(resourceType, sizeBytes) {
+        const maxSizeBytes = MAX_FILE_SIZES[resourceType] || this.config.maxUploadSizeBytes;
+        return {
+          isValid: sizeBytes > 0 && sizeBytes <= maxSizeBytes,
+          maxSizeBytes
+        };
+      }
+      /**
+       * Step 1: Initiates secure presigned upload flow.
+       * Generates a unique object key, inserts a PENDING metadata record, and returns a short-lived presigned URL.
+       */
+      async createUploadUrl(options) {
+        const {
+          organizationId,
+          resourceType,
+          resourceId,
+          filename,
+          contentType,
+          sizeBytes,
+          uploadedBy,
+          customMetadata
+        } = options;
+        if (!organizationId) {
+          throw new Error("TENANT_REQUIRED: Organization context is mandatory.");
+        }
+        if (!this.validateContentType(resourceType, contentType)) {
+          throw new Error(
+            `INVALID_CONTENT_TYPE: Content type '${contentType}' is not permitted for resource '${resourceType}'.`
+          );
+        }
+        const sizeCheck = this.validateFileSize(resourceType, sizeBytes);
+        if (!sizeCheck.isValid) {
+          throw new Error(
+            `FILE_SIZE_EXCEEDED: File size of ${sizeBytes} bytes exceeds maximum allowed limit of ${sizeCheck.maxSizeBytes} bytes.`
+          );
+        }
+        const storageObjectId = `obj_${Date.now()}_${crypto4.randomBytes(8).toString("hex")}`;
+        const sanitizedFilename = this.sanitizeFilename(filename);
+        const objectKey = this.generateObjectKey(
+          organizationId,
+          resourceType,
+          resourceId,
+          storageObjectId,
+          sanitizedFilename
+        );
+        const uploadUrl = await this.provider.createPresignedUploadUrl(
+          objectKey,
+          contentType,
+          this.config.presignedUrlTtlSeconds
+        );
+        const expiresAt = new Date(
+          Date.now() + this.config.presignedUrlTtlSeconds * 1e3
+        ).toISOString();
+        db.createStorageObject({
+          id: storageObjectId,
+          organizationId,
+          objectKey,
+          originalFilename: sanitizedFilename,
+          contentType,
+          sizeBytes,
+          resourceType,
+          resourceId,
+          uploadedBy,
+          status: "PENDING",
+          metadata: customMetadata || {}
+        });
+        return {
+          uploadUrl,
+          storageObjectId,
+          objectKey,
+          expiresAt,
+          maxSizeBytes: sizeCheck.maxSizeBytes,
+          contentType
+        };
+      }
+      /**
+       * Step 2: Finalizes upload after client finishes PUT request to S3.
+       * Verifies object presence in storage provider, updates status to UPLOADED.
+       */
+      async finalizeUpload(storageObjectId, organizationId, currentUser) {
+        const record = db.getStorageObjectById(storageObjectId, organizationId);
+        if (!record) {
+          throw new Error("OBJECT_NOT_FOUND: Storage object metadata does not exist or tenant mismatch.");
+        }
+        if (record.uploadedBy !== currentUser.id && currentUser.role !== "SUPER_ADMIN" && currentUser.role !== "ORG_ADMIN" && currentUser.role !== "TEACHER") {
+          throw new Error("UNAUTHORIZED_ACTION: Insufficient permission to finalize this object.");
+        }
+        const headResult = await this.provider.headObject(record.objectKey);
+        if (!headResult.exists) {
+          db.updateStorageObject(storageObjectId, organizationId, { status: "FAILED" });
+          throw new Error("UPLOAD_VERIFICATION_FAILED: Object was not found in storage bucket.");
+        }
+        const updated = db.updateStorageObject(storageObjectId, organizationId, {
+          status: "UPLOADED",
+          sizeBytes: headResult.sizeBytes || record.sizeBytes,
+          checksum: headResult.etag ? headResult.etag.replace(/"/g, "") : record.checksum
+        });
+        if (!updated) {
+          throw new Error("FAILED_TO_UPDATE_METADATA");
+        }
+        return updated;
+      }
+      /**
+       * Generates a secure, short-lived presigned download URL for an authorized tenant object.
+       */
+      async createDownloadUrl(options) {
+        const { organizationId, storageObjectId, dispositionFilename, expiresInSeconds } = options;
+        const record = db.getStorageObjectById(storageObjectId, organizationId);
+        if (!record) {
+          throw new Error("OBJECT_NOT_FOUND: Requested storage object does not exist or tenant mismatch.");
+        }
+        if (record.status === "DELETED") {
+          throw new Error("OBJECT_DELETED: Requested storage object has been deleted.");
+        }
+        const ttl = expiresInSeconds || this.config.presignedUrlTtlSeconds;
+        const filenameToUse = dispositionFilename || record.originalFilename;
+        const downloadUrl = await this.provider.createPresignedDownloadUrl(
+          record.objectKey,
+          ttl,
+          filenameToUse
+        );
+        const expiresAt = new Date(Date.now() + ttl * 1e3).toISOString();
+        return {
+          downloadUrl,
+          storageObjectId: record.id,
+          objectKey: record.objectKey,
+          originalFilename: record.originalFilename,
+          contentType: record.contentType,
+          sizeBytes: record.sizeBytes,
+          expiresAt
+        };
+      }
+      /**
+       * Deletes an object: removes from S3 and marks metadata as DELETED.
+       */
+      async deleteObject(storageObjectId, organizationId, currentUser) {
+        const record = db.getStorageObjectById(storageObjectId, organizationId);
+        if (!record) {
+          return false;
+        }
+        if (record.uploadedBy !== currentUser.id && currentUser.role !== "SUPER_ADMIN" && currentUser.role !== "ORG_ADMIN" && currentUser.role !== "TEACHER") {
+          throw new Error("UNAUTHORIZED_ACTION: Insufficient permission to delete this object.");
+        }
+        await this.provider.deleteObject(record.objectKey);
+        return db.deleteStorageObject(storageObjectId, organizationId);
+      }
+      /**
+       * Retrieves metadata for a storage object.
+       */
+      getMetadata(storageObjectId, organizationId) {
+        return db.getStorageObjectById(storageObjectId, organizationId);
+      }
+      /**
+       * Lists storage objects associated with a specific business resource.
+       */
+      getObjectsForResource(resourceType, resourceId, organizationId) {
+        return db.getStorageObjectsByResource(resourceType, resourceId, organizationId);
+      }
+      /**
+       * Safe health check for Object Storage infrastructure without secret exposure.
+       */
+      getHealth() {
+        const isMock = this.provider instanceof MockStorageProvider;
+        const credsConfigured = Boolean(this.config.accessKeyId && this.config.secretAccessKey);
+        return {
+          provider: this.config.provider,
+          bucket: this.config.bucket,
+          region: this.config.region || "us-east-1",
+          endpointConfigured: Boolean(this.config.endpoint && this.config.endpoint.trim() !== ""),
+          forcePathStyle: Boolean(this.config.forcePathStyle),
+          credentialsConfigured: credsConfigured,
+          status: isMock ? "MOCK" : this.config.bucket ? "READY" : "UNCONFIGURED"
+        };
+      }
+    };
+    globalStorageService = null;
+  }
+});
+
+// src/db/migrate.ts
+var migrate_exports = {};
+__export(migrate_exports, {
+  getMigrationStatus: () => getMigrationStatus,
+  runMigrations: () => runMigrations
+});
+import fs from "fs";
+import path from "path";
+async function runMigrations() {
+  const status = await checkPostgresConnection();
+  if (!status.connected) {
     return {
-      organizationId,
-      totalTokens,
-      totalInputTokens,
-      totalOutputTokens,
-      totalCostUsd: Number(totalCostUsd.toFixed(6)),
-      monthlyQuotaTokens,
-      usedQuotaPercentage,
-      requestsCount: records.length,
-      featureBreakdown
+      success: false,
+      message: `Cannot run migrations: PostgreSQL is not connected (${status.error})`
     };
   }
-  // --- AI Document Chunks (RAG Foundation) ---
-  createAIDocumentChunk(chunk) {
-    this.aiDocumentChunks.set(chunk.id, chunk);
-    return chunk;
+  const pool2 = getPostgresPool();
+  if (!pool2) {
+    return { success: false, message: "Pool not available" };
   }
-  getAIDocumentChunks(organizationId, documentId) {
-    return Array.from(this.aiDocumentChunks.values()).filter((c) => c.organizationId === organizationId && (!documentId || c.documentId === documentId)).sort((a, b) => a.chunkIndex - b.chunkIndex);
+  const client = await pool2.connect();
+  try {
+    const schemaPath = path.join(process.cwd(), "src", "db", "schema.sql");
+    if (!fs.existsSync(schemaPath)) {
+      throw new Error(`Schema file not found at ${schemaPath}`);
+    }
+    const schemaSql = fs.readFileSync(schemaPath, "utf8");
+    await client.query("BEGIN");
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS _schema_migrations (
+        id SERIAL PRIMARY KEY,
+        version VARCHAR(64) UNIQUE NOT NULL,
+        executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+      );
+    `);
+    await client.query(schemaSql);
+    await client.query(`
+      INSERT INTO _schema_migrations (version)
+      VALUES ('001_initial_schema_and_rls')
+      ON CONFLICT (version) DO UPDATE SET executed_at = CURRENT_TIMESTAMP;
+    `);
+    await client.query("COMMIT");
+    const tableRes = await client.query(`
+      SELECT COUNT(*) as count 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
+    `);
+    const count = parseInt(tableRes.rows[0]?.count || "0", 10);
+    return {
+      success: true,
+      message: `PostgreSQL schema and RLS policies applied successfully. (${count} tables in public schema)`,
+      tablesCount: count
+    };
+  } catch (err) {
+    await client.query("ROLLBACK").catch(() => {
+    });
+    return {
+      success: false,
+      message: `Migration failed: ${err.message}`
+    };
+  } finally {
+    client.release();
   }
-  // Reset database state (useful for automated tests)
-  resetData() {
-    this.organizations.clear();
-    this.users.clear();
-    this.academicYears.clear();
-    this.terms.clear();
-    this.gradeLevels.clear();
-    this.classrooms.clear();
-    this.subjects.clear();
-    this.courses.clear();
-    this.lessons.clear();
-    this.assignments.clear();
-    this.submissions.clear();
-    this.attendanceRecords.clear();
-    this.auditLogs.clear();
-    this.invitations.clear();
-    this.organizationMemberships.clear();
-    this.passwordResetTokens.clear();
-    this.emailVerificationTokens.clear();
-    this.phoneVerificationOtps.clear();
-    this.aiConversations.clear();
-    this.aiMessages.clear();
-    this.aiUsageRecords.clear();
-    this.aiDocumentChunks.clear();
-    this.teacherAssignments.clear();
-    this.studentEnrollments.clear();
-    this.parentStudentLinks.clear();
-    this.studentRecords.clear();
-    this.studentBehaviorRecords.clear();
-    this.studentLifecycleEvents.clear();
-    this.seedInitialData();
+}
+async function getMigrationStatus() {
+  const status = await checkPostgresConnection();
+  if (!status.connected) {
+    return { migrated: false, error: "Database not connected" };
   }
-  // Verification helpers
-  isSubjectInOrg(subjectId, orgId) {
-    const s = this.subjects.get(subjectId);
-    return Boolean(s && s.organizationId === orgId);
+  const pool2 = getPostgresPool();
+  if (!pool2) {
+    return { migrated: false, error: "PostgreSQL connection pool unavailable" };
   }
-  isTermInOrg(termId, orgId) {
-    const t = this.terms.get(termId);
-    return Boolean(t && t.organizationId === orgId);
+  try {
+    const migRes = await pool2.query(
+      `SELECT version FROM _schema_migrations ORDER BY id DESC LIMIT 1;`
+    );
+    const countRes = await pool2.query(
+      `SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`
+    );
+    const latestVersion = migRes.rows[0]?.version;
+    const count = parseInt(countRes.rows[0]?.count || "0", 10);
+    return {
+      migrated: Boolean(latestVersion),
+      version: latestVersion,
+      tablesCount: count
+    };
+  } catch (err) {
+    return {
+      migrated: false,
+      error: err.message
+    };
   }
-  isClassroomInOrg(classroomId, orgId) {
-    const c = this.classrooms.get(classroomId);
-    return Boolean(c && c.organizationId === orgId);
+}
+var init_migrate = __esm({
+  "src/db/migrate.ts"() {
+    init_postgres();
+    if (process.argv[1] && process.argv[1].endsWith("migrate.ts")) {
+      runMigrations().then((res) => {
+        console.log("[Migration Result]:", res);
+        process.exit(res.success ? 0 : 1);
+      });
+    }
   }
-  isGradeLevelInOrg(gradeId, orgId) {
-    const g = this.gradeLevels.get(gradeId);
-    return Boolean(g && g.organizationId === orgId);
-  }
-  isAcademicYearInOrg(yearId, orgId) {
-    const y = this.academicYears.get(yearId);
-    return Boolean(y && y.organizationId === orgId);
-  }
-};
-var db = new PlatformDatabase();
+});
+
+// server.ts
+import express14 from "express";
+import path2 from "path";
+import { fileURLToPath } from "url";
+
+// server/platform/index.ts
+import express13 from "express";
 
 // server/platform/auth.ts
+init_db();
+import crypto2 from "crypto";
 var devRuntimeSecret = null;
 function assertProductionAuthSecret() {
   const isProduction = process.env.NODE_ENV === "production";
@@ -2479,8 +4584,13 @@ var requireRoles = (allowedRoles) => {
   };
 };
 
+// server/platform/index.ts
+init_db();
+
 // server/platform/routes/authRoutes.ts
+init_db();
 import express from "express";
+init_security();
 
 // server/platform/smsService.ts
 function normalizePhoneNumber(rawPhone) {
@@ -4144,6 +6254,7 @@ authRouter.post("/join-school", acceptInviteLimiter, (req, res) => {
 });
 
 // server/platform/routes/academicRoutes.ts
+init_db();
 import express2 from "express";
 var academicRouter = express2.Router();
 academicRouter.use(requireAuth);
@@ -4748,7 +6859,9 @@ academicRouter.delete("/parent-links/:id", requireRoles(["ORG_ADMIN", "SUPER_ADM
 });
 
 // server/platform/routes/userRoutes.ts
+init_db();
 import express3 from "express";
+init_security();
 var userRouter = express3.Router();
 userRouter.use(requireAuth);
 var EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -5072,6 +7185,7 @@ userRouter.delete("/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, res)
 });
 
 // server/platform/routes/courseRoutes.ts
+init_db();
 import express4 from "express";
 var courseRouter = express4.Router();
 courseRouter.use(requireAuth);
@@ -5216,6 +7330,7 @@ courseRouter.delete("/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (req, re
 });
 
 // server/platform/routes/lessonRoutes.ts
+init_db();
 import express5 from "express";
 var lessonRouter = express5.Router();
 lessonRouter.use(requireAuth);
@@ -5307,6 +7422,7 @@ lessonRouter.delete("/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]
 });
 
 // server/platform/routes/assignmentRoutes.ts
+init_db();
 import express6 from "express";
 var assignmentRouter = express6.Router();
 assignmentRouter.use(requireAuth);
@@ -5440,26 +7556,235 @@ assignmentRouter.put("/submissions/:submissionId/grade", requireRoles(["ORG_ADMI
 });
 
 // server/platform/routes/attendanceRoutes.ts
+init_db();
 import express7 from "express";
 var attendanceRouter = express7.Router();
 attendanceRouter.use(requireAuth);
+attendanceRouter.get("/sessions", (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const classroomId = req.query.classroomId;
+    const courseId = req.query.courseId;
+    const date = req.query.date;
+    const status = req.query.status;
+    let sessions = db.getAttendanceSessions(orgId, { classroomId, courseId, date, status });
+    if (req.user.role === "TEACHER") {
+      const myAssignments = db.getTeacherAssignments(orgId, { teacherId: req.user.id });
+      const allowedCourseIds = new Set(myAssignments.map((a) => a.courseId).filter(Boolean));
+      const allowedClassroomIds = new Set(myAssignments.map((a) => a.classroomId).filter(Boolean));
+      sessions = sessions.filter(
+        (s) => s.openedBy === req.user.id || s.courseId && allowedCourseIds.has(s.courseId) || s.classroomId && allowedClassroomIds.has(s.classroomId)
+      );
+    }
+    res.json({ success: true, data: sessions });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+attendanceRouter.post("/sessions", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const { classroomId, courseId, date, periodNumber, title, notes } = req.body;
+    if (!classroomId) {
+      return res.status(400).json({ success: false, error: "MISSING_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u0645\u0637\u0644\u0648\u0628\u0629 \u0644\u0641\u062A\u062D \u062C\u0644\u0633\u0629 \u0627\u0644\u062A\u062D\u0636\u064A\u0631" });
+    }
+    if (!db.isClassroomInOrg(classroomId, orgId)) {
+      return res.status(400).json({ success: false, error: "INVALID_CLASSROOM", message: "\u0627\u0644\u0634\u0639\u0628\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D\u0629" });
+    }
+    if (courseId) {
+      const course = db.getCourseById(courseId, orgId);
+      if (!course) {
+        return res.status(400).json({ success: false, error: "INVALID_COURSE", message: "\u0627\u0644\u0645\u0642\u0631\u0631 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u063A\u064A\u0631 \u0635\u0627\u0644\u062D" });
+      }
+      if (req.user.role === "TEACHER" && course.teacherId !== req.user.id) {
+        const assignments = db.getTeacherAssignments(orgId, { teacherId: req.user.id, courseId });
+        if (assignments.length === 0) {
+          return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0644\u0643 \u0628\u0641\u062A\u062D \u062C\u0644\u0633\u0629 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0642\u0631\u0631" });
+        }
+      }
+    }
+    const sessionDate = date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
+    const classroom = db.getClassroomById(classroomId, orgId);
+    const students = db.getStudentsByClassroom(classroomId, orgId);
+    const newSession = db.createAttendanceSession({
+      organizationId: orgId,
+      classroomId,
+      classroomName: classroom?.name,
+      courseId,
+      date: sessionDate,
+      periodNumber: periodNumber ? Number(periodNumber) : void 0,
+      title: title || `\u062A\u062D\u0636\u064A\u0631 ${classroom?.name || ""} - ${sessionDate}`,
+      status: "OPEN",
+      openedBy: req.user.id,
+      notes,
+      totalStudents: students.length,
+      presentCount: 0,
+      absentCount: 0,
+      lateCount: 0,
+      excusedCount: 0
+    });
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "CREATE_ATTENDANCE_SESSION",
+      "AttendanceSession",
+      newSession.id,
+      { classroomId, courseId, date: sessionDate }
+    );
+    res.status(201).json({ success: true, data: newSession });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+attendanceRouter.get("/sessions/:id", (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const session = db.getAttendanceSessionById(req.params.id, orgId);
+    if (!session) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u062C\u0644\u0633\u0629 \u0627\u0644\u062A\u062D\u0636\u064A\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    if (req.user.role === "TEACHER") {
+      const myAssignments = db.getTeacherAssignments(orgId, { teacherId: req.user.id });
+      const allowedCourseIds = new Set(myAssignments.map((a) => a.courseId).filter(Boolean));
+      const allowedClassroomIds = new Set(myAssignments.map((a) => a.classroomId).filter(Boolean));
+      const isAllowed = session.openedBy === req.user.id || session.courseId && allowedCourseIds.has(session.courseId) || session.classroomId && allowedClassroomIds.has(session.classroomId);
+      if (!isAllowed) {
+        return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0627\u0637\u0644\u0627\u0639 \u0639\u0644\u0649 \u0647\u0630\u0647 \u0627\u0644\u062C\u0644\u0633\u0629" });
+      }
+    }
+    const students = session.classroomId ? db.getStudentsByClassroom(session.classroomId, orgId) : [];
+    const records = db.getAttendanceRecords(orgId, { sessionId: session.id });
+    const recordsByStudent = new Map(records.map((r) => [r.studentId, r]));
+    const studentRoster = students.map((std) => {
+      const rec = recordsByStudent.get(std.id);
+      return {
+        studentId: std.id,
+        studentName: std.fullName,
+        studentIdNumber: std.studentIdNumber,
+        status: rec ? rec.status : "PENDING",
+        notes: rec?.notes || "",
+        recordId: rec?.id
+      };
+    });
+    res.json({
+      success: true,
+      data: {
+        session,
+        roster: studentRoster,
+        records
+      }
+    });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+attendanceRouter.post("/sessions/:id/roll-call", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const session = db.getAttendanceSessionById(req.params.id, orgId);
+    if (!session) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u062C\u0644\u0633\u0629 \u0627\u0644\u062A\u062D\u0636\u064A\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    if (req.user.role === "TEACHER" && session.openedBy !== req.user.id) {
+      const assignments = db.getTeacherAssignments(orgId, { teacherId: req.user.id });
+      const allowed = assignments.some(
+        (a) => session.courseId && a.courseId === session.courseId || session.classroomId && a.classroomId === session.classroomId
+      );
+      if (!allowed) {
+        return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u062A\u0633\u062C\u064A\u0644 \u0647\u0630\u0627 \u0627\u0644\u062A\u062D\u0636\u064A\u0631" });
+      }
+    }
+    const { records } = req.body;
+    if (!Array.isArray(records) || records.length === 0) {
+      return res.status(400).json({ success: false, error: "EMPTY_RECORDS", message: "\u0642\u0627\u0626\u0645\u0629 \u0631\u0635\u062F \u0627\u0644\u062D\u0636\u0648\u0631 \u0641\u0627\u0631\u063A\u0629" });
+    }
+    const preparedRecords = records.map((r) => ({
+      organizationId: orgId,
+      sessionId: session.id,
+      courseId: session.courseId,
+      classroomId: session.classroomId,
+      studentId: r.studentId,
+      recordedBy: req.user.id,
+      date: session.date,
+      status: r.status || "PRESENT",
+      notes: r.notes ? String(r.notes).trim() : void 0
+    }));
+    const saved = db.recordAttendanceBatch(orgId, preparedRecords, session.id);
+    db.updateAttendanceSession(session.id, orgId, { status: "COMPLETED" });
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "RECORD_SESSION_ROLL_CALL",
+      "AttendanceSession",
+      session.id,
+      { count: saved.length, date: session.date }
+    );
+    res.json({ success: true, data: saved, message: "\u062A\u0645 \u0631\u0635\u062F \u0648\u062A\u062D\u062F\u064A\u062B \u0633\u062C\u0644 \u0627\u0644\u062D\u0636\u0648\u0631 \u0628\u0646\u062C\u0627\u062D" });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+attendanceRouter.delete("/sessions/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const session = db.getAttendanceSessionById(req.params.id, orgId);
+    if (!session) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u062C\u0644\u0633\u0629 \u0627\u0644\u062A\u062D\u0636\u064A\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+    }
+    if (req.user.role === "TEACHER" && session.openedBy !== req.user.id) {
+      return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u0644\u0627 \u064A\u0645\u0643\u0646 \u062D\u0630\u0641 \u062C\u0644\u0633\u0629 \u0623\u0646\u0634\u0623\u0647\u0627 \u0645\u0639\u0644\u0645 \u0622\u062E\u0631" });
+    }
+    db.deleteAttendanceSession(session.id, orgId);
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "DELETE_ATTENDANCE_SESSION",
+      "AttendanceSession",
+      session.id
+    );
+    res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u062C\u0644\u0633\u0629 \u0627\u0644\u062A\u062D\u0636\u064A\u0631 \u0628\u0646\u062C\u0627\u062D" });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
 attendanceRouter.get("/", (req, res) => {
   try {
+    const orgId = req.organization.id;
     const courseId = req.query.courseId;
     const classroomId = req.query.classroomId;
-    const date = req.query.date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
-    let records = db.getAttendance(req.organization.id, courseId, classroomId, date);
+    const date = req.query.date;
+    const studentIdParam = req.query.studentId;
+    let records = db.getAttendanceRecords(orgId, {
+      courseId,
+      classroomId,
+      date,
+      studentId: studentIdParam
+    });
     if (req.user.role === "STUDENT") {
       records = records.filter((r) => r.studentId === req.user.id);
+    } else if (req.user.role === "PARENT") {
+      const links = db.getParentStudentLinks(orgId, { parentId: req.user.id });
+      const childIds = new Set(links.map((l) => l.studentId));
+      records = records.filter((r) => childIds.has(r.studentId));
+    } else if (req.user.role === "TEACHER") {
+      const myAssignments = db.getTeacherAssignments(orgId, { teacherId: req.user.id });
+      const allowedCourseIds = new Set(myAssignments.map((a) => a.courseId).filter(Boolean));
+      const allowedClassroomIds = new Set(myAssignments.map((a) => a.classroomId).filter(Boolean));
+      records = records.filter(
+        (r) => r.recordedBy === req.user.id || r.courseId && allowedCourseIds.has(r.courseId) || r.classroomId && allowedClassroomIds.has(r.classroomId)
+      );
     }
-    res.json({ success: true, data: records, date });
+    res.json({ success: true, data: records });
   } catch {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
 attendanceRouter.post("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
   try {
-    const { records, courseId, classroomId, date } = req.body;
+    const { records, courseId, classroomId, date, sessionId } = req.body;
     if (!Array.isArray(records) || records.length === 0) {
       return res.status(400).json({ success: false, error: "NO_RECORDS", message: "\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062D\u0636\u0648\u0631 \u0641\u0627\u0631\u063A\u0629" });
     }
@@ -5483,15 +7808,16 @@ attendanceRouter.post("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"])
     }
     const prepared = records.map((r) => ({
       organizationId: orgId,
+      sessionId: sessionId || void 0,
       courseId: courseId || void 0,
       classroomId: classroomId || "default",
       studentId: r.studentId,
       recordedBy: req.user.id,
       date: effectiveDate,
       status: r.status || "PRESENT",
-      notes: r.notes ? String(r.notes).trim() : ""
+      notes: r.notes ? String(r.notes).trim() : void 0
     }));
-    const saved = db.recordAttendanceBatch(orgId, prepared);
+    const saved = db.recordAttendanceBatch(orgId, prepared, sessionId);
     db.logAction(
       orgId,
       req.user.id,
@@ -5506,25 +7832,49 @@ attendanceRouter.post("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"])
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
+attendanceRouter.get("/student/:studentId", (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const targetStudentId = req.params.studentId;
+    if (req.user.role === "STUDENT" && req.user.id !== targetStudentId) {
+      return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0627\u0637\u0644\u0627\u0639 \u0639\u0644\u0649 \u0633\u062C\u0644 \u0637\u0627\u0644\u0628 \u0622\u062E\u0631" });
+    }
+    if (req.user.role === "PARENT") {
+      const links = db.getParentStudentLinks(orgId, { parentId: req.user.id });
+      const hasAccess = links.some((l) => l.studentId === targetStudentId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0627\u0637\u0644\u0627\u0639 \u0639\u0644\u0649 \u0633\u062C\u0644 \u0647\u0630\u0627 \u0627\u0644\u0637\u0627\u0644\u0628" });
+      }
+    }
+    const summary = db.getAttendanceSummaryForStudent(targetStudentId, orgId);
+    res.json({ success: true, data: summary });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
 attendanceRouter.get("/summary", (req, res) => {
   try {
+    const orgId = req.organization.id;
     const studentId = req.user.role === "STUDENT" ? req.user.id : req.query.studentId;
-    const all = db.getAttendance(req.organization.id);
-    const relevant = studentId ? all.filter((r) => r.studentId === studentId) : all;
-    const total = relevant.length;
-    const present = relevant.filter((r) => r.status === "PRESENT").length;
-    const late = relevant.filter((r) => r.status === "LATE").length;
-    const absent = relevant.filter((r) => r.status === "ABSENT").length;
-    const excused = relevant.filter((r) => r.status === "EXCUSED").length;
-    const rate = total > 0 ? Math.round((present + late * 0.8) / total * 100) : 100;
+    if (studentId) {
+      const summary = db.getAttendanceSummaryForStudent(studentId, orgId);
+      return res.json({ success: true, data: summary });
+    }
+    const all = db.getAttendanceRecords(orgId);
+    const total = all.length;
+    const present = all.filter((r) => r.status === "PRESENT").length;
+    const late = all.filter((r) => r.status === "LATE").length;
+    const absent = all.filter((r) => r.status === "ABSENT").length;
+    const excused = all.filter((r) => r.status === "EXCUSED").length;
+    const rate = total > 0 ? Math.round((present + late * 0.8 + excused) / total * 100) : 100;
     res.json({
       success: true,
       data: {
         totalDays: total,
-        present,
-        late,
-        absent,
-        excused,
+        presentDays: present,
+        lateDays: late,
+        absentDays: absent,
+        excusedDays: excused,
         attendanceRate: rate
       }
     });
@@ -5534,58 +7884,239 @@ attendanceRouter.get("/summary", (req, res) => {
 });
 
 // server/platform/routes/gradebookRoutes.ts
+init_db();
 import express8 from "express";
 var gradebookRouter = express8.Router();
 gradebookRouter.use(requireAuth);
-gradebookRouter.get("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+gradebookRouter.get("/assessments", (req, res) => {
   try {
+    const orgId = req.organization.id;
     const courseId = req.query.courseId;
-    if (!courseId) {
-      return res.status(400).json({ success: false, error: "COURSE_ID_REQUIRED", message: "\u0645\u0639\u0631\u0641 \u0627\u0644\u0645\u0642\u0631\u0631 \u0645\u0637\u0644\u0648\u0628" });
+    const classroomId = req.query.classroomId;
+    const termId = req.query.termId;
+    const category = req.query.category;
+    const status = req.query.status;
+    let assessments = db.getAssessments(orgId, { courseId, classroomId, termId, category, status });
+    if (req.user.role === "TEACHER") {
+      const myAssignments = db.getTeacherAssignments(orgId, { teacherId: req.user.id });
+      const allowedCourseIds = new Set(myAssignments.map((a) => a.courseId).filter(Boolean));
+      assessments = assessments.filter(
+        (a) => a.createdBy === req.user.id || a.courseId && allowedCourseIds.has(a.courseId)
+      );
+    } else if (req.user.role === "STUDENT") {
+      const student = db.getUserById(req.user.id, orgId);
+      if (student?.classroomId) {
+        assessments = assessments.filter(
+          (a) => (!a.classroomId || a.classroomId === student.classroomId) && a.status !== "DRAFT"
+        );
+      }
     }
-    const course = db.getCourseById(courseId, req.organization.id);
-    if (!course) return res.status(404).json({ success: false, error: "COURSE_NOT_FOUND", message: "\u0627\u0644\u0645\u0642\u0631\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    res.json({ success: true, data: assessments });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+gradebookRouter.post("/assessments", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const { title, courseId, subjectId, classroomId, termId, category, maxScore, weightPercentage, dueDate, description, status } = req.body;
+    if (!title || !courseId) {
+      return res.status(400).json({ success: false, error: "MISSING_FIELDS", message: "\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u062A\u0642\u064A\u064A\u0645 \u0648\u0645\u0639\u0631\u0641 \u0627\u0644\u0645\u0642\u0631\u0631 \u0645\u0637\u0644\u0648\u0628\u0627\u0646" });
+    }
+    const course = db.getCourseById(courseId, orgId);
+    if (!course) {
+      return res.status(404).json({ success: false, error: "COURSE_NOT_FOUND", message: "\u0627\u0644\u0645\u0642\u0631\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F \u0641\u064A \u0627\u0644\u0645\u0624\u0633\u0633\u0629" });
+    }
     if (req.user.role === "TEACHER" && course.teacherId !== req.user.id) {
-      return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u0647\u0630\u0627 \u0627\u0644\u0645\u0642\u0631\u0631 \u0644\u064A\u0633 \u0645\u0633\u0646\u062F\u0627\u064B \u0625\u0644\u064A\u0643" });
+      const assignments = db.getTeacherAssignments(orgId, { teacherId: req.user.id, courseId });
+      if (assignments.length === 0) {
+        return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0625\u0646\u0634\u0627\u0621 \u062A\u0642\u064A\u064A\u0645 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0642\u0631\u0631" });
+      }
     }
-    const assignments = db.getAssignmentsByCourse(courseId, req.organization.id);
-    const students = db.getUsersByOrg(req.organization.id, "STUDENT").filter((s) => s.classroomId === course.classroomId);
-    const matrix = students.map((student) => {
-      const studentSubs = db.getSubmissionsByStudent(student.id, req.organization.id);
-      const scores = {};
-      let totalEarned = 0;
-      let totalMax = 0;
-      assignments.forEach((asg) => {
-        const sub = studentSubs.find((s) => s.assignmentId === asg.id);
-        scores[asg.id] = {
-          score: sub?.score,
-          maxScore: asg.maxScore,
-          feedback: sub?.teacherFeedback,
-          submittedAt: sub?.submittedAt
-        };
-        if (sub?.score !== void 0) {
-          totalEarned += sub.score;
-          totalMax += asg.maxScore;
-        }
-      });
-      const averagePercent = totalMax > 0 ? Math.round(totalEarned / totalMax * 100) : 0;
+    const assessment = db.createAssessment({
+      organizationId: orgId,
+      title: String(title).trim(),
+      courseId,
+      subjectId: subjectId || course.subjectId,
+      classroomId: classroomId || course.classroomId,
+      termId: termId || course.termId,
+      category: category || "HOMEWORK",
+      maxScore: Number(maxScore) || 100,
+      weightPercentage: weightPercentage !== void 0 ? Number(weightPercentage) : void 0,
+      dueDate: dueDate || void 0,
+      description: description ? String(description).trim() : void 0,
+      status: status || "PUBLISHED",
+      createdBy: req.user.id
+    });
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "CREATE_ASSESSMENT",
+      "Assessment",
+      assessment.id,
+      { title: assessment.title, courseId, maxScore: assessment.maxScore }
+    );
+    res.status(201).json({ success: true, data: assessment });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+gradebookRouter.get("/assessments/:id", (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const assessment = db.getAssessmentById(req.params.id, orgId);
+    if (!assessment) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u062A\u0642\u064A\u064A\u0645 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    res.json({ success: true, data: assessment });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+gradebookRouter.patch("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const assessment = db.getAssessmentById(req.params.id, orgId);
+    if (!assessment) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u062A\u0642\u064A\u064A\u0645 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    if (req.user.role === "TEACHER" && assessment.createdBy !== req.user.id) {
+      const assignments = db.getTeacherAssignments(orgId, { teacherId: req.user.id, courseId: assessment.courseId });
+      if (assignments.length === 0) {
+        return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u062A\u0639\u062F\u064A\u0644 \u0647\u0630\u0627 \u0627\u0644\u062A\u0642\u064A\u064A\u0645" });
+      }
+    }
+    const updated = db.updateAssessment(req.params.id, orgId, req.body);
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "UPDATE_ASSESSMENT",
+      "Assessment",
+      assessment.id,
+      { updates: req.body }
+    );
+    res.json({ success: true, data: updated });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+gradebookRouter.delete("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const assessment = db.getAssessmentById(req.params.id, orgId);
+    if (!assessment) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u062A\u0642\u064A\u064A\u0645 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    if (req.user.role === "TEACHER" && assessment.createdBy !== req.user.id) {
+      return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u0644\u0627 \u064A\u0645\u0643\u0646 \u062D\u0630\u0641 \u062A\u0642\u064A\u064A\u0645 \u0623\u0646\u0634\u0623\u0647 \u0645\u0633\u062A\u062E\u062F\u0645 \u0622\u062E\u0631" });
+    }
+    db.deleteAssessment(req.params.id, orgId);
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "DELETE_ASSESSMENT",
+      "Assessment",
+      assessment.id
+    );
+    res.json({ success: true, message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u062A\u0642\u064A\u064A\u0645 \u0648\u0633\u062C\u0644 \u062F\u0631\u062C\u0627\u062A\u0647 \u0628\u0646\u062C\u0627\u062D" });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+gradebookRouter.get("/assessments/:id/grades", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const assessment = db.getAssessmentById(req.params.id, orgId);
+    if (!assessment) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u062A\u0642\u064A\u064A\u0645 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    const course = db.getCourseById(assessment.courseId, orgId);
+    const students = course?.classroomId ? db.getStudentsByClassroom(course.classroomId, orgId) : db.getUsersByOrg(orgId, "STUDENT");
+    const grades = db.getAssessmentGrades(orgId, { assessmentId: assessment.id });
+    const gradesMap = new Map(grades.map((g) => [g.studentId, g]));
+    const roster = students.map((std) => {
+      const g = gradesMap.get(std.id);
       return {
-        studentId: student.id,
-        studentName: student.fullName,
-        studentIdNumber: student.studentIdNumber,
-        scores,
-        totalEarned,
-        totalMax,
-        averagePercent
+        studentId: std.id,
+        studentName: std.fullName,
+        studentIdNumber: std.studentIdNumber,
+        score: g?.score,
+        percentage: g?.percentage,
+        feedback: g?.feedback,
+        gradedAt: g?.gradedAt,
+        gradedByName: g?.gradedByName,
+        status: g ? "GRADED" : "UNGRADED"
       };
     });
     res.json({
       success: true,
       data: {
-        course,
-        assignments: assignments.map((a) => ({ id: a.id, title: a.title, maxScore: a.maxScore, dueDate: a.dueDate })),
-        matrix
+        assessment,
+        roster
       }
+    });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+gradebookRouter.post("/assessments/:id/grades", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const assessment = db.getAssessmentById(req.params.id, orgId);
+    if (!assessment) {
+      return res.status(404).json({ success: false, error: "NOT_FOUND", message: "\u0627\u0644\u062A\u0642\u064A\u064A\u0645 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+    }
+    const { grades } = req.body;
+    if (!Array.isArray(grades) || grades.length === 0) {
+      return res.status(400).json({ success: false, error: "NO_GRADES", message: "\u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u062F\u0631\u062C\u0627\u062A \u0641\u0627\u0631\u063A\u0629" });
+    }
+    const preparedGrades = grades.map((g) => ({
+      organizationId: orgId,
+      assessmentId: assessment.id,
+      studentId: g.studentId,
+      score: Math.max(0, Math.min(assessment.maxScore, Number(g.score) || 0)),
+      maxScore: assessment.maxScore,
+      feedback: g.feedback ? String(g.feedback).trim() : void 0,
+      gradedBy: req.user.id
+    }));
+    const saved = db.recordAssessmentGradesBatch(orgId, preparedGrades);
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "RECORD_ASSESSMENT_GRADES",
+      "Assessment",
+      assessment.id,
+      { count: saved.length }
+    );
+    res.json({ success: true, data: saved, message: "\u062A\u0645 \u0631\u0635\u062F \u0648\u062D\u0641\u0638 \u0627\u0644\u062F\u0631\u062C\u0627\u062A \u0628\u0646\u062C\u0627\u062D" });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+gradebookRouter.get("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const courseId = req.query.courseId;
+    if (!courseId) {
+      return res.status(400).json({ success: false, error: "COURSE_ID_REQUIRED", message: "\u0645\u0639\u0631\u0641 \u0627\u0644\u0645\u0642\u0631\u0631 \u0645\u0637\u0644\u0648\u0628 \u0644\u0639\u0631\u0636 \u0633\u062C\u0644 \u0627\u0644\u062F\u0631\u062C\u0627\u062A" });
+    }
+    const matrix = db.getGradebookMatrix(courseId, orgId);
+    if (!matrix) {
+      return res.status(404).json({ success: false, error: "COURSE_NOT_FOUND", message: "\u0627\u0644\u0645\u0642\u0631\u0631 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F \u0641\u064A \u0627\u0644\u0645\u0624\u0633\u0633\u0629" });
+    }
+    if (req.user.role === "TEACHER" && matrix.course.teacherId !== req.user.id) {
+      const assignments = db.getTeacherAssignments(orgId, { teacherId: req.user.id, courseId });
+      if (assignments.length === 0) {
+        return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u0647\u0630\u0627 \u0627\u0644\u0645\u0642\u0631\u0631 \u0644\u064A\u0633 \u0645\u0633\u0646\u062F\u0627\u064B \u0625\u0644\u064A\u0643" });
+      }
+    }
+    res.json({
+      success: true,
+      data: matrix
     });
   } catch {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
@@ -5593,91 +8124,88 @@ gradebookRouter.get("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), 
 });
 gradebookRouter.get("/export-csv", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
   try {
+    const orgId = req.organization.id;
     const courseId = req.query.courseId;
     if (!courseId) {
       return res.status(400).json({ success: false, error: "COURSE_ID_REQUIRED" });
     }
-    const course = db.getCourseById(courseId, req.organization.id);
-    if (!course) return res.status(404).json({ success: false, error: "COURSE_NOT_FOUND" });
-    if (req.user.role === "TEACHER" && course.teacherId !== req.user.id) {
-      return res.status(403).json({ success: false, error: "FORBIDDEN" });
+    const matrix = db.getGradebookMatrix(courseId, orgId);
+    if (!matrix) {
+      return res.status(404).json({ success: false, error: "COURSE_NOT_FOUND" });
     }
-    const assignments = db.getAssignmentsByCourse(courseId, req.organization.id);
-    const students = db.getUsersByOrg(req.organization.id, "STUDENT").filter((s) => s.classroomId === course.classroomId);
-    const headers = ["Student Name", "Student ID", ...assignments.map((a) => `${a.title} (Max: ${a.maxScore})`), "Total Earned", "Total Max", "Average %"];
+    const headers = [
+      "\u0627\u0633\u0645 \u0627\u0644\u0637\u0627\u0644\u0628 (Student Name)",
+      "\u0627\u0644\u0631\u0642\u0645 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A (Student ID)",
+      ...matrix.assessments.map((a) => `${a.title} [${a.category}] (Max: ${a.maxScore})`),
+      "\u0627\u0644\u0645\u062C\u0645\u0648\u0639 \u0627\u0644\u0645\u0643\u062A\u0633\u0628 (Total Earned)",
+      "\u0627\u0644\u0645\u062C\u0645\u0648\u0639 \u0627\u0644\u0643\u0644\u064A (Total Max)",
+      "\u0627\u0644\u0646\u0633\u0628\u0629 \u0627\u0644\u0645\u0626\u0648\u064A\u0629 (%)",
+      "\u0627\u0644\u062A\u0642\u062F\u064A\u0631 (Letter Grade)"
+    ];
     const rows = [headers.join(",")];
-    students.forEach((std) => {
-      const subs = db.getSubmissionsByStudent(std.id, req.organization.id);
-      let earned = 0;
-      let totalMax = 0;
-      const scores = assignments.map((a) => {
-        const s = subs.find((sub) => sub.assignmentId === a.id);
-        if (s?.score !== void 0) {
-          earned += s.score;
-          totalMax += a.maxScore;
-          return s.score.toString();
-        }
-        totalMax += a.maxScore;
-        return "N/A";
+    matrix.students.forEach((std) => {
+      const scores = matrix.assessments.map((a) => {
+        const item = std.scores[a.id];
+        return item?.score !== void 0 ? String(item.score) : "N/A";
       });
-      const avg = totalMax > 0 ? Math.round(earned / totalMax * 100) : 0;
-      rows.push([`"${std.fullName}"`, std.studentIdNumber || "", ...scores, earned, totalMax, `${avg}%`].join(","));
+      rows.push(
+        [
+          `"${std.studentName}"`,
+          std.studentIdNumber || "",
+          ...scores,
+          std.totalEarned,
+          std.totalMax,
+          `${std.percentage}%`,
+          std.letterGrade
+        ].join(",")
+      );
     });
     const csvContent = rows.join("\n");
-    res.json({ success: true, csv: csvContent });
+    res.json({ success: true, csv: csvContent, fileName: `gradebook_${matrix.course.title}.csv` });
+  } catch {
+    res.status(500).json({ success: false, error: "SERVER_ERROR" });
+  }
+});
+gradebookRouter.get("/student/:studentId/performance", (req, res) => {
+  try {
+    const orgId = req.organization.id;
+    const targetStudentId = req.params.studentId;
+    if (req.user.role === "STUDENT" && req.user.id !== targetStudentId) {
+      return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0627\u0637\u0644\u0627\u0639 \u0639\u0644\u0649 \u0623\u062F\u0627\u0621 \u0637\u0627\u0644\u0628 \u0622\u062E\u0631" });
+    }
+    if (req.user.role === "PARENT") {
+      const links = db.getParentStudentLinks(orgId, { parentId: req.user.id });
+      const hasAccess = links.some((l) => l.studentId === targetStudentId);
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0627\u0637\u0644\u0627\u0639 \u0639\u0644\u0649 \u0623\u062F\u0627\u0621 \u0647\u0630\u0627 \u0627\u0644\u0637\u0627\u0644\u0628" });
+      }
+    }
+    const performance = db.getStudentAcademicPerformance(targetStudentId, orgId);
+    res.json({ success: true, data: performance });
   } catch {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
 gradebookRouter.get("/my-grades", (req, res) => {
   try {
+    const orgId = req.organization.id;
     let targetStudentId = req.user.id;
-    if (req.user.role !== "STUDENT") {
-      targetStudentId = req.query.studentId || req.user.id;
+    if (req.user.role !== "STUDENT" && req.query.studentId) {
+      targetStudentId = req.query.studentId;
     }
-    const student = db.getUserById(targetStudentId, req.organization.id);
-    if (!student || student.role !== "STUDENT") {
-      return res.status(404).json({ success: false, error: "STUDENT_NOT_FOUND", message: "\u0627\u0644\u0637\u0627\u0644\u0628 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F \u0641\u064A \u0627\u0644\u0645\u0624\u0633\u0633\u0629" });
-    }
-    const courses = db.getCourses(req.organization.id).filter((c) => c.classroomId === student.classroomId);
-    const submissions = db.getSubmissionsByStudent(targetStudentId, req.organization.id);
-    const breakdown = courses.map((course) => {
-      const asgs = db.getAssignmentsByCourse(course.id, req.organization.id);
-      let earned = 0;
-      let max = 0;
-      const items = asgs.map((a) => {
-        const sub = submissions.find((s) => s.assignmentId === a.id);
-        if (sub?.score !== void 0) {
-          earned += sub.score;
-          max += a.maxScore;
-        }
-        return {
-          assignmentId: a.id,
-          title: a.title,
-          maxScore: a.maxScore,
-          score: sub?.score,
-          feedback: sub?.teacherFeedback,
-          submittedAt: sub?.submittedAt,
-          status: sub ? sub.score !== void 0 ? "GRADED" : "SUBMITTED" : "PENDING"
-        };
-      });
-      const average = max > 0 ? Math.round(earned / max * 100) : 0;
-      return {
-        courseId: course.id,
-        courseTitle: course.title,
-        subjectName: course.subjectName,
-        teacherName: course.teacherName,
-        earned,
-        max,
-        average,
-        items
-      };
-    });
+    const studentUser = db.getUserById(targetStudentId, orgId);
+    const performance = db.getStudentAcademicPerformance(targetStudentId, orgId);
     res.json({
       success: true,
       data: {
-        student: { id: student.id, fullName: student.fullName, studentIdNumber: student.studentIdNumber },
-        breakdown
+        ...performance,
+        student: studentUser ? {
+          id: studentUser.id,
+          fullName: studentUser.fullName,
+          email: studentUser.email,
+          role: studentUser.role,
+          studentIdNumber: studentUser.studentIdNumber
+        } : { id: targetStudentId, fullName: performance.studentName }
       }
     });
   } catch {
@@ -5686,6 +8214,7 @@ gradebookRouter.get("/my-grades", (req, res) => {
 });
 
 // server/platform/routes/dashboardRoutes.ts
+init_db();
 import express9 from "express";
 var dashboardRouter = express9.Router();
 dashboardRouter.use(requireAuth);
@@ -5744,31 +8273,42 @@ dashboardRouter.get("/stats", (req, res) => {
         }
       });
     }
-    const myCourses = db.getCourses(orgId).filter((c) => c.classroomId === user.classroomId);
+    const academicPerformance = db.getStudentAcademicPerformance(user.id, orgId);
+    const attendanceSummary = db.getAttendanceSummaryForStudent(user.id, orgId);
+    const myCourses = academicPerformance.courses.map((c) => {
+      const fullCourse = db.getCourseById(c.courseId, orgId);
+      return fullCourse || {
+        id: c.courseId,
+        title: c.courseTitle,
+        subjectId: c.subjectId,
+        subjectName: c.subjectName,
+        teacherName: c.teacherName,
+        classroomName: c.classroomName
+      };
+    });
     const mySubmissions = db.getSubmissionsByStudent(user.id, orgId);
     const allAssignments = db.getAssignmentsByOrg(orgId).filter((a) => myCourses.some((c) => c.id === a.courseId));
     const pendingAssignments = allAssignments.filter((a) => !mySubmissions.some((s) => s.assignmentId === a.id));
-    const gradedSubmissions = mySubmissions.filter((s) => s.score !== void 0);
-    let earnedTotal = 0;
-    let maxTotal = 0;
-    gradedSubmissions.forEach((s) => {
-      const asg = db.getAssignmentById(s.assignmentId, orgId);
-      if (asg && s.score !== void 0) {
-        earnedTotal += s.score;
-        maxTotal += asg.maxScore;
-      }
-    });
-    const gpaPercent = maxTotal > 0 ? Math.round(earnedTotal / maxTotal * 100) : 95;
+    const allAssessments = db.getAssessments(orgId).filter((ass) => myCourses.some((c) => c.id === ass.courseId) && ass.status !== "DRAFT");
+    const myGrades = db.getAssessmentGrades(orgId, { studentId: user.id });
+    const pendingAssessments = allAssessments.filter((ass) => !myGrades.some((g) => g.assessmentId === ass.id));
     return res.json({
       success: true,
       data: {
         role: "STUDENT",
         enrolledCoursesCount: myCourses.length,
-        pendingAssignmentsCount: pendingAssignments.length,
-        completedAssignmentsCount: mySubmissions.length,
-        gpaPercent,
+        pendingAssignmentsCount: pendingAssignments.length + pendingAssessments.length,
+        completedAssignmentsCount: mySubmissions.length + myGrades.length,
+        gpaPercent: academicPerformance.overallGpaPercent,
+        letterGrade: academicPerformance.letterGrade,
+        attendanceRate: attendanceSummary.attendanceRate,
+        attendanceSummary,
+        academicPerformance,
         myCourses,
-        upcomingAssignments: pendingAssignments.slice(0, 4)
+        upcomingAssignments: [
+          ...pendingAssignments.slice(0, 3).map((a) => ({ id: a.id, title: a.title, type: "ASSIGNMENT", dueDate: a.dueDate, maxScore: a.maxScore })),
+          ...pendingAssessments.slice(0, 3).map((a) => ({ id: a.id, title: a.title, type: a.category, dueDate: a.dueDate, maxScore: a.maxScore }))
+        ]
       }
     });
   } catch {
@@ -5809,6 +8349,10 @@ dashboardRouter.get("/audit-logs", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (
 
 // server/platform/routes/aiRoutes.ts
 import express10 from "express";
+init_db();
+
+// server/platform/ai/aiService.ts
+init_db();
 
 // server/platform/ai/gateway/geminiProvider.ts
 import { GoogleGenAI } from "@google/genai";
@@ -6092,6 +8636,9 @@ var AISafetyService = class {
   }
 };
 
+// server/platform/ai/context/contextBuilder.ts
+init_db();
+
 // server/platform/ai/prompts/templates.ts
 var AIPromptTemplates = class {
   static getSystemInstruction(feature, options) {
@@ -6275,6 +8822,7 @@ var AIContextBuilder = class {
 };
 
 // server/platform/ai/limits/rateLimiter.ts
+init_db();
 var AIRateLimiterService = class {
   static {
     this.orgBuckets = /* @__PURE__ */ new Map();
@@ -6367,6 +8915,7 @@ var AIRateLimiterService = class {
 };
 
 // server/platform/ai/rag/ragService.ts
+init_db();
 var RAGService = class {
   /**
    * Split document text into overlapping chunks
@@ -6901,7 +9450,9 @@ aiRouter.post(
 );
 
 // server/platform/routes/studentRoutes.ts
+init_db();
 import express11 from "express";
+init_security();
 var studentRouter = express11.Router();
 studentRouter.use(requireAuth);
 var DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -7599,16 +10150,333 @@ studentRouter.post(
   }
 );
 
+// server/platform/routes/storageRoutes.ts
+init_db();
+import express12 from "express";
+init_service();
+var storageRouter = express12.Router();
+storageRouter.use(requireAuth);
+function checkUploadAuthorization(req, resourceType, resourceId) {
+  const user = req.user;
+  const orgId = req.organization.id;
+  if (user.role === "SUPER_ADMIN" || user.role === "ORG_ADMIN") {
+    return { allowed: true };
+  }
+  switch (resourceType) {
+    case "avatar": {
+      if (resourceId === user.id) return { allowed: true };
+      if (user.role === "PARENT") {
+        const links = db.getParentStudentLinks(orgId, { parentId: user.id });
+        const isChild = links.some((l) => l.studentId === resourceId);
+        if (isChild) return { allowed: true };
+      }
+      return { allowed: false, reason: "FORBIDDEN_AVATAR_UPLOAD" };
+    }
+    case "student_document": {
+      if (user.role === "TEACHER") return { allowed: true };
+      if (user.role === "STUDENT" && resourceId === user.id) return { allowed: true };
+      if (user.role === "PARENT") {
+        const links = db.getParentStudentLinks(orgId, { parentId: user.id });
+        if (links.some((l) => l.studentId === resourceId)) return { allowed: true };
+      }
+      return { allowed: false, reason: "FORBIDDEN_STUDENT_DOC_UPLOAD" };
+    }
+    case "assignment_attachment": {
+      if (user.role === "TEACHER") return { allowed: true };
+      return { allowed: false, reason: "FORBIDDEN_ASSIGNMENT_ATTACHMENT" };
+    }
+    case "assignment_submission": {
+      if (user.role === "STUDENT") {
+        return { allowed: true };
+      }
+      return { allowed: false, reason: "FORBIDDEN_SUBMISSION_UPLOAD" };
+    }
+    case "curriculum_document":
+    case "report_card": {
+      if (user.role === "TEACHER") return { allowed: true };
+      return { allowed: false, reason: "FORBIDDEN_TEACHER_RESOURCE_UPLOAD" };
+    }
+    case "general_asset": {
+      return { allowed: false, reason: "FORBIDDEN_GENERAL_ASSET_UPLOAD" };
+    }
+    default:
+      return { allowed: false, reason: "UNKNOWN_RESOURCE_TYPE" };
+  }
+}
+function checkDownloadAuthorization(req, record) {
+  const user = req.user;
+  const orgId = req.organization.id;
+  if (record.organizationId !== orgId) {
+    return { allowed: false, reason: "TENANT_MISMATCH" };
+  }
+  if (user.role === "SUPER_ADMIN" || user.role === "ORG_ADMIN") {
+    return { allowed: true };
+  }
+  if (record.uploadedBy === user.id) {
+    return { allowed: true };
+  }
+  switch (record.resourceType) {
+    case "avatar":
+    case "general_asset":
+      return { allowed: true };
+    case "assignment_attachment":
+    case "curriculum_document":
+      return { allowed: true };
+    case "assignment_submission": {
+      if (user.role === "TEACHER") return { allowed: true };
+      if (user.role === "STUDENT" && record.uploadedBy === user.id) return { allowed: true };
+      if (user.role === "PARENT") {
+        const links = db.getParentStudentLinks(orgId, { parentId: user.id });
+        if (links.some((l) => l.studentId === record.uploadedBy || l.studentId === record.resourceId)) {
+          return { allowed: true };
+        }
+      }
+      return { allowed: false, reason: "FORBIDDEN_SUBMISSION_ACCESS" };
+    }
+    case "student_document":
+    case "report_card": {
+      if (user.role === "TEACHER") return { allowed: true };
+      if (user.role === "STUDENT" && record.resourceId === user.id) return { allowed: true };
+      if (user.role === "PARENT") {
+        const links = db.getParentStudentLinks(orgId, { parentId: user.id });
+        if (links.some((l) => l.studentId === record.resourceId)) return { allowed: true };
+      }
+      return { allowed: false, reason: "FORBIDDEN_STUDENT_DATA_ACCESS" };
+    }
+    default:
+      return { allowed: true };
+  }
+}
+storageRouter.post("/upload-url", async (req, res) => {
+  try {
+    const { resourceType, resourceId, filename, contentType, sizeBytes, customMetadata } = req.body;
+    if (!resourceType || !resourceId || !filename || !contentType || !sizeBytes) {
+      return res.status(400).json({
+        success: false,
+        error: "MISSING_FIELDS",
+        message: "\u0627\u0644\u062D\u0642\u0648\u0644 \u0627\u0644\u0645\u0637\u0644\u0648\u0628\u0629: resourceType, resourceId, filename, contentType, sizeBytes"
+      });
+    }
+    const orgId = req.organization.id;
+    const authCheck = checkUploadAuthorization(req, resourceType, resourceId);
+    if (!authCheck.allowed) {
+      return res.status(403).json({
+        success: false,
+        error: "FORBIDDEN",
+        message: authCheck.reason || "\u0644\u0627 \u062A\u0645\u0644\u0643 \u0627\u0644\u0635\u0644\u0627\u062D\u064A\u0629 \u0644\u0631\u0641\u0639 \u0645\u0644\u0641\u0627\u062A \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0631\u062F"
+      });
+    }
+    const storageService = getStorageService();
+    const result = await storageService.createUploadUrl({
+      organizationId: orgId,
+      resourceType,
+      resourceId,
+      filename,
+      contentType,
+      sizeBytes: Number(sizeBytes),
+      uploadedBy: req.user.id,
+      customMetadata
+    });
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "STORAGE_UPLOAD_URL_REQUESTED",
+      resourceType,
+      result.storageObjectId,
+      { filename, contentType, sizeBytes }
+    );
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (err) {
+    const status = err.message?.startsWith("INVALID_CONTENT_TYPE") || err.message?.startsWith("FILE_SIZE_EXCEEDED") ? 400 : 500;
+    res.status(status).json({
+      success: false,
+      error: err.message?.split(":")[0] || "STORAGE_ERROR",
+      message: err.message
+    });
+  }
+});
+storageRouter.post("/finalize/:id", async (req, res) => {
+  try {
+    const storageObjectId = req.params.id;
+    const orgId = req.organization.id;
+    const storageService = getStorageService();
+    const updated = await storageService.finalizeUpload(storageObjectId, orgId, req.user);
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "STORAGE_OBJECT_UPLOAD_FINALIZED",
+      updated.resourceType,
+      updated.id,
+      { sizeBytes: updated.sizeBytes, checksum: updated.checksum }
+    );
+    res.json({
+      success: true,
+      data: updated
+    });
+  } catch (err) {
+    const status = err.message?.startsWith("OBJECT_NOT_FOUND") ? 404 : err.message?.startsWith("UNAUTHORIZED") ? 403 : 400;
+    res.status(status).json({
+      success: false,
+      error: err.message?.split(":")[0] || "FINALIZE_ERROR",
+      message: err.message
+    });
+  }
+});
+storageRouter.get("/download-url/:id", async (req, res) => {
+  try {
+    const storageObjectId = req.params.id;
+    const orgId = req.organization.id;
+    const dispositionFilename = req.query.filename;
+    const storageService = getStorageService();
+    const metadata = storageService.getMetadata(storageObjectId, orgId);
+    if (!metadata) {
+      return res.status(404).json({
+        success: false,
+        error: "OBJECT_NOT_FOUND",
+        message: "\u0627\u0644\u0645\u0644\u0641 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F \u0623\u0648 \u062A\u0645 \u062D\u0630\u0641\u0647"
+      });
+    }
+    const authCheck = checkDownloadAuthorization(req, metadata);
+    if (!authCheck.allowed) {
+      return res.status(403).json({
+        success: false,
+        error: "FORBIDDEN",
+        message: "\u0644\u0627 \u062A\u0645\u0644\u0643 \u0635\u0644\u0627\u062D\u064A\u0629 \u0627\u0644\u0648\u0635\u0648\u0644 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u0641"
+      });
+    }
+    const result = await storageService.createDownloadUrl({
+      organizationId: orgId,
+      storageObjectId,
+      dispositionFilename
+    });
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "STORAGE_DOWNLOAD_URL_REQUESTED",
+      metadata.resourceType,
+      metadata.id
+    );
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (err) {
+    const status = err.message?.startsWith("OBJECT_NOT_FOUND") ? 404 : 500;
+    res.status(status).json({
+      success: false,
+      error: err.message?.split(":")[0] || "DOWNLOAD_ERROR",
+      message: err.message
+    });
+  }
+});
+storageRouter.get("/metadata/:id", (req, res) => {
+  try {
+    const storageObjectId = req.params.id;
+    const orgId = req.organization.id;
+    const storageService = getStorageService();
+    const metadata = storageService.getMetadata(storageObjectId, orgId);
+    if (!metadata) {
+      return res.status(404).json({
+        success: false,
+        error: "OBJECT_NOT_FOUND",
+        message: "\u0627\u0644\u0645\u0644\u0641 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F"
+      });
+    }
+    const authCheck = checkDownloadAuthorization(req, metadata);
+    if (!authCheck.allowed) {
+      return res.status(403).json({
+        success: false,
+        error: "FORBIDDEN",
+        message: "\u0644\u0627 \u062A\u0645\u0644\u0643 \u0635\u0644\u0627\u062D\u064A\u0629 \u0627\u0644\u0627\u0637\u0644\u0627\u0639 \u0639\u0644\u0649 \u0628\u064A\u0627\u0646\u0627\u062A \u0647\u0630\u0627 \u0627\u0644\u0645\u0644\u0641"
+      });
+    }
+    res.json({
+      success: true,
+      data: metadata
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "SERVER_ERROR", message: err.message });
+  }
+});
+storageRouter.get("/resource/:resourceType/:resourceId", (req, res) => {
+  try {
+    const { resourceType, resourceId } = req.params;
+    const orgId = req.organization.id;
+    const storageService = getStorageService();
+    const objects = storageService.getObjectsForResource(
+      resourceType,
+      resourceId,
+      orgId
+    );
+    const accessible = objects.filter((o) => checkDownloadAuthorization(req, o).allowed);
+    res.json({
+      success: true,
+      data: accessible
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "SERVER_ERROR", message: err.message });
+  }
+});
+storageRouter.delete("/:id", async (req, res) => {
+  try {
+    const storageObjectId = req.params.id;
+    const orgId = req.organization.id;
+    const storageService = getStorageService();
+    const success = await storageService.deleteObject(storageObjectId, orgId, req.user);
+    if (!success) {
+      return res.status(404).json({
+        success: false,
+        error: "OBJECT_NOT_FOUND",
+        message: "\u0627\u0644\u0645\u0644\u0641 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F \u0623\u0648 \u062A\u0639\u0630\u0631 \u062D\u0630\u0641\u0647"
+      });
+    }
+    db.logAction(
+      orgId,
+      req.user.id,
+      req.user.email,
+      "STORAGE_OBJECT_DELETED",
+      "storage_object",
+      storageObjectId
+    );
+    res.json({
+      success: true,
+      message: "\u062A\u0645 \u062D\u0630\u0641 \u0627\u0644\u0645\u0644\u0641 \u0628\u0646\u062C\u0627\u062D"
+    });
+  } catch (err) {
+    const status = err.message?.startsWith("UNAUTHORIZED") ? 403 : 500;
+    res.status(status).json({
+      success: false,
+      error: err.message?.split(":")[0] || "DELETE_ERROR",
+      message: err.message
+    });
+  }
+});
+
 // server/platform/index.ts
-var platformApiRouter = express12.Router();
+init_service();
+init_migrate();
+var platformApiRouter = express13.Router();
 platformApiRouter.get("/health", async (req, res) => {
   try {
     const dbStatus = await db.getEngineStatus();
-    res.json({
-      status: "ok",
+    const migrationStatus = dbStatus.connected ? await getMigrationStatus() : { migrated: false };
+    const storageHealth = getStorageService().getHealth();
+    const isHealthy = process.env.NODE_ENV === "production" ? dbStatus.connected && migrationStatus.migrated && storageHealth.status === "READY" : true;
+    res.status(isHealthy ? 200 : 503).json({
+      status: isHealthy ? "ok" : "degraded",
       service: "rtiqa-platform-api",
       version: "1.0.0",
-      database: dbStatus,
+      database: {
+        ...dbStatus,
+        migration: migrationStatus
+      },
+      storage: storageHealth,
       timestamp: (/* @__PURE__ */ new Date()).toISOString()
     });
   } catch (err) {
@@ -7627,12 +10495,13 @@ platformApiRouter.use("/gradebook", requireOrg, gradebookRouter);
 platformApiRouter.use("/dashboard", requireOrg, dashboardRouter);
 platformApiRouter.use("/ai", requireOrg, aiRouter);
 platformApiRouter.use("/students", requireOrg, studentRouter);
+platformApiRouter.use("/storage", requireOrg, storageRouter);
 
 // server.ts
 init_postgres();
 async function createApp() {
   assertProductionAuthSecret();
-  const app = express13();
+  const app = express14();
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
@@ -7682,7 +10551,7 @@ async function createApp() {
     }
     next();
   });
-  app.use(express13.json({ limit: "1mb" }));
+  app.use(express14.json({ limit: "1mb" }));
   const rateLimitStore2 = /* @__PURE__ */ new Map();
   const formRateLimiter = (req, res, next) => {
     const rawIp = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress || "unknown";
@@ -7715,15 +10584,34 @@ async function createApp() {
   app.get("/api/health", async (req, res) => {
     try {
       const { checkPostgresConnection: checkPostgresConnection2 } = await Promise.resolve().then(() => (init_postgres(), postgres_exports));
+      const { getMigrationStatus: getMigrationStatus2 } = await Promise.resolve().then(() => (init_migrate(), migrate_exports));
+      const { getStorageService: getStorageService2 } = await Promise.resolve().then(() => (init_service(), service_exports));
       const dbStatus = await checkPostgresConnection2();
-      res.json({
-        status: "ok",
+      const migrationStatus = dbStatus.connected ? await getMigrationStatus2() : { migrated: false };
+      const storageHealth = getStorageService2().getHealth();
+      const isHealthy = process.env.NODE_ENV === "production" ? dbStatus.connected && migrationStatus.migrated && storageHealth.status === "READY" : true;
+      res.status(isHealthy ? 200 : 503).json({
+        status: isHealthy ? "ok" : "degraded",
         service: "rtiqa-api-gateway",
-        database: dbStatus,
+        environment: process.env.NODE_ENV || "development",
+        uptimeSeconds: Math.floor(process.uptime()),
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        database: {
+          connected: dbStatus.connected,
+          engine: dbStatus.engine,
+          connectionUrlConfigured: dbStatus.connectionUrlConfigured,
+          migration: migrationStatus,
+          message: dbStatus.message
+        },
+        storage: storageHealth
+      });
+    } catch (err) {
+      res.status(500).json({
+        status: "error",
+        service: "rtiqa-api-gateway",
+        error: err.message,
         timestamp: (/* @__PURE__ */ new Date()).toISOString()
       });
-    } catch {
-      res.json({ status: "ok", service: "rtiqa-api-gateway", timestamp: (/* @__PURE__ */ new Date()).toISOString() });
     }
   });
   app.use("/api/v1", platformApiRouter);
@@ -7861,10 +10749,10 @@ async function createApp() {
     }
   });
   if (process.env.NODE_ENV === "production") {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express13.static(distPath));
+    const distPath = path2.join(process.cwd(), "dist");
+    app.use(express14.static(distPath));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      res.sendFile(path2.join(distPath, "index.html"));
     });
   } else if (process.env.NODE_ENV !== "test") {
     const { createServer: createViteServer } = await import("vite");
@@ -7898,10 +10786,10 @@ async function startServer() {
   process.on("SIGINT", () => handleShutdown("SIGINT"));
   return server;
 }
-var isMainModule = Boolean(
-  process.argv[1] && (process.argv[1].endsWith("server.ts") || process.argv[1].endsWith("server.cjs"))
+var isDirectRun = Boolean(
+  process.argv.some((arg) => arg.includes("server.ts") || arg.includes("server.cjs") || arg.includes("server.js")) || process.argv[1] && fileURLToPath(import.meta.url) === path2.resolve(process.argv[1])
 );
-if (isMainModule && process.env.NODE_ENV !== "test") {
+if (isDirectRun && process.env.NODE_ENV !== "test") {
   startServer().catch((err) => {
     console.error("Failed to start server:", err);
     process.exit(1);

@@ -58,13 +58,13 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
 
   // Role-based Nav items
   const navItems: { id: PlatformPage; label: string; icon: any; roles?: string[]; badge?: string }[] = [
-    { id: 'dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
+    { id: 'dashboard', label: user.role === 'PARENT' ? 'بوابة ولي الأمر' : 'لوحة التحكم', icon: LayoutDashboard },
     { id: 'ai-assistant', label: 'مساعد رتقاء الذكي (AI)', icon: Sparkles, badge: 'جديد' },
-    { id: 'courses', label: 'المقررات والمناهج', icon: BookOpen },
-    { id: 'lessons', label: 'الدروس والمحتوى', icon: FileText },
-    { id: 'assignments', label: 'الواجبات والتكليفات', icon: ClipboardCheck },
-    { id: 'gradebook', label: user.role === 'STUDENT' ? 'سجل درجاتي' : 'سجل الدرجات والتقييم', icon: Award },
-    { id: 'attendance', label: 'الحضور والغياب', icon: GraduationCap },
+    { id: 'courses', label: 'المقررات والمناهج', icon: BookOpen, roles: ['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER', 'STUDENT'] },
+    { id: 'lessons', label: 'الدروس والمحتوى', icon: FileText, roles: ['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER', 'STUDENT'] },
+    { id: 'assignments', label: 'الواجبات والتكليفات', icon: ClipboardCheck, roles: ['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER', 'STUDENT'] },
+    { id: 'gradebook', label: user.role === 'STUDENT' ? 'سجل درجاتي' : (user.role === 'PARENT' ? 'سجل درجات الأبناء' : 'سجل الدرجات والتقييم'), icon: Award },
+    { id: 'attendance', label: user.role === 'PARENT' ? 'سجل حضور الأبناء' : 'الحضور والغياب', icon: GraduationCap },
     { id: 'students', label: 'شؤون الطلاب وسجل SIS', icon: UserCheck, roles: ['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER'] },
     { id: 'users', label: 'إدارة المستخدمين والطلاب', icon: Users, roles: ['ORG_ADMIN', 'SUPER_ADMIN'] },
     { id: 'academic', label: 'الهيكل الأكاديمي والصفوف', icon: Layers, roles: ['ORG_ADMIN', 'SUPER_ADMIN'] },
@@ -79,7 +79,7 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSwitchPersona = (p: 'admin' | 'teacher' | 'student') => {
+  const handleSwitchPersona = (p: 'admin' | 'teacher' | 'student' | 'parent') => {
     demoSwitch(p, tenantSlug);
     setPersonaDropdownOpen(false);
   };
@@ -220,6 +220,15 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
                   <span>طالب (Student)</span>
                   <Badge variant="amber" size="sm">تعلم وتسليم</Badge>
                 </button>
+                <button
+                  onClick={() => handleSwitchPersona('parent')}
+                  className={`w-full text-start px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between ${
+                    user.role === 'PARENT' ? 'bg-purple-500/15 text-purple-300' : 'hover:bg-slate-800 text-slate-300'
+                  }`}
+                >
+                  <span>ولي أمر (Parent)</span>
+                  <Badge variant="purple" size="sm">متابعة الأبناء</Badge>
+                </button>
               </div>
             )}
           </div>
@@ -345,7 +354,7 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
             </div>
 
             {/* Persona Switch */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               <button
                 onClick={() => handleSwitchPersona('admin')}
                 className={`py-2 rounded-xl text-xs font-bold ${
@@ -369,6 +378,14 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
                 }`}
               >
                 طالب
+              </button>
+              <button
+                onClick={() => handleSwitchPersona('parent')}
+                className={`py-2 rounded-xl text-xs font-bold ${
+                  user.role === 'PARENT' ? 'bg-purple-500 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800'
+                }`}
+              >
+                ولي أمر
               </button>
             </div>
 

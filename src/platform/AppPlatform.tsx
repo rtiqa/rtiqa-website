@@ -17,6 +17,7 @@ import { SchoolSettingsPage } from './pages/SchoolSettingsPage';
 import { OnboardingWizardPage } from './pages/OnboardingWizardPage';
 import { AIAssistantPage } from './pages/AIAssistantPage';
 import { StudentsPage } from './pages/StudentsPage';
+import { ParentDashboardPage } from './pages/ParentDashboardPage';
 
 interface AppPlatformProps {
   onExitPlatform: () => void;
@@ -49,6 +50,9 @@ const PlatformRoot: React.FC<AppPlatformProps> = ({ onExitPlatform }) => {
         }
         if (user.role === 'TEACHER') {
           return <TeacherDashboardPage onNavigate={setCurrentPage} />;
+        }
+        if (user.role === 'PARENT') {
+          return <ParentDashboardPage onNavigate={setCurrentPage} />;
         }
         return <StudentDashboardPage onNavigate={setCurrentPage} />;
 

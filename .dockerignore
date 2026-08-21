@@ -1,0 +1,12 @@
+.git
+.github
+node_modules
+dist
+test
+coverage
+*.log
+.env
+.env.local
+.env.development
+.env.production
+.DS_Store

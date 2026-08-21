@@ -30,6 +30,10 @@ import {
   ParentStudentLink,
   TeacherAssignmentRole,
   StudentEnrollmentStatus,
+  StorageObject,
+  StorageResourceType,
+  UploadUrlResponse,
+  DownloadUrlResponse,
 } from '../types';
 
 class PlatformApiClient {
@@ -268,7 +272,7 @@ class PlatformApiClient {
     return res;
   }
 
-  async demoSwitch(persona: 'admin' | 'teacher' | 'teacher2' | 'student' | 'student2', tenantSlug?: string) {
+  async demoSwitch(persona: 'admin' | 'teacher' | 'teacher2' | 'student' | 'student2' | 'parent', tenantSlug?: string) {
     const slug = tenantSlug || this.tenantSlug;
     const res = await this.request<{ success: boolean; token: string; user: User; organization: Organization }>(
       '/auth/demo-switch',
@@ -568,7 +572,7 @@ class PlatformApiClient {
     });
   }
 
-  // --- Parent-Student Links ---
+  // --- Parent-Student Links & Student Dossier ---
   async getParentStudentLinks(filters: { parentId?: string; studentId?: string } = {}) {
     const query = new URLSearchParams();
     if (filters.parentId) query.set('parentId', filters.parentId);
@@ -587,6 +591,14 @@ class PlatformApiClient {
     return this.request<{ success: boolean; message: string }>(`/academic/parent-links/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  async getStudentDossier(studentId: string) {
+    return this.request<{ success: boolean; data: any }>(`/students/${studentId}/dossier`);
+  }
+
+  async getStudentBehavior(studentId: string) {
+    return this.request<{ success: boolean; data: any[] }>(`/students/${studentId}/behavior`);
   }
 
   // --- Users & CSV Import ---
@@ -1069,6 +1081,112 @@ class PlatformApiClient {
     return this.request<{ success: boolean; message: string }>(`/ai/conversations/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // ====================================================================
+  // STORAGE API (Presigned S3/R2 3-step lifecycle)
+  // ====================================================================
+
+  async getStorageUploadUrl(params: {
+    resourceType: StorageResourceType;
+    resourceId: string;
+    filename: string;
+    contentType: string;
+    sizeBytes: number;
+    customMetadata?: Record<string, unknown>;
+  }) {
+    return this.request<{ success: boolean; data: UploadUrlResponse }>('/storage/upload-url', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  }
+
+  async finalizeStorageUpload(storageObjectId: string) {
+    return this.request<{ success: boolean; data: StorageObject }>(`/storage/finalize/${storageObjectId}`, {
+      method: 'POST',
+    });
+  }
+
+  async getStorageDownloadUrl(storageObjectId: string, filename?: string) {
+    const query = filename ? `?filename=${encodeURIComponent(filename)}` : '';
+    return this.request<{ success: boolean; data: DownloadUrlResponse }>(`/storage/download-url/${storageObjectId}${query}`);
+  }
+
+  async getResourceStorageObjects(resourceType: StorageResourceType, resourceId: string) {
+    return this.request<{ success: boolean; data: StorageObject[] }>(`/storage/resource/${resourceType}/${resourceId}`);
+  }
+
+  async deleteStorageObject(storageObjectId: string) {
+    return this.request<{ success: boolean; message: string }>(`/storage/object/${storageObjectId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * High-level client helper to execute the full 3-step presigned upload lifecycle:
+   * 1. POST /api/v1/storage/upload-url
+   * 2. PUT binary file directly to presigned S3/R2 URL
+   * 3. POST /api/v1/storage/finalize/:id
+   */
+  async uploadFileToStorage(options: {
+    file: File;
+    resourceType: StorageResourceType;
+    resourceId: string;
+    customMetadata?: Record<string, unknown>;
+    onProgress?: (percent: number) => void;
+  }): Promise<StorageObject> {
+    const { file, resourceType, resourceId, customMetadata, onProgress } = options;
+
+    // Step 1: Request presigned upload URL
+    const urlRes = await this.getStorageUploadUrl({
+      resourceType,
+      resourceId,
+      filename: file.name,
+      contentType: file.type || 'application/octet-stream',
+      sizeBytes: file.size,
+      customMetadata,
+    });
+
+    if (!urlRes.success || !urlRes.data) {
+      throw new Error((urlRes as any).message || 'فشل في إنشاء رابط الرفع الآمن');
+    }
+
+    const { storageObjectId, uploadUrl } = urlRes.data;
+
+    // Step 2: PUT directly to presigned URL
+    await new Promise<void>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            onProgress(pct);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`فشل رفع الملف إلى التخزين السحابي (كود الاستجابة: ${xhr.status})`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('حدث خطأ في الاتصال بالشبكة أثناء رفع الملف'));
+      xhr.send(file);
+    });
+
+    // Step 3: Finalize upload
+    const finalRes = await this.finalizeStorageUpload(storageObjectId);
+    if (!finalRes.success || !finalRes.data) {
+      throw new Error((finalRes as any).message || 'فشل في تثبيت الملف في النظام');
+    }
+
+    return finalRes.data;
   }
 }
 

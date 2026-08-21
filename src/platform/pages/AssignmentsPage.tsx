@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { platformApi } from '../services/api';
-import { Assignment, Course, Submission } from '../types';
+import { Assignment, Course, Submission, StorageObject } from '../types';
 import { usePlatformAuth } from '../context/PlatformAuthContext';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
+import { FileUploadZone } from '../components/FileUploadZone';
+import { AttachmentViewer } from '../components/AttachmentViewer';
 import {
   ClipboardCheck,
   Plus,
@@ -15,6 +17,8 @@ import {
   AlertCircle,
   ChevronRight,
   Send,
+  Paperclip,
+  Download,
 } from 'lucide-react';
 
 export const AssignmentsPage: React.FC = () => {
@@ -40,6 +44,14 @@ export const AssignmentsPage: React.FC = () => {
   // Student Submission State
   const [subText, setSubText] = useState('');
   const [subFileUrl, setSubFileUrl] = useState('');
+  const [subStorageObj, setSubStorageObj] = useState<StorageObject | null>(null);
+
+  // New Assignment Attachment State
+  const [newAttachmentObj, setNewAttachmentObj] = useState<StorageObject | null>(null);
+  const [refreshAttachmentsTrigger, setRefreshAttachmentsTrigger] = useState(0);
+
+  // Temporary ID for new assignment attachment upload
+  const [tempAssignmentDraftId, setTempAssignmentDraftId] = useState(`asg_draft_${Date.now()}`);
 
   // Teacher Grading State
   const [gradeScore, setGradeScore] = useState<number>(20);
@@ -84,16 +96,27 @@ export const AssignmentsPage: React.FC = () => {
     if (!courseId) return;
 
     try {
+      const attachmentsList: { name: string; url: string }[] = [];
+      if (newAttachmentObj) {
+        attachmentsList.push({
+          name: newAttachmentObj.originalFilename || newAttachmentObj.filename,
+          url: `/api/v1/storage/download-url/${newAttachmentObj.id}`,
+        });
+      }
+
       await platformApi.createAssignment({
         courseId,
         title: newTitle,
         description: newDesc,
         maxScore: Number(newMaxScore),
         dueDate: newDueDate,
+        attachments: attachmentsList,
       });
       setIsCreateOpen(false);
       setNewTitle('');
       setNewDesc('');
+      setNewAttachmentObj(null);
+      setTempAssignmentDraftId(`asg_draft_${Date.now()}`);
       loadData();
     } catch (e: any) {
       alert(e.message || 'فشل إنشاء الواجب');
@@ -102,12 +125,22 @@ export const AssignmentsPage: React.FC = () => {
 
   const handleStudentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedAssignment || (!subText && !subFileUrl)) return;
+    const resolvedAttachment = subStorageObj
+      ? (subStorageObj.originalFilename || subStorageObj.filename)
+      : subFileUrl;
+
+    if (!selectedAssignment || (!subText && !resolvedAttachment)) {
+      alert('يرجى كتابة نص الحل أو رفع ملف المرفق للتسليم');
+      return;
+    }
+
     try {
-      await platformApi.submitAssignment(selectedAssignment.id, subText, subFileUrl);
+      await platformApi.submitAssignment(selectedAssignment.id, subText, resolvedAttachment);
       setIsSubmitModalOpen(false);
       setSubText('');
       setSubFileUrl('');
+      setSubStorageObj(null);
+      setRefreshAttachmentsTrigger((prev) => prev + 1);
       loadAssignmentDetail(selectedAssignment.id);
       loadData();
     } catch (e: any) {
@@ -253,6 +286,14 @@ export const AssignmentsPage: React.FC = () => {
                 </div>
                 <h3 className="text-lg font-bold text-white">{selectedAssignment.title}</h3>
                 <p className="text-xs text-slate-300 whitespace-pre-wrap">{selectedAssignment.description}</p>
+                
+                {/* Assignment Attachments Viewer */}
+                <AttachmentViewer
+                  resourceType="assignment_attachment"
+                  resourceId={selectedAssignment.id}
+                  title="مرفقات وأوراق عمل التكليف"
+                  refreshTrigger={refreshAttachmentsTrigger}
+                />
               </div>
 
               {/* Student View: My Submission Card or Submit Button */}
@@ -270,9 +311,18 @@ export const AssignmentsPage: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800/80 text-xs text-slate-200">
-                        {selectedAssignment.mySubmission.submissionText || 'تم إرفاق ملف'}
-                      </div>
+                      {selectedAssignment.mySubmission.submissionText && (
+                        <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800/80 text-xs text-slate-200">
+                          {selectedAssignment.mySubmission.submissionText}
+                        </div>
+                      )}
+
+                      {selectedAssignment.mySubmission.fileAttachmentUrl && (
+                        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-emerald-300">
+                          <Paperclip className="w-4 h-4 text-emerald-400" />
+                          <span className="truncate">{selectedAssignment.mySubmission.fileAttachmentUrl}</span>
+                        </div>
+                      )}
 
                       {selectedAssignment.mySubmission.score !== undefined && (
                         <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1 text-xs">
@@ -323,9 +373,15 @@ export const AssignmentsPage: React.FC = () => {
                           key={sub.id}
                           className="p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-3 text-xs"
                         >
-                          <div className="space-y-1">
+                          <div className="space-y-1 overflow-hidden">
                             <span className="font-bold text-slate-100 block">{sub.studentName || 'طالب'}</span>
-                            <p className="text-slate-400 line-clamp-1 text-[11px]">{sub.submissionText}</p>
+                            {sub.submissionText && <p className="text-slate-400 line-clamp-1 text-[11px]">{sub.submissionText}</p>}
+                            {sub.fileAttachmentUrl && (
+                              <div className="flex items-center gap-1 text-[10px] text-emerald-400">
+                                <Paperclip className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{sub.fileAttachmentUrl}</span>
+                              </div>
+                            )}
                             <span className="text-[10px] text-slate-500 font-mono block">
                               تم التسليم: {new Date(sub.submittedAt).toLocaleTimeString('ar-SA')}
                             </span>
@@ -412,13 +468,24 @@ export const AssignmentsPage: React.FC = () => {
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">تفاصيل التكليف والتعليمات:</label>
             <textarea
-              rows={4}
+              rows={3}
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
               placeholder="اكتب تعليمات الحل والمسائل المطلوبة..."
               className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:border-emerald-500 focus:outline-none text-xs"
             />
           </div>
+
+          {/* Teacher File Upload Zone */}
+          <FileUploadZone
+            resourceType="assignment_attachment"
+            resourceId={tempAssignmentDraftId}
+            onUploadSuccess={(storageObj) => setNewAttachmentObj(storageObj)}
+            onRemove={() => setNewAttachmentObj(null)}
+            initialStorageObject={newAttachmentObj}
+            label="مرفق ورقة العمل أو ملف الأسئلة (اختياري):"
+            helpText="PDF، Word، أو صور حتى 50 ميجابايت"
+          />
 
           <div className="flex items-center justify-end gap-3 pt-3">
             <button
@@ -442,10 +509,9 @@ export const AssignmentsPage: React.FC = () => {
       <Modal isOpen={isSubmitModalOpen} onClose={() => setIsSubmitModalOpen(false)} title="تسليم الواجب الدراسي">
         <form onSubmit={handleStudentSubmit} className="space-y-4 text-sm">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">إجابتك / الحل النصي:</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">إجابتك / الحل النصي (اختياري إذا أرفقت ملفاً):</label>
             <textarea
-              required
-              rows={6}
+              rows={4}
               value={subText}
               onChange={(e) => setSubText(e.target.value)}
               placeholder="اكتب خطوات الحل أو ملخص الإجابة هنا..."
@@ -453,16 +519,22 @@ export const AssignmentsPage: React.FC = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">اسم الملف أو رابط المرفق (اختياري):</label>
-            <input
-              type="text"
-              value={subFileUrl}
-              onChange={(e) => setSubFileUrl(e.target.value)}
-              placeholder="مثال: الواجب_الاول_عمر_السعيد.pdf"
-              className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:border-emerald-500 focus:outline-none text-xs"
-            />
-          </div>
+          {/* Student Solution File Upload Zone */}
+          <FileUploadZone
+            resourceType="submission_attachment"
+            resourceId={selectedAssignment?.id || 'submission'}
+            onUploadSuccess={(storageObj) => {
+              setSubStorageObj(storageObj);
+              setSubFileUrl(storageObj.originalFilename || storageObj.filename);
+            }}
+            onRemove={() => {
+              setSubStorageObj(null);
+              setSubFileUrl('');
+            }}
+            initialStorageObject={subStorageObj}
+            label="رفع ملف الحل أو صورة الواجب (PDF / Word / صورة):"
+            helpText="يتم تخزين الملف بشكل آمن في السحابة وربطه بتسليمك"
+          />
 
           <div className="flex items-center justify-end gap-3 pt-3">
             <button
@@ -490,9 +562,18 @@ export const AssignmentsPage: React.FC = () => {
         title={`تقييم تسليم الطالب: ${gradingSubmission?.studentName || ''}`}
       >
         <form onSubmit={handleTeacherGrade} className="space-y-4 text-sm">
-          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300">
-            <span className="font-bold block text-slate-200 mb-1">إجابة الطالب:</span>
-            <p className="whitespace-pre-wrap">{gradingSubmission?.submissionText}</p>
+          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-2">
+            <div>
+              <span className="font-bold block text-slate-200 mb-1">إجابة الطالب:</span>
+              <p className="whitespace-pre-wrap">{gradingSubmission?.submissionText || 'لا يوجد نص مكتوب (تسليم بملف مرفق)'}</p>
+            </div>
+
+            {gradingSubmission?.fileAttachmentUrl && (
+              <div className="pt-2 border-t border-slate-900 flex items-center gap-2 text-emerald-400">
+                <Paperclip className="w-3.5 h-3.5" />
+                <span>ملف الحل المرفق: <strong>{gradingSubmission.fileAttachmentUrl}</strong></span>
+              </div>
+            )}
           </div>
 
           <div>

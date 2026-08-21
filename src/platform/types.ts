@@ -591,3 +591,52 @@ export interface AIUsageSummary {
   featureBreakdown: Record<string, { requests: number; tokens: number; cost: number }>;
 }
 
+export type StorageResourceType =
+  | 'assignment_attachment'
+  | 'submission_attachment'
+  | 'lesson_attachment'
+  | 'student_avatar'
+  | 'school_logo';
+
+export type StorageObjectStatus = 'PENDING' | 'ACTIVE' | 'ARCHIVED' | 'DELETED';
+
+export interface StorageObject {
+  id: string;
+  organizationId: string;
+  resourceType: StorageResourceType;
+  resourceId: string;
+  filename: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  storageProvider: string;
+  storageKey: string;
+  bucketName: string;
+  checksum?: string;
+  status: StorageObjectStatus;
+  uploadedBy: string;
+  customMetadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UploadUrlResponse {
+  storageObjectId: string;
+  uploadUrl: string;
+  key: string;
+  bucket: string;
+  expiresIn: number;
+  maxSizeBytes: number;
+  allowedMimeTypes: string[];
+}
+
+export interface DownloadUrlResponse {
+  storageObjectId: string;
+  downloadUrl: string;
+  filename: string;
+  contentType: string;
+  sizeBytes: number;
+  expiresIn: number;
+}
+
+

@@ -48,6 +48,9 @@ import type {
   StudentBehaviorType,
   StudentGender,
   StudentBloodType,
+  StorageObjectMetadata,
+  StorageResourceType,
+  StorageObjectStatus,
 } from './types.ts';
 import { checkPostgresConnection, getPostgresPool, withTenantClient } from '../../src/db/postgres.ts';
 import type { PostgresStatus } from '../../src/db/postgres.ts';
@@ -70,6 +73,7 @@ class PlatformDatabase {
   private attendanceRecords: Map<string, AttendanceRecord> = new Map();
   private assessments: Map<string, Assessment> = new Map();
   private assessmentGrades: Map<string, AssessmentGrade> = new Map();
+  private storageObjects: Map<string, StorageObjectMetadata> = new Map();
   private auditLogs: Map<string, AuditLog> = new Map();
   private invitations: Map<string, Invitation> = new Map();
   private organizationMemberships: Map<string, OrganizationMembership> = new Map();
@@ -937,6 +941,19 @@ class PlatformDatabase {
       createdAt: '2026-01-01T00:00:00Z',
     };
     this.parentStudentLinks.set(psl1.id, psl1);
+
+    const psl2: ParentStudentLink = {
+      id: `psl_horizon_002`,
+      organizationId: schoolAId,
+      parentId: parent1.id,
+      parentName: parent1.fullName,
+      studentId: student3.id,
+      studentName: student3.fullName,
+      relationship: 'FATHER',
+      isEmergencyContact: true,
+      createdAt: '2026-01-01T00:00:00Z',
+    };
+    this.parentStudentLinks.set(psl2.id, psl2);
 
     // School A: Attendance Sessions
     const sess1Id = 'att_sess_horizon_001';
@@ -3836,6 +3853,206 @@ class PlatformDatabase {
       .sort((a, b) => a.chunkIndex - b.chunkIndex);
   }
 
+  // ==========================================
+  // Object Storage Metadata Methods (Multi-Tenant)
+  // ==========================================
+
+  createStorageObject(
+    data: Omit<StorageObjectMetadata, 'createdAt' | 'updatedAt'> & { createdAt?: string; updatedAt?: string }
+  ): StorageObjectMetadata {
+    const now = new Date().toISOString();
+    const obj: StorageObjectMetadata = {
+      ...data,
+      id: data.id || `obj_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+      createdAt: data.createdAt || now,
+      updatedAt: data.updatedAt || now,
+    };
+    this.storageObjects.set(obj.id, obj);
+    this.persistStorageObjectToPostgres(obj);
+    return obj;
+  }
+
+  getStorageObjectById(id: string, organizationId: string): StorageObjectMetadata | undefined {
+    const obj = this.storageObjects.get(id);
+    if (!obj || obj.organizationId !== organizationId) return undefined;
+    return obj;
+  }
+
+  getStorageObjectsByResource(
+    resourceType: StorageResourceType,
+    resourceId: string,
+    organizationId: string
+  ): StorageObjectMetadata[] {
+    return Array.from(this.storageObjects.values())
+      .filter(
+        (o) =>
+          o.organizationId === organizationId &&
+          o.resourceType === resourceType &&
+          o.resourceId === resourceId &&
+          o.status !== 'DELETED'
+      )
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  getStorageObjectsByOrg(organizationId: string): StorageObjectMetadata[] {
+    return Array.from(this.storageObjects.values())
+      .filter((o) => o.organizationId === organizationId && o.status !== 'DELETED')
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  updateStorageObject(
+    id: string,
+    organizationId: string,
+    updates: Partial<StorageObjectMetadata>
+  ): StorageObjectMetadata | undefined {
+    const obj = this.getStorageObjectById(id, organizationId);
+    if (!obj) return undefined;
+
+    const updated: StorageObjectMetadata = {
+      ...obj,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.storageObjects.set(id, updated);
+    this.persistStorageObjectToPostgres(updated);
+    return updated;
+  }
+
+  deleteStorageObject(id: string, organizationId: string, hardDelete = false): boolean {
+    const obj = this.getStorageObjectById(id, organizationId);
+    if (!obj) return false;
+
+    if (hardDelete) {
+      this.storageObjects.delete(id);
+      this.deleteStorageObjectFromPostgres(id, organizationId, true);
+    } else {
+      const now = new Date().toISOString();
+      const updated: StorageObjectMetadata = {
+        ...obj,
+        status: 'DELETED',
+        deletedAt: now,
+        updatedAt: now,
+      };
+      this.storageObjects.set(id, updated);
+      this.persistStorageObjectToPostgres(updated);
+    }
+    return true;
+  }
+
+  private persistStorageObjectToPostgres(obj: StorageObjectMetadata): void {
+    const pool = getPostgresPool();
+    if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('PostgreSQL is required in production environment.');
+      }
+      return;
+    }
+    pool.query(
+      `INSERT INTO storage_objects (
+        id, organization_id, object_key, original_filename, content_type, size_bytes,
+        checksum, resource_type, resource_id, uploaded_by, status, metadata,
+        created_at, updated_at, deleted_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      ON CONFLICT (id) DO UPDATE SET
+        object_key = EXCLUDED.object_key,
+        original_filename = EXCLUDED.original_filename,
+        content_type = EXCLUDED.content_type,
+        size_bytes = EXCLUDED.size_bytes,
+        checksum = EXCLUDED.checksum,
+        resource_type = EXCLUDED.resource_type,
+        resource_id = EXCLUDED.resource_id,
+        status = EXCLUDED.status,
+        metadata = EXCLUDED.metadata,
+        updated_at = EXCLUDED.updated_at,
+        deleted_at = EXCLUDED.deleted_at;`,
+      [
+        obj.id,
+        obj.organizationId,
+        obj.objectKey,
+        obj.originalFilename,
+        obj.contentType,
+        obj.sizeBytes,
+        obj.checksum || null,
+        obj.resourceType,
+        obj.resourceId,
+        obj.uploadedBy,
+        obj.status,
+        JSON.stringify(obj.metadata || {}),
+        obj.createdAt,
+        obj.updatedAt,
+        obj.deletedAt || null,
+      ]
+    ).catch((err) => {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('[PostgreSQL Critical Error]: Failed to persist storage object', err);
+        throw err;
+      }
+      console.error('[PostgreSQL Storage Object Persist Warning]:', (err as Error).message);
+    });
+  }
+
+  private deleteStorageObjectFromPostgres(id: string, organizationId: string, hardDelete = false): void {
+    const pool = getPostgresPool();
+    if (!pool) {
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('PostgreSQL is required in production environment.');
+      }
+      return;
+    }
+    if (hardDelete) {
+      pool.query('DELETE FROM storage_objects WHERE id = $1 AND organization_id = $2', [id, organizationId]).catch((err) => {
+        if (process.env.NODE_ENV === 'production') throw err;
+        console.error('[PostgreSQL Delete Storage Object Warning]:', (err as Error).message);
+      });
+    } else {
+      pool.query(
+        "UPDATE storage_objects SET status = 'DELETED', deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND organization_id = $2",
+        [id, organizationId]
+      ).catch((err) => {
+        if (process.env.NODE_ENV === 'production') throw err;
+        console.error('[PostgreSQL Soft Delete Storage Object Warning]:', (err as Error).message);
+      });
+    }
+  }
+
+  async syncStorageObjectsFromPostgres(organizationId?: string): Promise<void> {
+    const pool = getPostgresPool();
+    if (!pool) return;
+
+    try {
+      let query = 'SELECT * FROM storage_objects';
+      const params: any[] = [];
+      if (organizationId) {
+        query += ' WHERE organization_id = $1';
+        params.push(organizationId);
+      }
+      const res = await pool.query(query, params);
+      for (const row of res.rows) {
+        const obj: StorageObjectMetadata = {
+          id: row.id,
+          organizationId: row.organization_id,
+          objectKey: row.object_key,
+          originalFilename: row.original_filename,
+          contentType: row.content_type,
+          sizeBytes: Number(row.size_bytes) || 0,
+          checksum: row.checksum || undefined,
+          resourceType: row.resource_type as StorageResourceType,
+          resourceId: row.resource_id,
+          uploadedBy: row.uploaded_by,
+          status: row.status as StorageObjectStatus,
+          metadata: row.metadata || {},
+          createdAt: row.created_at?.toISOString ? row.created_at.toISOString() : (row.created_at || new Date().toISOString()),
+          updatedAt: row.updated_at?.toISOString ? row.updated_at.toISOString() : (row.updated_at || new Date().toISOString()),
+          deletedAt: row.deleted_at?.toISOString ? row.deleted_at.toISOString() : (row.deleted_at || undefined),
+        };
+        this.storageObjects.set(obj.id, obj);
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production') throw err;
+      console.error('[PostgreSQL Storage Sync Warning]:', (err as Error).message);
+    }
+  }
+
   // Reset database state (useful for automated tests)
   resetData(): void {
     this.organizations.clear();
@@ -3853,6 +4070,7 @@ class PlatformDatabase {
     this.attendanceRecords.clear();
     this.assessments.clear();
     this.assessmentGrades.clear();
+    this.storageObjects.clear();
     this.auditLogs.clear();
     this.invitations.clear();
     this.organizationMemberships.clear();

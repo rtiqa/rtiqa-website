@@ -72,6 +72,40 @@ dashboardRouter.get('/stats', (req: PlatformRequest, res: express.Response) => {
       });
     }
 
+    if (user.role === 'PARENT') {
+      const links = db.getParentStudentLinks(orgId, { parentId: user.id });
+      const childrenSummaries = links.map((link) => {
+        const studentUser = db.getUserById(link.studentId, orgId);
+        const performance = db.getStudentAcademicPerformance(link.studentId, orgId);
+        const attendance = db.getAttendanceSummaryForStudent(link.studentId, orgId);
+        const behaviorRecords = db.getStudentBehaviorRecords(orgId, { studentId: link.studentId });
+        const behaviorPoints = behaviorRecords.reduce((sum, b) => sum + (b.points || 0), 0);
+
+        return {
+          linkId: link.id,
+          studentId: link.studentId,
+          studentName: studentUser?.fullName || link.studentName || 'طالب',
+          relationship: link.relationship,
+          isEmergencyContact: link.isEmergencyContact,
+          classroomId: studentUser?.classroomId,
+          gpaPercent: performance.overallGpaPercent,
+          letterGrade: performance.letterGrade,
+          attendanceRate: attendance.attendanceRate,
+          behaviorPoints,
+          activeCoursesCount: performance.courses.length,
+        };
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          role: 'PARENT',
+          linkedChildrenCount: links.length,
+          children: childrenSummaries,
+        },
+      });
+    }
+
     // Student
     const academicPerformance = db.getStudentAcademicPerformance(user.id, orgId);
     const attendanceSummary = db.getAttendanceSummaryForStudent(user.id, orgId);

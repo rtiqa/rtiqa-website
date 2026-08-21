@@ -637,3 +637,33 @@ export interface AIUsageSummary {
   featureBreakdown: Record<string, { requests: number; tokens: number; cost: number }>;
 }
 
+export type StorageResourceType =
+  | 'avatar'
+  | 'student_document'
+  | 'assignment_attachment'
+  | 'assignment_submission'
+  | 'curriculum_document'
+  | 'report_card'
+  | 'general_asset';
+
+export type StorageObjectStatus = 'PENDING' | 'UPLOADED' | 'FAILED' | 'DELETED';
+
+export interface StorageObjectMetadata {
+  id: string;
+  organizationId: string;
+  objectKey: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  checksum?: string;
+  resourceType: StorageResourceType;
+  resourceId: string;
+  uploadedBy: string;
+  status: StorageObjectStatus;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
+}
+
+

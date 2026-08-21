@@ -31,7 +31,7 @@ interface AuthContextType {
   unlinkProvider: (provider: AuthProviderType) => Promise<void>;
   switchOrganization: (organizationId?: string, organizationSlug?: string) => Promise<void>;
   updateProfile: (data: { fullName?: string; avatarUrl?: string; phone?: string }) => Promise<void>;
-  demoSwitch: (persona: 'admin' | 'teacher' | 'teacher2' | 'student' | 'student2', tenantSlug?: string) => Promise<void>;
+  demoSwitch: (persona: 'admin' | 'teacher' | 'teacher2' | 'student' | 'student2' | 'parent', tenantSlug?: string) => Promise<void>;
   registerSchool: (data: {
     schoolName: string;
     slug: string;

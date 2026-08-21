@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { platformApi } from '../services/api';
-import { Course, Lesson } from '../types';
+import { Course, Lesson, StorageObject } from '../types';
 import { usePlatformAuth } from '../context/PlatformAuthContext';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
+import { FileUploadZone } from '../components/FileUploadZone';
+import { AttachmentViewer } from '../components/AttachmentViewer';
 import {
   FileText,
   Plus,
@@ -31,6 +33,9 @@ export const LessonsManagerPage: React.FC = () => {
   const [newMediaUrl, setNewMediaUrl] = useState('');
   const [isPublished, setIsPublished] = useState(true);
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [lessonAttachmentObj, setLessonAttachmentObj] = useState<StorageObject | null>(null);
+  const [tempLessonDraftId, setTempLessonDraftId] = useState(`lesson_draft_${Date.now()}`);
+  const [refreshAttachmentsTrigger, setRefreshAttachmentsTrigger] = useState(0);
 
   const handleAIAssistLesson = async () => {
     if (!newTitle.trim()) {
@@ -98,11 +103,21 @@ export const LessonsManagerPage: React.FC = () => {
     e.preventDefault();
     if (!newTitle || !newContent || !selectedCourseId) return;
     try {
+      const attachmentsList: Array<{ name: string; url: string; size: string }> = [];
+      if (lessonAttachmentObj) {
+        attachmentsList.push({
+          name: lessonAttachmentObj.originalFilename || lessonAttachmentObj.filename,
+          url: lessonAttachmentObj.id,
+          size: `${Math.round(lessonAttachmentObj.sizeBytes / 1024)} KB`,
+        });
+      }
+
       await platformApi.createLesson({
         courseId: selectedCourseId,
         title: newTitle,
         contentHtml: newContent,
         mediaUrl: newMediaUrl || undefined,
+        attachments: attachmentsList,
         isPublished,
         orderIndex: lessons.length + 1,
       });
@@ -110,6 +125,9 @@ export const LessonsManagerPage: React.FC = () => {
       setNewTitle('');
       setNewContent('');
       setNewMediaUrl('');
+      setLessonAttachmentObj(null);
+      setTempLessonDraftId(`lesson_draft_${Date.now()}`);
+      setRefreshAttachmentsTrigger((prev) => prev + 1);
       loadLessons(selectedCourseId);
     } catch (e: any) {
       alert(e.message || 'فشل حفظ الدرس');
@@ -258,11 +276,18 @@ export const LessonsManagerPage: React.FC = () => {
               />
 
               {/* Attachments Section */}
+              <AttachmentViewer
+                resourceType="lesson_attachment"
+                resourceId={activeLesson.id}
+                title="المستندات والمرفقات الإثرائية للدرس"
+                refreshTrigger={refreshAttachmentsTrigger}
+              />
+
               {activeLesson.attachments && activeLesson.attachments.length > 0 && (
                 <div className="pt-4 border-t border-slate-800 space-y-2.5">
                   <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                     <Paperclip className="w-3.5 h-3.5 text-emerald-400" />
-                    المرفقات والمراجع الدراسية:
+                    المرفقات والمراجع الدراسية المسجلة:
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {activeLesson.attachments.map((att, idx) => (
@@ -315,6 +340,17 @@ export const LessonsManagerPage: React.FC = () => {
               className="w-full px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 font-mono text-xs focus:border-emerald-500 focus:outline-none"
             />
           </div>
+
+          {/* Lesson Attachment File Upload Zone */}
+          <FileUploadZone
+            resourceType="lesson_attachment"
+            resourceId={tempLessonDraftId}
+            onUploadSuccess={(storageObj) => setLessonAttachmentObj(storageObj)}
+            onRemove={() => setLessonAttachmentObj(null)}
+            initialStorageObject={lessonAttachmentObj}
+            label="رفع ملف أو مذكرة إثرائية للدرس (اختياري):"
+            helpText="PDF، Word، شرائح العرض، أو صور توضيحية حتى 50 ميجابايت"
+          />
 
           <div>
             <div className="flex items-center justify-between mb-1">

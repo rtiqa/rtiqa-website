@@ -73,6 +73,49 @@ export async function runMigrations(): Promise<{ success: boolean; message: stri
   }
 }
 
+/**
+ * Checks the current migration status and latest applied version.
+ */
+export async function getMigrationStatus(): Promise<{
+  migrated: boolean;
+  version?: string;
+  tablesCount?: number;
+  error?: string;
+}> {
+  const status = await checkPostgresConnection();
+  if (!status.connected) {
+    return { migrated: false, error: 'Database not connected' };
+  }
+
+  const pool = getPostgresPool();
+  if (!pool) {
+    return { migrated: false, error: 'PostgreSQL connection pool unavailable' };
+  }
+
+  try {
+    const migRes = await pool.query<{ version: string }>(
+      `SELECT version FROM _schema_migrations ORDER BY id DESC LIMIT 1;`
+    );
+    const countRes = await pool.query<{ count: string }>(
+      `SELECT COUNT(*) as count FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';`
+    );
+
+    const latestVersion = migRes.rows[0]?.version;
+    const count = parseInt(countRes.rows[0]?.count || '0', 10);
+
+    return {
+      migrated: Boolean(latestVersion),
+      version: latestVersion,
+      tablesCount: count,
+    };
+  } catch (err: any) {
+    return {
+      migrated: false,
+      error: err.message,
+    };
+  }
+}
+
 // CLI execution check
 if (process.argv[1] && process.argv[1].endsWith('migrate.ts')) {
   runMigrations().then((res) => {
