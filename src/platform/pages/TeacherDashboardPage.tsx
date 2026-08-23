@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { platformApi } from '../services/api';
 import { StatCard } from '../components/StatCard';
 import { Badge } from '../components/Badge';
+import { AcademicAnalyticsPanel } from '../components/AcademicAnalyticsPanel';
 import { PlatformPage } from '../types';
 import {
   BookOpen,
@@ -115,6 +116,9 @@ export const TeacherDashboardPage: React.FC<TeacherDashboardPageProps> = ({ onNa
           color={stats?.pendingGradingCount > 0 ? 'amber' : 'emerald'}
         />
       </div>
+
+      {/* Academic Analytics & Student Early Warning */}
+      <AcademicAnalyticsPanel onNavigate={onNavigate} />
 
       {/* Active Courses List */}
       <div className="p-6 rounded-3xl bg-slate-900/60 border border-slate-800 space-y-4">

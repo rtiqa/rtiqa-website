@@ -51,6 +51,17 @@ import type {
   StorageObjectMetadata,
   StorageResourceType,
   StorageObjectStatus,
+  NotificationItem,
+  NotificationType,
+  NotificationChannel,
+  CurriculumUnit,
+  LibraryResource,
+  ResourceActivity,
+  LibraryStats,
+  LibraryResourceType,
+  LibraryResourceVisibility,
+  LibraryResourceStatus,
+  ResourceActivityAction,
 } from './types.ts';
 import { checkPostgresConnection, getPostgresPool, withTenantClient } from '../../src/db/postgres.ts';
 import type { PostgresStatus } from '../../src/db/postgres.ts';
@@ -90,6 +101,10 @@ class PlatformDatabase {
   private studentRecords: Map<string, StudentRecord> = new Map();
   private studentBehaviorRecords: Map<string, StudentBehaviorRecord> = new Map();
   private studentLifecycleEvents: Map<string, StudentLifecycleEvent> = new Map();
+  private notifications: Map<string, NotificationItem> = new Map();
+  private curriculumUnits: Map<string, CurriculumUnit> = new Map();
+  private libraryResources: Map<string, LibraryResource> = new Map();
+  private resourceActivities: Map<string, ResourceActivity> = new Map();
 
   constructor() {
     this.seedInitialData();
@@ -1356,6 +1371,312 @@ class PlatformDatabase {
         teacherSpecialization: user.teacherSpecialization,
       });
     }
+
+    // Seed realistic notifications
+    this.createNotification({
+      organizationId: schoolAId,
+      recipientId: student1.id,
+      recipientRole: 'STUDENT',
+      type: 'ASSIGNMENT_CREATED',
+      title: 'واجب جديد: الدوال الأسية واللوغاريتمات',
+      body: 'قام أستاذ الرياضيات بإضافة واجب جديد في مقرر الرياضيات - شعبة 10-أ.',
+      channels: ['IN_APP', 'EMAIL'],
+      data: { courseId: courseMath10AId },
+    });
+
+    this.createNotification({
+      organizationId: schoolAId,
+      recipientId: parent1.id,
+      recipientRole: 'PARENT',
+      type: 'BEHAVIOR_LOGGED',
+      title: 'إشادة تفوق وتميز أكاديمي',
+      body: 'تم تسجيل بطاقة تفوق للطالب عمر خالد السعيد لحصوله على المركز الأول في أولمبياد الرياضيات.',
+      channels: ['IN_APP', 'EMAIL', 'WHATSAPP'],
+      data: { studentId: student1.id },
+    });
+
+    this.createNotification({
+      organizationId: schoolAId,
+      recipientId: teacherMath.id,
+      recipientRole: 'TEACHER',
+      type: 'ANNOUNCEMENT',
+      title: 'تذكير: رصد درجات الاختبارات التكوينية',
+      body: 'يرجى مراجعة سجلات الدرجات وإتمام اعتماد نتائج الاختبارات للفصل الدراسي الأول.',
+      channels: ['IN_APP'],
+    });
+
+    this.createNotification({
+      organizationId: schoolAId,
+      recipientId: adminA.id,
+      recipientRole: 'ORG_ADMIN',
+      type: 'SYSTEM_ALERT',
+      title: 'تقرير التحليلات الأكاديمية الأسبوعي جاهز',
+      body: 'تم توليد تقرير مؤشرات الأداء والتدخل المبكر للمدرسة تلقائياً عبر الذكاء الاصطناعي.',
+      channels: ['IN_APP'],
+    });
+
+    // School A: Curriculum Units (Structured Units)
+    const unit1MathId = 'unit_horizon_math_01';
+    this.curriculumUnits.set(unit1MathId, {
+      id: unit1MathId,
+      organizationId: schoolAId,
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات المتقدمة - الصف العاشر',
+      title: 'الوحدة الأولى: الجبر والتحليل الرياضي المتقدم',
+      description: 'الدوال الأسية واللوغاريتمية، حل المعادلات غير الخطية، وتطبيقات النمذجة الرياضية',
+      orderIndex: 1,
+      isPublished: true,
+      createdAt: '2026-08-25T08:00:00Z',
+      updatedAt: '2026-08-25T08:00:00Z',
+    });
+
+    const unit2MathId = 'unit_horizon_math_02';
+    this.curriculumUnits.set(unit2MathId, {
+      id: unit2MathId,
+      organizationId: schoolAId,
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات المتقدمة - الصف العاشر',
+      title: 'الوحدة الثانية: الجبر الخطي والمصفوفات والمحددات',
+      description: 'العمليات على المصفوفات، إيجاد النظير الضربي، وتطبيقات حل أنظمة المعادلات الخطية',
+      orderIndex: 2,
+      isPublished: true,
+      createdAt: '2026-08-25T08:00:00Z',
+      updatedAt: '2026-08-25T08:00:00Z',
+    });
+
+    const unit1PhysId = 'unit_horizon_phys_01';
+    this.curriculumUnits.set(unit1PhysId, {
+      id: unit1PhysId,
+      organizationId: schoolAId,
+      courseId: coursePhys10AId,
+      courseTitle: 'الفيزياء التجريبية والميكانيكا',
+      title: 'الوحدة الأولى: علم الحركة والميكانيكا الكلاسيكية',
+      description: 'قوانين نيوتن للحركة، كمية الحركة والاصطدامات، والطاقة والشغل الميكانيكي',
+      orderIndex: 1,
+      isPublished: true,
+      createdAt: '2026-08-25T08:00:00Z',
+      updatedAt: '2026-08-25T08:00:00Z',
+    });
+
+    // Update lessons with unit link
+    const les1 = this.lessons.get(lesson1Id);
+    if (les1) {
+      les1.unitId = unit1MathId;
+      les1.unitTitle = 'الوحدة الأولى: الجبر والتحليل الرياضي المتقدم';
+    }
+    const les2 = this.lessons.get(lesson2Id);
+    if (les2) {
+      les2.unitId = unit2MathId;
+      les2.unitTitle = 'الوحدة الثانية: الجبر الخطي والمصفوفات والمحددات';
+    }
+
+    // School A: Digital Learning Library Resources (Multi-Format, Rich Educational Assets)
+    const res1Id = 'res_horizon_math_doc1';
+    this.libraryResources.set(res1Id, {
+      id: res1Id,
+      organizationId: schoolAId,
+      title: 'الدليل الشامل في حل المعادلات اللوغاريتمية والأسية',
+      description: 'مذكرة تدريبية مكثفة تحوي 50 مسألة محلولة بالتفصيل مع خرائط مفاهيمية للتحويل اللوغاريتمي.',
+      resourceType: 'DOCUMENT',
+      format: 'pdf',
+      subjectId: mathSubId,
+      subjectName: 'الرياضيات العامة والتحليل',
+      gradeLevelId: grade10Id,
+      gradeLevelName: 'الصف العاشر (الأول ثانوي)',
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات - الصف العاشر (شعبة أ)',
+      unitId: unit1MathId,
+      unitTitle: 'الوحدة الأولى: الجبر والتحليل الرياضي المتقدم',
+      lessonId: lesson1Id,
+      lessonTitle: 'مقدمة في الدوال الأسية واللوغاريتمات',
+      externalUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      fileSize: 2450000,
+      fileType: 'application/pdf',
+      tags: ['رياضيات', 'لوغاريتمات', 'دوال أسية', 'أول ثانوي', 'حلول نموذجية'],
+      uploadedBy: teacherMath.id,
+      authorName: teacherMath.fullName,
+      visibility: 'PUBLIC_SCHOOL',
+      status: 'PUBLISHED',
+      viewCount: 142,
+      downloadCount: 88,
+      completionCount: 65,
+      aiSearchable: true,
+      aiSummary: 'دليل تدريبي شامل يركز على قوانين اللوغاريتمات الطبيعية والمعتادة وخطوات تبسيط المعادلات الأسية.',
+      createdAt: '2026-09-01T10:00:00Z',
+      updatedAt: '2026-09-01T10:00:00Z',
+    });
+
+    const res2Id = 'res_horizon_math_video1';
+    this.libraryResources.set(res2Id, {
+      id: res2Id,
+      organizationId: schoolAId,
+      title: 'شرح مرئي: التطبيقات الحقيقية للمصفوفات في الذكاء الاصطناعي',
+      description: 'فيديو تفاعلي عالي الدقة يشرح كيفية تحويل الصور إلى مصفوفات ثنائية وتطبيق فلاتر الالتفاف الجبري.',
+      resourceType: 'VIDEO',
+      format: 'youtube',
+      subjectId: mathSubId,
+      subjectName: 'الرياضيات العامة والتحليل',
+      gradeLevelId: grade10Id,
+      gradeLevelName: 'الصف العاشر (الأول ثانوي)',
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات - الصف العاشر (شعبة أ)',
+      unitId: unit2MathId,
+      unitTitle: 'الوحدة الثانية: الجبر الخطي والمصفوفات والمحددات',
+      lessonId: lesson2Id,
+      lessonTitle: 'المصفوفات والعمليات الجبرية الخطية',
+      externalUrl: 'https://www.youtube.com/watch?v=fNk_zzaMoSs',
+      fileSize: 0,
+      fileType: 'video/youtube',
+      tags: ['مصفوفات', 'ذكاء اصطناعي', 'شرح مرئي', 'جبر خطي'],
+      uploadedBy: teacherMath.id,
+      authorName: teacherMath.fullName,
+      visibility: 'PUBLIC_SCHOOL',
+      status: 'PUBLISHED',
+      viewCount: 290,
+      downloadCount: 45,
+      completionCount: 180,
+      aiSearchable: true,
+      aiSummary: 'فيديو تعليمي يوضح العلاقة بين العمليات المصفوفية وتدريب الشبكات العصبية ومعالجة الصور الرقمية.',
+      createdAt: '2026-09-08T11:00:00Z',
+      updatedAt: '2026-09-08T11:00:00Z',
+    });
+
+    const res3Id = 'res_horizon_phys_sim1';
+    this.libraryResources.set(res3Id, {
+      id: res3Id,
+      organizationId: schoolAId,
+      title: 'مختبر افتراضي تفاعلي: محاكاة قوانين الحركة وقوى الاحتكاك',
+      description: 'تطبيق محاكاة فيزيائي تفاعلي يسمح للطالب بتغيير زاوية السطح المائل ومعامل الاحتكاك وملاحظة التسارع بيانياً.',
+      resourceType: 'INTERACTIVE',
+      format: 'web_link',
+      subjectId: physicsSubId,
+      subjectName: 'الفيزياء التجريبية والميكانيكا',
+      gradeLevelId: grade10Id,
+      gradeLevelName: 'الصف العاشر (الأول ثانوي)',
+      courseId: coursePhys10AId,
+      courseTitle: 'الفيزياء - الصف العاشر (شعبة أ)',
+      unitId: unit1PhysId,
+      unitTitle: 'الوحدة الأولى: علم الحركة والميكانيكا الكلاسيكية',
+      externalUrl: 'https://phet.colorado.edu/sims/html/forces-and-motion-basics/latest/forces-and-motion-basics_all.html',
+      fileSize: 0,
+      fileType: 'text/html',
+      tags: ['فيزياء', 'مختبر افتراضي', 'قوانين نيوتن', 'محاكاة', 'تجارب تفاعلية'],
+      uploadedBy: teacherMath.id,
+      authorName: teacherMath.fullName,
+      visibility: 'COURSE_STUDENTS',
+      status: 'PUBLISHED',
+      viewCount: 185,
+      downloadCount: 0,
+      completionCount: 110,
+      aiSearchable: true,
+      aiSummary: 'محاكاة تفاعلية لفهم محصلة القوى، التسارع، والتأثير المباشر للكتلة وقوة الاحتكاك على الأجسام.',
+      createdAt: '2026-09-12T09:00:00Z',
+      updatedAt: '2026-09-12T09:00:00Z',
+    });
+
+    const res4Id = 'res_horizon_arab_pres1';
+    this.libraryResources.set(res4Id, {
+      id: res4Id,
+      organizationId: schoolAId,
+      title: 'عرض تقديمي: فنون البلاغة العربية وعلم البيان',
+      description: 'شرائح عرض تفاعلية مع شواهد قرآنية وأبيات شعرية معربة توضح الفروق بين الاستعارة التصريحية والمكنية.',
+      resourceType: 'PRESENTATION',
+      format: 'pptx',
+      subjectId: arabicSubId,
+      subjectName: 'اللغة العربية والأدب',
+      gradeLevelId: grade10Id,
+      gradeLevelName: 'الصف العاشر (الأول ثانوي)',
+      courseId: courseArabic10AId,
+      courseTitle: 'اللغة العربية والبلاغة - الصف العاشر (شعبة أ)',
+      externalUrl: 'https://view.officeapps.live.com/op/view.aspx',
+      fileSize: 5200000,
+      fileType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      tags: ['لغة عربية', 'بلاغة', 'عرض تقديمي', 'استعارة', 'بيان'],
+      uploadedBy: teacherArabic.id,
+      authorName: teacherArabic.fullName,
+      visibility: 'PUBLIC_SCHOOL',
+      status: 'PUBLISHED',
+      viewCount: 96,
+      downloadCount: 42,
+      completionCount: 50,
+      aiSearchable: true,
+      aiSummary: 'عرض تقديمي تعليمي شامل في علم البيان والبلاغة مع تمارين تطبيقية لتحليل الاستعارة والكناية.',
+      createdAt: '2026-09-15T12:00:00Z',
+      updatedAt: '2026-09-15T12:00:00Z',
+    });
+
+    const res5Id = 'res_horizon_math_sheet1';
+    this.libraryResources.set(res5Id, {
+      id: res5Id,
+      organizationId: schoolAId,
+      title: 'جدول حاسبي: حاسبة المصفوفات وحل المعادلات الآنية 3x3',
+      description: 'جدول إكسيل احترافي مبرمج بالمعادلات الرياضية للتحقق الذاتي من حسابات محدد المصفوفة والمعكوس.',
+      resourceType: 'SPREADSHEET',
+      format: 'xlsx',
+      subjectId: mathSubId,
+      subjectName: 'الرياضيات العامة والتحليل',
+      gradeLevelId: grade10Id,
+      gradeLevelName: 'الصف العاشر (الأول ثانوي)',
+      courseId: courseMath10AId,
+      courseTitle: 'الرياضيات - الصف العاشر (شعبة أ)',
+      unitId: unit2MathId,
+      unitTitle: 'الوحدة الثانية: الجبر الخطي والمصفوفات والمحددات',
+      externalUrl: 'https://view.officeapps.live.com/op/view.aspx',
+      fileSize: 850000,
+      fileType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      tags: ['جداول', 'إكسيل', 'حاسبة مصفوفات', 'تحقق ذاتي'],
+      uploadedBy: teacherMath.id,
+      authorName: teacherMath.fullName,
+      visibility: 'TEACHERS_ONLY',
+      status: 'PUBLISHED',
+      viewCount: 38,
+      downloadCount: 22,
+      completionCount: 15,
+      aiSearchable: true,
+      aiSummary: 'نموذج جدول إلكتروني يساعد المعلمين على إعداد وتصحيح مسائل المصفوفات 3x3 بسرعة ودقة.',
+      createdAt: '2026-09-18T14:00:00Z',
+      updatedAt: '2026-09-18T14:00:00Z',
+    });
+
+    // Seed realistic learning activities
+    this.resourceActivities.set('act_seed_01', {
+      id: 'act_seed_01',
+      organizationId: schoolAId,
+      resourceId: res1Id,
+      userId: student1.id,
+      userName: student1.fullName,
+      userRole: 'STUDENT',
+      action: 'VIEWED',
+      courseId: courseMath10AId,
+      lessonId: lesson1Id,
+      timestamp: '2026-09-05T14:20:00Z',
+    });
+
+    this.resourceActivities.set('act_seed_02', {
+      id: 'act_seed_02',
+      organizationId: schoolAId,
+      resourceId: res1Id,
+      userId: student1.id,
+      userName: student1.fullName,
+      userRole: 'STUDENT',
+      action: 'DOWNLOADED',
+      courseId: courseMath10AId,
+      lessonId: lesson1Id,
+      timestamp: '2026-09-05T14:25:00Z',
+    });
+
+    this.resourceActivities.set('act_seed_03', {
+      id: 'act_seed_03',
+      organizationId: schoolAId,
+      resourceId: res2Id,
+      userId: student2.id,
+      userName: student2.fullName,
+      userRole: 'STUDENT',
+      action: 'COMPLETED',
+      courseId: courseMath10AId,
+      lessonId: lesson2Id,
+      timestamp: '2026-09-10T16:00:00Z',
+    });
   }
 
   // --- Multi-Tenant Query Helpers (Row-Level Security Enforcement) ---
@@ -4087,7 +4408,93 @@ class PlatformDatabase {
     this.studentRecords.clear();
     this.studentBehaviorRecords.clear();
     this.studentLifecycleEvents.clear();
+    this.notifications.clear();
     this.seedInitialData();
+  }
+
+  // ==========================================
+  // Notification Management Operations
+  // ==========================================
+
+  createNotification(data: Omit<NotificationItem, 'id' | 'createdAt' | 'isRead'>): NotificationItem {
+    const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const notification: NotificationItem = {
+      id,
+      organizationId: data.organizationId,
+      recipientId: data.recipientId,
+      recipientRole: data.recipientRole,
+      type: data.type,
+      title: data.title,
+      body: data.body,
+      data: data.data || {},
+      channels: data.channels || ['IN_APP'],
+      isRead: false,
+      createdAt: new Date().toISOString(),
+    };
+
+    this.notifications.set(id, notification);
+    return notification;
+  }
+
+  getNotifications(
+    orgId: string,
+    recipientId: string,
+    filter?: { unreadOnly?: boolean; limit?: number }
+  ): NotificationItem[] {
+    let items = Array.from(this.notifications.values()).filter(
+      (n) => n.organizationId === orgId && n.recipientId === recipientId
+    );
+
+    if (filter?.unreadOnly) {
+      items = items.filter((n) => !n.isRead);
+    }
+
+    // Sort newest first
+    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    if (filter?.limit) {
+      items = items.slice(0, filter.limit);
+    }
+
+    return items;
+  }
+
+  markNotificationAsRead(id: string, orgId: string, recipientId: string): boolean {
+    const notif = this.notifications.get(id);
+    if (!notif || notif.organizationId !== orgId || notif.recipientId !== recipientId) {
+      return false;
+    }
+
+    notif.isRead = true;
+    notif.readAt = new Date().toISOString();
+    this.notifications.set(id, notif);
+    return true;
+  }
+
+  markAllNotificationsAsRead(orgId: string, recipientId: string): number {
+    let count = 0;
+    const now = new Date().toISOString();
+
+    for (const [id, notif] of this.notifications.entries()) {
+      if (notif.organizationId === orgId && notif.recipientId === recipientId && !notif.isRead) {
+        notif.isRead = true;
+        notif.readAt = now;
+        this.notifications.set(id, notif);
+        count++;
+      }
+    }
+
+    return count;
+  }
+
+  getUnreadNotificationCount(orgId: string, recipientId: string): number {
+    let count = 0;
+    for (const notif of this.notifications.values()) {
+      if (notif.organizationId === orgId && notif.recipientId === recipientId && !notif.isRead) {
+        count++;
+      }
+    }
+    return count;
   }
 
   // Verification helpers
@@ -4114,6 +4521,310 @@ class PlatformDatabase {
   isAcademicYearInOrg(yearId: string, orgId: string): boolean {
     const y = this.academicYears.get(yearId);
     return Boolean(y && y.organizationId === orgId);
+  }
+
+  // ==========================================
+  // Phase 5.1: Curriculum Units Management
+  // ==========================================
+
+  getUnitsByCourse(courseId: string, orgId: string): CurriculumUnit[] {
+    const course = this.courses.get(courseId);
+    if (!course || course.organizationId !== orgId) return [];
+
+    return Array.from(this.curriculumUnits.values())
+      .filter((u) => u.organizationId === orgId && u.courseId === courseId)
+      .map((u) => ({
+        ...u,
+        courseTitle: course.title,
+      }))
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+  }
+
+  getUnitById(unitId: string, orgId: string): CurriculumUnit | undefined {
+    const unit = this.curriculumUnits.get(unitId);
+    if (!unit || unit.organizationId !== orgId) return undefined;
+    const course = this.courses.get(unit.courseId);
+    return {
+      ...unit,
+      courseTitle: course?.title,
+    };
+  }
+
+  createUnit(data: Omit<CurriculumUnit, 'id' | 'createdAt' | 'updatedAt'>): CurriculumUnit {
+    const id = `unit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const now = new Date().toISOString();
+    const course = this.courses.get(data.courseId);
+    const unit: CurriculumUnit = {
+      ...data,
+      id,
+      courseTitle: course?.title,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.curriculumUnits.set(id, unit);
+    return unit;
+  }
+
+  updateUnit(id: string, orgId: string, updates: Partial<CurriculumUnit>): CurriculumUnit | undefined {
+    const unit = this.getUnitById(id, orgId);
+    if (!unit) return undefined;
+    const updated: CurriculumUnit = {
+      ...unit,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.curriculumUnits.set(id, updated);
+    return updated;
+  }
+
+  deleteUnit(id: string, orgId: string): boolean {
+    const unit = this.getUnitById(id, orgId);
+    if (!unit) return false;
+    this.curriculumUnits.delete(id);
+    return true;
+  }
+
+  // ==========================================
+  // Phase 5.1: Digital Learning Library Resources
+  // ==========================================
+
+  getLibraryResources(
+    orgId: string,
+    filter?: {
+      subjectId?: string;
+      gradeLevelId?: string;
+      courseId?: string;
+      unitId?: string;
+      lessonId?: string;
+      resourceType?: LibraryResourceType;
+      status?: LibraryResourceStatus;
+      visibility?: LibraryResourceVisibility;
+      search?: string;
+      role?: string;
+      userId?: string;
+      enrolledCourseIds?: string[];
+    }
+  ): LibraryResource[] {
+    let resources = Array.from(this.libraryResources.values()).filter((r) => r.organizationId === orgId);
+
+    // Role-based visibility filtering
+    if (filter?.role) {
+      if (filter.role === 'STUDENT') {
+        resources = resources.filter((r) => {
+          if (r.status !== 'PUBLISHED') return false;
+          if (r.visibility === 'PUBLIC_SCHOOL') return true;
+          if (r.visibility === 'COURSE_STUDENTS') {
+            if (!r.courseId) return true;
+            return filter.enrolledCourseIds?.includes(r.courseId) ?? false;
+          }
+          return false;
+        });
+      } else if (filter.role === 'PARENT') {
+        resources = resources.filter((r) => {
+          if (r.status !== 'PUBLISHED') return false;
+          return r.visibility === 'PUBLIC_SCHOOL' || r.visibility === 'COURSE_STUDENTS';
+        });
+      } else if (filter.role === 'TEACHER') {
+        resources = resources.filter((r) => {
+          if (r.visibility === 'PRIVATE' && r.uploadedBy !== filter.userId) return false;
+          return true;
+        });
+      }
+    }
+
+    if (filter?.subjectId) {
+      resources = resources.filter((r) => r.subjectId === filter.subjectId);
+    }
+    if (filter?.gradeLevelId) {
+      resources = resources.filter((r) => r.gradeLevelId === filter.gradeLevelId);
+    }
+    if (filter?.courseId) {
+      resources = resources.filter((r) => r.courseId === filter.courseId);
+    }
+    if (filter?.unitId) {
+      resources = resources.filter((r) => r.unitId === filter.unitId);
+    }
+    if (filter?.lessonId) {
+      resources = resources.filter((r) => r.lessonId === filter.lessonId);
+    }
+    if (filter?.resourceType) {
+      resources = resources.filter((r) => r.resourceType === filter.resourceType);
+    }
+    if (filter?.status) {
+      resources = resources.filter((r) => r.status === filter.status);
+    }
+    if (filter?.visibility) {
+      resources = resources.filter((r) => r.visibility === filter.visibility);
+    }
+    if (filter?.search && filter.search.trim()) {
+      const q = filter.search.trim().toLowerCase();
+      resources = resources.filter(
+        (r) =>
+          r.title.toLowerCase().includes(q) ||
+          (r.description && r.description.toLowerCase().includes(q)) ||
+          (Array.isArray(r.tags) && r.tags.some((t) => t.toLowerCase().includes(q))) ||
+          (r.authorName && r.authorName.toLowerCase().includes(q))
+      );
+    }
+
+    return resources.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  getLibraryResourceById(id: string, orgId: string): LibraryResource | undefined {
+    const res = this.libraryResources.get(id);
+    if (!res || res.organizationId !== orgId) return undefined;
+    return res;
+  }
+
+  createLibraryResource(
+    data: Omit<LibraryResource, 'id' | 'viewCount' | 'downloadCount' | 'completionCount' | 'createdAt' | 'updatedAt' | 'tags' | 'aiSearchable'> & {
+      tags?: string[];
+      aiSearchable?: boolean;
+    }
+  ): LibraryResource {
+    const id = `res_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const now = new Date().toISOString();
+
+    const subject = data.subjectId ? this.subjects.get(data.subjectId) : undefined;
+    const gradeLevel = data.gradeLevelId ? this.gradeLevels.get(data.gradeLevelId) : undefined;
+    const course = data.courseId ? this.courses.get(data.courseId) : undefined;
+    const unit = data.unitId ? this.curriculumUnits.get(data.unitId) : undefined;
+    const lesson = data.lessonId ? this.lessons.get(data.lessonId) : undefined;
+    const uploader = this.users.get(data.uploadedBy);
+
+    const resource: LibraryResource = {
+      ...data,
+      id,
+      tags: Array.isArray(data.tags) ? data.tags : [],
+      aiSearchable: data.aiSearchable !== false,
+      subjectName: subject?.name,
+      gradeLevelName: gradeLevel?.name,
+      courseTitle: course?.title,
+      unitTitle: unit?.title,
+      lessonTitle: lesson?.title,
+      authorName: uploader?.fullName || data.authorName || 'معلم',
+      viewCount: 0,
+      downloadCount: 0,
+      completionCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.libraryResources.set(id, resource);
+    return resource;
+  }
+
+  updateLibraryResource(id: string, orgId: string, updates: Partial<LibraryResource>): LibraryResource | undefined {
+    const res = this.getLibraryResourceById(id, orgId);
+    if (!res) return undefined;
+
+    const subject = updates.subjectId ? this.subjects.get(updates.subjectId) : res.subjectId ? this.subjects.get(res.subjectId) : undefined;
+    const gradeLevel = updates.gradeLevelId ? this.gradeLevels.get(updates.gradeLevelId) : res.gradeLevelId ? this.gradeLevels.get(res.gradeLevelId) : undefined;
+    const course = updates.courseId ? this.courses.get(updates.courseId) : res.courseId ? this.courses.get(res.courseId) : undefined;
+    const unit = updates.unitId ? this.curriculumUnits.get(updates.unitId) : res.unitId ? this.curriculumUnits.get(res.unitId) : undefined;
+    const lesson = updates.lessonId ? this.lessons.get(updates.lessonId) : res.lessonId ? this.lessons.get(res.lessonId) : undefined;
+
+    const updated: LibraryResource = {
+      ...res,
+      ...updates,
+      subjectName: subject?.name || res.subjectName,
+      gradeLevelName: gradeLevel?.name || res.gradeLevelName,
+      courseTitle: course?.title || res.courseTitle,
+      unitTitle: unit?.title || res.unitTitle,
+      lessonTitle: lesson?.title || res.lessonTitle,
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.libraryResources.set(id, updated);
+    return updated;
+  }
+
+  deleteLibraryResource(id: string, orgId: string): boolean {
+    const res = this.getLibraryResourceById(id, orgId);
+    if (!res) return false;
+    this.libraryResources.delete(id);
+    return true;
+  }
+
+  recordResourceActivity(data: Omit<ResourceActivity, 'id' | 'timestamp'>): ResourceActivity {
+    const id = `act_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const now = new Date().toISOString();
+    const user = this.users.get(data.userId);
+
+    const activity: ResourceActivity = {
+      ...data,
+      id,
+      userName: user?.fullName,
+      timestamp: now,
+    };
+    this.resourceActivities.set(id, activity);
+
+    // Increment resource stats
+    const res = this.libraryResources.get(data.resourceId);
+    if (res && res.organizationId === data.organizationId) {
+      if (data.action === 'VIEWED') res.viewCount = (res.viewCount || 0) + 1;
+      if (data.action === 'DOWNLOADED') res.downloadCount = (res.downloadCount || 0) + 1;
+      if (data.action === 'COMPLETED') res.completionCount = (res.completionCount || 0) + 1;
+      this.libraryResources.set(res.id, res);
+    }
+
+    return activity;
+  }
+
+  getLibraryStats(orgId: string): LibraryStats {
+    const resources = Array.from(this.libraryResources.values()).filter((r) => r.organizationId === orgId);
+    
+    let totalViews = 0;
+    let totalDownloads = 0;
+    let totalCompletions = 0;
+
+    const byType: Record<LibraryResourceType, number> = {
+      DOCUMENT: 0,
+      PRESENTATION: 0,
+      SPREADSHEET: 0,
+      IMAGE: 0,
+      VIDEO: 0,
+      AUDIO: 0,
+      EXTERNAL_LINK: 0,
+      INTERACTIVE: 0,
+    };
+
+    const subjectMap = new Map<string, { subjectId: string; subjectName: string; count: number }>();
+    const gradeMap = new Map<string, { gradeLevelId: string; gradeLevelName: string; count: number }>();
+
+    for (const r of resources) {
+      totalViews += r.viewCount || 0;
+      totalDownloads += r.downloadCount || 0;
+      totalCompletions += r.completionCount || 0;
+      
+      if (r.resourceType in byType) {
+        byType[r.resourceType]++;
+      }
+
+      if (r.subjectId) {
+        const sName = r.subjectName || this.subjects.get(r.subjectId)?.name || 'عام';
+        const current = subjectMap.get(r.subjectId) || { subjectId: r.subjectId, subjectName: sName, count: 0 };
+        current.count++;
+        subjectMap.set(r.subjectId, current);
+      }
+
+      if (r.gradeLevelId) {
+        const gName = r.gradeLevelName || this.gradeLevels.get(r.gradeLevelId)?.name || 'عام';
+        const current = gradeMap.get(r.gradeLevelId) || { gradeLevelId: r.gradeLevelId, gradeLevelName: gName, count: 0 };
+        current.count++;
+        gradeMap.set(r.gradeLevelId, current);
+      }
+    }
+
+    return {
+      totalResources: resources.length,
+      totalViews,
+      totalDownloads,
+      totalCompletions,
+      byType,
+      bySubject: Array.from(subjectMap.values()),
+      byGrade: Array.from(gradeMap.values()),
+    };
   }
 }
 

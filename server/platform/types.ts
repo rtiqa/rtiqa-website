@@ -305,10 +305,13 @@ export interface Lesson {
   id: string;
   organizationId: string;
   courseId: string;
+  unitId?: string;
+  unitTitle?: string;
   title: string;
   contentHtml: string;
   mediaUrl?: string;
   attachments?: { name: string; url: string; size: string }[];
+  resourceIds?: string[];
   orderIndex: number;
   isPublished: boolean;
   createdAt: string;
@@ -569,7 +572,13 @@ export type AIFeatureType =
   | 'lesson_summary'
   | 'question_generator'
   | 'student_tutor'
-  | 'content_explainer';
+  | 'content_explainer'
+  | 'parent_assistant'
+  | 'feedback_generator'
+  | 'learning_recommendations'
+  | 'lesson_planner'
+  | 'quiz_generator'
+  | 'diagnostic_intervention';
 
 export type AIMessageRole = 'system' | 'user' | 'assistant';
 
@@ -665,5 +674,131 @@ export interface StorageObjectMetadata {
   updatedAt: string;
   deletedAt?: string;
 }
+
+// ==========================================
+// Rtiqa Notification & Event Architecture
+// ==========================================
+
+export type NotificationType =
+  | 'ASSIGNMENT_CREATED'
+  | 'SUBMISSION_GRADED'
+  | 'ATTENDANCE_ABSENT'
+  | 'ATTENDANCE_LATE'
+  | 'BEHAVIOR_LOGGED'
+  | 'PARENT_LINK_CREATED'
+  | 'ANNOUNCEMENT'
+  | 'AI_RECOMMENDATION'
+  | 'SYSTEM_ALERT';
+
+export type NotificationChannel = 'IN_APP' | 'EMAIL' | 'SMS' | 'WHATSAPP';
+
+export interface NotificationItem {
+  id: string;
+  organizationId: string;
+  recipientId: string;
+  recipientRole?: UserRole;
+  type: NotificationType;
+  title: string;
+  body: string;
+  data?: Record<string, unknown>;
+  channels: NotificationChannel[];
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+// ==========================================
+// Rtiqa Phase 5.1: Digital Learning Library & Curriculum Content
+// ==========================================
+
+export type LibraryResourceType =
+  | 'DOCUMENT'
+  | 'PRESENTATION'
+  | 'SPREADSHEET'
+  | 'IMAGE'
+  | 'VIDEO'
+  | 'AUDIO'
+  | 'EXTERNAL_LINK'
+  | 'INTERACTIVE';
+
+export type LibraryResourceFormat = 'pdf' | 'docx' | 'pptx' | 'xlsx' | 'mp4' | 'youtube' | 'web_link' | 'image' | 'audio' | string;
+
+export type LibraryResourceVisibility = 'PUBLIC_SCHOOL' | 'COURSE_STUDENTS' | 'TEACHERS_ONLY' | 'PRIVATE';
+
+export type LibraryResourceStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface CurriculumUnit {
+  id: string;
+  organizationId: string;
+  courseId: string;
+  courseTitle?: string;
+  title: string;
+  description?: string;
+  orderIndex: number;
+  isPublished: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LibraryResource {
+  id: string;
+  organizationId: string;
+  title: string;
+  description?: string;
+  resourceType: LibraryResourceType;
+  format: LibraryResourceFormat;
+  subjectId?: string;
+  subjectName?: string;
+  gradeLevelId?: string;
+  gradeLevelName?: string;
+  courseId?: string;
+  courseTitle?: string;
+  unitId?: string;
+  unitTitle?: string;
+  lessonId?: string;
+  lessonTitle?: string;
+  storageObjectId?: string;
+  externalUrl?: string;
+  fileSize?: number;
+  fileType?: string;
+  tags: string[];
+  uploadedBy: string;
+  authorName?: string;
+  visibility: LibraryResourceVisibility;
+  status: LibraryResourceStatus;
+  viewCount: number;
+  downloadCount: number;
+  completionCount: number;
+  aiSearchable: boolean;
+  aiSummary?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ResourceActivityAction = 'VIEWED' | 'DOWNLOADED' | 'COMPLETED' | 'ATTACHED';
+
+export interface ResourceActivity {
+  id: string;
+  organizationId: string;
+  resourceId: string;
+  userId: string;
+  userName?: string;
+  userRole: UserRole;
+  action: ResourceActivityAction;
+  courseId?: string;
+  lessonId?: string;
+  timestamp: string;
+}
+
+export interface LibraryStats {
+  totalResources: number;
+  totalViews: number;
+  totalDownloads: number;
+  totalCompletions: number;
+  byType: Record<LibraryResourceType, number>;
+  bySubject: Array<{ subjectId: string; subjectName: string; count: number }>;
+  byGrade: Array<{ gradeLevelId: string; gradeLevelName: string; count: number }>;
+}
+
 
 

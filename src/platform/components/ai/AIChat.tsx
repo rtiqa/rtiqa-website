@@ -34,7 +34,11 @@ export const AIChat: React.FC<AIChatProps> = ({ userRole, userName, initialCours
   const [selectedCourseId, setSelectedCourseId] = useState<string>(initialCourseId || '');
   const [selectedLessonId, setSelectedLessonId] = useState<string>(initialLessonId || '');
   const [selectedFeature, setSelectedFeature] = useState<AIFeatureType>(
-    userRole === 'STUDENT' ? 'student_tutor' : 'teacher_assistant'
+    userRole === 'PARENT'
+      ? 'parent_assistant'
+      : userRole === 'STUDENT'
+      ? 'student_tutor'
+      : 'teacher_assistant'
   );
   const [loading, setLoading] = useState<boolean>(false);
   const [fetchingHistory, setFetchingHistory] = useState<boolean>(false);
@@ -43,6 +47,8 @@ export const AIChat: React.FC<AIChatProps> = ({ userRole, userName, initialCours
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const isTeacher = userRole === 'TEACHER' || userRole === 'ORG_ADMIN' || userRole === 'SUPER_ADMIN';
+  const isParent = userRole === 'PARENT';
+  const isStudent = userRole === 'STUDENT';
 
   // Load Initial Data (Conversations, Courses, Usage)
   useEffect(() => {
@@ -280,7 +286,7 @@ export const AIChat: React.FC<AIChatProps> = ({ userRole, userName, initialCours
         {/* Header with Feature Mode & Course Scoping Controls */}
         <div className="p-3.5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap items-center justify-between gap-3">
           {/* Mode Selector */}
-          <div className="flex items-center gap-1.5 bg-slate-200/60 p-1 rounded-xl">
+          <div className="flex items-center gap-1 bg-slate-200/60 p-1 rounded-xl flex-wrap">
             {isTeacher ? (
               <>
                 <button
@@ -297,6 +303,18 @@ export const AIChat: React.FC<AIChatProps> = ({ userRole, userName, initialCours
                 </button>
                 <button
                   type="button"
+                  onClick={() => setSelectedFeature('lesson_planner')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    selectedFeature === 'lesson_planner'
+                      ? 'bg-white text-emerald-800 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <BookOpen className="w-3.5 h-3.5" />
+                  تحضير الدروس
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSelectedFeature('question_generator')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                     selectedFeature === 'question_generator'
@@ -309,15 +327,66 @@ export const AIChat: React.FC<AIChatProps> = ({ userRole, userName, initialCours
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedFeature('lesson_summary')}
+                  onClick={() => setSelectedFeature('feedback_generator')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                    selectedFeature === 'lesson_summary'
+                    selectedFeature === 'feedback_generator'
                       ? 'bg-white text-emerald-800 shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  التلخيص
+                  تغذية راجعة
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeature('diagnostic_intervention')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    selectedFeature === 'diagnostic_intervention'
+                      ? 'bg-white text-emerald-800 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  تشخيص وتدخل
+                </button>
+              </>
+            ) : isParent ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeature('parent_assistant')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    selectedFeature === 'parent_assistant'
+                      ? 'bg-white text-emerald-800 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                  مستشار ولي الأمر
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeature('learning_recommendations')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    selectedFeature === 'learning_recommendations'
+                      ? 'bg-white text-emerald-800 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  توصيات التعلم
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeature('content_explainer')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    selectedFeature === 'content_explainer'
+                      ? 'bg-white text-emerald-800 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                  شرح وتبسيط المنهاج
                 </button>
               </>
             ) : (
@@ -336,18 +405,6 @@ export const AIChat: React.FC<AIChatProps> = ({ userRole, userName, initialCours
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSelectedFeature('lesson_summary')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                    selectedFeature === 'lesson_summary'
-                      ? 'bg-white text-emerald-800 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <FileText className="w-3.5 h-3.5" />
-                  تلخيص الدرس
-                </button>
-                <button
-                  type="button"
                   onClick={() => setSelectedFeature('content_explainer')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
                     selectedFeature === 'content_explainer'
@@ -357,6 +414,30 @@ export const AIChat: React.FC<AIChatProps> = ({ userRole, userName, initialCours
                 >
                   <HelpCircle className="w-3.5 h-3.5" />
                   تبسيط المفاهيم
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeature('learning_recommendations')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    selectedFeature === 'learning_recommendations'
+                      ? 'bg-white text-emerald-800 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <GraduationCap className="w-3.5 h-3.5" />
+                  توصياتي الأكاديمية
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedFeature('lesson_summary')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    selectedFeature === 'lesson_summary'
+                      ? 'bg-white text-emerald-800 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  تلخيص الدرس
                 </button>
               </>
             )}
@@ -414,14 +495,76 @@ export const AIChat: React.FC<AIChatProps> = ({ userRole, userName, initialCours
               </div>
 
               <h3 className="text-lg font-black text-slate-900 mb-1">
-                {isTeacher ? 'مساعد المعلم الذكي (Rtiqa AI)' : 'مرشد رتقاء السقراطي الذكي'}
+                {isParent
+                  ? 'مستشار ولي الأمر الذكي (Rtiqa AI)'
+                  : isTeacher
+                  ? 'مساعد المعلم الذكي (Rtiqa AI)'
+                  : 'مرشد رتقاء السقراطي الذكي'}
               </h3>
 
-              <p className="text-xs text-slate-600 mb-6 leading-relaxed">
-                {isTeacher
+              <p className="text-xs text-slate-600 mb-4 leading-relaxed">
+                {isParent
+                  ? 'مساعدك الذكي لتفسير نتائج ابنك الأكاديمية، وتقديم نصائح تربوية وتوصيات لتعزيز شغفه وتفوقه الدراسي.'
+                  : isTeacher
                   ? 'أداة أكاديمية متقدمة لمساعدتك في إعداد خطط الدروس، وتصميم سلالم التقييم، وتوليد أسئلة الاختبارات المعيارية بسرعة ودقة.'
                   : 'مساعدك التعليمي التفاعلي الذي يوجهك خطوة بخطوة ويفسر لك المسائل دون إعطاء الإجابات المباشرة لتطوير مهاراتك الذاتية.'}
               </p>
+
+              {/* Quick Starter Suggestions */}
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                {isParent ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSendMessage('كيف أساعد ابني في تحسين درجاته في مادة الرياضيات وتنظيم وقت المذاكرة؟')}
+                      className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-200 text-xs text-slate-700 text-right transition"
+                    >
+                      💡 نصائح لتنظيم وقت المذاكرة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendMessage('ما هي أفضل الأنشطة اللاصفية لتنمية المهارات العلمية والتحليلية في هذه المرحلة؟')}
+                      className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-200 text-xs text-slate-700 text-right transition"
+                    >
+                      🌱 أنشطة تنمية التفكير التحليلي
+                    </button>
+                  </>
+                ) : isTeacher ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSendMessage('أعد خطة درس نموذجية خماسية المراحل لموضوع: مقدمة في الدوال الأسية')}
+                      className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-200 text-xs text-slate-700 text-right transition"
+                    >
+                      📋 خطة درس خماسية نموذجية
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendMessage('ولّد 5 أسئلة اختيار من متعدد متدرجة الصعوبة وفق هرم بلوم')}
+                      className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-200 text-xs text-slate-700 text-right transition"
+                    >
+                      🎯 توليد بنك أسئلة معياري
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleSendMessage('اشرح لي الفرق بين الدوال الخطية والدوال التربيعية بمثال واقعي')}
+                      className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-200 text-xs text-slate-700 text-right transition"
+                    >
+                      🔍 شرح مفهوم الدوال بالأمثلة
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSendMessage('وجهني بطريقة سقراطية لحل معادلة تربيعية خطوة بخطوة')}
+                      className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50/80 border border-slate-200 text-xs text-slate-700 text-right transition"
+                    >
+                      🧠 تمرين تفاعلي سقراطي
+                    </button>
+                  </>
+                )}
+              </div>
 
               <div className="w-full bg-slate-50 border border-slate-200/80 rounded-2xl p-3 text-right">
                 <div className="text-[11px] font-bold text-slate-700 mb-1.5 flex items-center gap-1">

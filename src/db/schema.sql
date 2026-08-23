@@ -586,6 +586,88 @@ CREATE INDEX IF NOT EXISTS idx_storage_objects_key ON storage_objects(object_key
 CREATE INDEX IF NOT EXISTS idx_storage_objects_uploader ON storage_objects(organization_id, uploaded_by);
 CREATE INDEX IF NOT EXISTS idx_storage_objects_status ON storage_objects(organization_id, status);
 
+-- 20. Curriculum Units (Structured Course Units / Chapters)
+CREATE TABLE IF NOT EXISTS curriculum_units (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    course_id VARCHAR(64) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    order_index INT DEFAULT 1 NOT NULL,
+    is_published BOOLEAN DEFAULT TRUE NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_curriculum_units_course ON curriculum_units(organization_id, course_id, order_index);
+
+-- Ensure lessons support unit_id and resource_ids
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lessons' AND column_name='unit_id') THEN
+        ALTER TABLE lessons ADD COLUMN unit_id VARCHAR(64) REFERENCES curriculum_units(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='lessons' AND column_name='resource_ids') THEN
+        ALTER TABLE lessons ADD COLUMN resource_ids JSONB DEFAULT '[]'::jsonb;
+    END IF;
+END $$;
+
+-- 21. Digital Library Resources (Multi-Format Educational Assets)
+CREATE TABLE IF NOT EXISTS library_resources (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    resource_type VARCHAR(32) NOT NULL CHECK (resource_type IN ('DOCUMENT', 'PRESENTATION', 'SPREADSHEET', 'IMAGE', 'VIDEO', 'AUDIO', 'EXTERNAL_LINK', 'INTERACTIVE')),
+    format VARCHAR(64) NOT NULL,
+    subject_id VARCHAR(64) REFERENCES subjects(id) ON DELETE SET NULL,
+    grade_level_id VARCHAR(64) REFERENCES grade_levels(id) ON DELETE SET NULL,
+    course_id VARCHAR(64) REFERENCES courses(id) ON DELETE SET NULL,
+    unit_id VARCHAR(64) REFERENCES curriculum_units(id) ON DELETE SET NULL,
+    lesson_id VARCHAR(64) REFERENCES lessons(id) ON DELETE SET NULL,
+    storage_object_id VARCHAR(64) REFERENCES storage_objects(id) ON DELETE SET NULL,
+    external_url TEXT,
+    file_size BIGINT DEFAULT 0,
+    file_type VARCHAR(128),
+    tags JSONB DEFAULT '[]'::jsonb,
+    uploaded_by VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    author_name VARCHAR(255),
+    visibility VARCHAR(32) DEFAULT 'PUBLIC_SCHOOL' NOT NULL CHECK (visibility IN ('PUBLIC_SCHOOL', 'COURSE_STUDENTS', 'TEACHERS_ONLY', 'PRIVATE')),
+    status VARCHAR(32) DEFAULT 'PUBLISHED' NOT NULL CHECK (status IN ('DRAFT', 'PUBLISHED', 'ARCHIVED')),
+    view_count INT DEFAULT 0 NOT NULL,
+    download_count INT DEFAULT 0 NOT NULL,
+    completion_count INT DEFAULT 0 NOT NULL,
+    ai_searchable BOOLEAN DEFAULT TRUE NOT NULL,
+    ai_summary TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_library_resources_org ON library_resources(organization_id);
+CREATE INDEX IF NOT EXISTS idx_library_resources_course ON library_resources(organization_id, course_id);
+CREATE INDEX IF NOT EXISTS idx_library_resources_subject ON library_resources(organization_id, subject_id);
+CREATE INDEX IF NOT EXISTS idx_library_resources_grade ON library_resources(organization_id, grade_level_id);
+CREATE INDEX IF NOT EXISTS idx_library_resources_unit ON library_resources(organization_id, unit_id);
+CREATE INDEX IF NOT EXISTS idx_library_resources_type ON library_resources(organization_id, resource_type);
+CREATE INDEX IF NOT EXISTS idx_library_resources_status ON library_resources(organization_id, status);
+
+-- 22. Resource Learning Activity (Tracking Student & Teacher Interactions)
+CREATE TABLE IF NOT EXISTS resource_activities (
+    id VARCHAR(64) PRIMARY KEY,
+    organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+    resource_id VARCHAR(64) NOT NULL REFERENCES library_resources(id) ON DELETE CASCADE,
+    user_id VARCHAR(64) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    user_role VARCHAR(32) NOT NULL,
+    action VARCHAR(32) NOT NULL CHECK (action IN ('VIEWED', 'DOWNLOADED', 'COMPLETED', 'ATTACHED')),
+    course_id VARCHAR(64) REFERENCES courses(id) ON DELETE SET NULL,
+    lesson_id VARCHAR(64) REFERENCES lessons(id) ON DELETE SET NULL,
+    timestamp TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_resource_activities_org_res ON resource_activities(organization_id, resource_id);
+CREATE INDEX IF NOT EXISTS idx_resource_activities_user ON resource_activities(organization_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_resource_activities_action ON resource_activities(organization_id, action);
+
 -- =====================================================================
 -- Row-Level Security (RLS) Policies & Enforcement
 -- Multi-tenant isolation at the PostgreSQL storage engine level
@@ -612,6 +694,9 @@ ALTER TABLE ai_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_usage ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_document_chunks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE storage_objects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE curriculum_units ENABLE ROW LEVEL SECURITY;
+ALTER TABLE library_resources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE resource_activities ENABLE ROW LEVEL SECURITY;
 
 -- 1. Organizations Policy: Accessible if matching session tenant or if in global/unbound resolution mode
 DROP POLICY IF EXISTS tenant_isolation_org ON organizations;
@@ -812,6 +897,28 @@ DROP POLICY IF EXISTS tenant_isolation_storage_objects ON storage_objects;
 CREATE POLICY tenant_isolation_storage_objects ON storage_objects
     USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
     WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 30. Curriculum Units Policy (Multi-Tenant Unit Isolation)
+ALTER TABLE curriculum_units ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_curriculum_units ON curriculum_units;
+CREATE POLICY tenant_isolation_curriculum_units ON curriculum_units
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 31. Library Resources Policy (Multi-Tenant Digital Resource Isolation)
+ALTER TABLE library_resources ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_library_resources ON library_resources;
+CREATE POLICY tenant_isolation_library_resources ON library_resources
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
+-- 32. Resource Activities Policy (Multi-Tenant Learning Activity Isolation)
+ALTER TABLE resource_activities ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS tenant_isolation_resource_activities ON resource_activities;
+CREATE POLICY tenant_isolation_resource_activities ON resource_activities
+    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
+    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+
 
 
 

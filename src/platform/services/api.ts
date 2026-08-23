@@ -34,6 +34,17 @@ import {
   StorageResourceType,
   UploadUrlResponse,
   DownloadUrlResponse,
+  NotificationItem,
+  NotificationType,
+  AcademicAnalyticsSummary,
+  CurriculumUnit,
+  LibraryResource,
+  ResourceActivity,
+  LibraryStats,
+  LibraryResourceType,
+  LibraryResourceVisibility,
+  LibraryResourceStatus,
+  ResourceActivityAction,
 } from '../types';
 
 class PlatformApiClient {
@@ -1188,7 +1199,222 @@ class PlatformApiClient {
 
     return finalRes.data;
   }
+
+  // --- Notification APIs ---
+  async getNotifications(unreadOnly?: boolean, limit?: number) {
+    const params = new URLSearchParams();
+    if (unreadOnly) params.append('unreadOnly', 'true');
+    if (limit) params.append('limit', String(limit));
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return this.request<{ success: boolean; data: NotificationItem[]; meta: { total: number; unreadCount: number } }>(
+      `/notifications${query}`
+    );
+  }
+
+  async getUnreadNotificationCount() {
+    return this.request<{ success: boolean; data: { unreadCount: number } }>('/notifications/unread-count');
+  }
+
+  async markNotificationAsRead(id: string) {
+    return this.request<{ success: boolean; data: { unreadCount: number } }>(`/notifications/${id}/read`, {
+      method: 'POST',
+    });
+  }
+
+  async markAllNotificationsAsRead() {
+    return this.request<{ success: boolean; data: { updatedCount: number; unreadCount: number } }>(
+      '/notifications/read-all',
+      { method: 'POST' }
+    );
+  }
+
+  async broadcastNotification(payload: {
+    title: string;
+    body: string;
+    targetRole?: string;
+    classroomId?: string;
+    channels?: string[];
+  }) {
+    return this.request<{ success: boolean; data: { recipientsCount: number; message: string } }>(
+      '/notifications/broadcast',
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+  }
+
+  // --- Phase 4 AI APIs ---
+  async askParentAdvisor(studentId: string | undefined, question: string, includePerformance = true) {
+    return this.request<{
+      success: boolean;
+      data: {
+        text: string;
+        structuredData?: any;
+        sources?: any[];
+        usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+      };
+    }>('/ai/parent-advisor', {
+      method: 'POST',
+      body: JSON.stringify({ studentId, question, includePerformance }),
+    });
+  }
+
+  async generateLessonPlan(payload: {
+    topic: string;
+    courseId?: string;
+    gradeLevel?: string;
+    durationMinutes?: number;
+    learningObjectives?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        text: string;
+        structuredData?: any;
+        sources?: any[];
+        usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+      };
+    }>('/ai/lesson-plan', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async generateAssignmentFeedback(payload: {
+    assignmentTitle?: string;
+    studentAnswer: string;
+    score?: number;
+    maxScore?: number;
+    rubricCriteria?: string;
+  }) {
+    return this.request<{
+      success: boolean;
+      data: {
+        text: string;
+        structuredData?: any;
+        sources?: any[];
+        usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+      };
+    }>('/ai/assignment-feedback', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async getLearningRecommendations(studentId?: string) {
+    return this.request<{
+      success: boolean;
+      data: {
+        text: string;
+        structuredData?: any;
+        sources?: any[];
+        usage: { promptTokens: number; completionTokens: number; totalTokens: number };
+      };
+    }>('/ai/recommendations', {
+      method: 'POST',
+      body: JSON.stringify({ studentId }),
+    });
+  }
+
+  // --- Academic Analytics API ---
+  async getAcademicAnalytics() {
+    return this.request<{ success: boolean; data: AcademicAnalyticsSummary }>('/dashboard/analytics');
+  }
+
+  // ==========================================
+  // Phase 5.1: Curriculum Units API
+  // ==========================================
+  async getUnitsByCourse(courseId: string) {
+    return this.request<{ units: CurriculumUnit[] }>(`/library/units/course/${courseId}`);
+  }
+
+  async getUnitById(unitId: string) {
+    return this.request<{ unit: CurriculumUnit }>(`/library/units/${unitId}`);
+  }
+
+  async createUnit(payload: { courseId: string; title: string; description?: string; orderIndex?: number; isPublished?: boolean }) {
+    return this.request<{ unit: CurriculumUnit }>('/library/units', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateUnit(unitId: string, payload: Partial<CurriculumUnit>) {
+    return this.request<{ unit: CurriculumUnit }>(`/library/units/${unitId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteUnit(unitId: string) {
+    return this.request<{ success: boolean }>(`/library/units/${unitId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ==========================================
+  // Phase 5.1: Digital Learning Library Resources API
+  // ==========================================
+  async getLibraryStats() {
+    return this.request<{ stats: LibraryStats }>('/library/resources/stats');
+  }
+
+  async getLibraryResources(filter?: {
+    subjectId?: string;
+    gradeLevelId?: string;
+    courseId?: string;
+    unitId?: string;
+    lessonId?: string;
+    resourceType?: string;
+    status?: string;
+    visibility?: string;
+    search?: string;
+  }) {
+    const params = new URLSearchParams();
+    if (filter) {
+      Object.entries(filter).forEach(([key, val]) => {
+        if (val !== undefined && val !== '') {
+          params.append(key, val);
+        }
+      });
+    }
+    const queryStr = params.toString() ? `?${params.toString()}` : '';
+    return this.request<{ resources: LibraryResource[] }>(`/library/resources${queryStr}`);
+  }
+
+  async getLibraryResourceById(id: string) {
+    return this.request<{ resource: LibraryResource }>(`/library/resources/${id}`);
+  }
+
+  async createLibraryResource(payload: Partial<LibraryResource>) {
+    return this.request<{ resource: LibraryResource }>('/library/resources', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateLibraryResource(id: string, payload: Partial<LibraryResource>) {
+    return this.request<{ resource: LibraryResource }>(`/library/resources/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async deleteLibraryResource(id: string) {
+    return this.request<{ success: boolean }>(`/library/resources/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async recordResourceActivity(resourceId: string, action: ResourceActivityAction, details?: { courseId?: string; lessonId?: string }) {
+    return this.request<{ activity: ResourceActivity; resource: LibraryResource }>(`/library/resources/${resourceId}/activity`, {
+      method: 'POST',
+      body: JSON.stringify({ action, ...details }),
+    });
+  }
 }
 
 export const platformApi = new PlatformApiClient();
+
 

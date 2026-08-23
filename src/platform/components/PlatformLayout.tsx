@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Users,
   BookOpen,
+  BookOpenCheck,
   GraduationCap,
   ClipboardCheck,
   Award,
@@ -24,6 +25,7 @@ import {
 } from 'lucide-react';
 import { Badge } from './Badge';
 import { UserProfileModal } from './auth/UserProfileModal';
+import { NotificationCenter } from './NotificationCenter';
 
 interface PlatformLayoutProps {
   currentPage: PlatformPage;
@@ -61,7 +63,8 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
     { id: 'dashboard', label: user.role === 'PARENT' ? 'بوابة ولي الأمر' : 'لوحة التحكم', icon: LayoutDashboard },
     { id: 'ai-assistant', label: 'مساعد رتقاء الذكي (AI)', icon: Sparkles, badge: 'جديد' },
     { id: 'courses', label: 'المقررات والمناهج', icon: BookOpen, roles: ['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER', 'STUDENT'] },
-    { id: 'lessons', label: 'الدروس والمحتوى', icon: FileText, roles: ['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER', 'STUDENT'] },
+    { id: 'lessons', label: 'الدروس والوحدات', icon: FileText, roles: ['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER', 'STUDENT'] },
+    { id: 'library', label: 'المكتبة التعليمية الرقمية', icon: BookOpenCheck, badge: '5.1' },
     { id: 'assignments', label: 'الواجبات والتكليفات', icon: ClipboardCheck, roles: ['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER', 'STUDENT'] },
     { id: 'gradebook', label: user.role === 'STUDENT' ? 'سجل درجاتي' : (user.role === 'PARENT' ? 'سجل درجات الأبناء' : 'سجل الدرجات والتقييم'), icon: Award },
     { id: 'attendance', label: user.role === 'PARENT' ? 'سجل حضور الأبناء' : 'الحضور والغياب', icon: GraduationCap },
@@ -303,6 +306,9 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
 
           {/* Fast Top Actions */}
           <div className="flex items-center gap-2.5">
+            {/* Notification Center */}
+            <NotificationCenter userRole={user.role} onNavigate={handleNav} />
+
             {/* Persona Switch Pills for Easy Demo Testing */}
             <div className="hidden lg:flex items-center p-1 rounded-xl bg-slate-900/90 border border-slate-800 text-xs">
               <button

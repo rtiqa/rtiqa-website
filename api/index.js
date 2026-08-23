@@ -316,6 +316,10 @@ var init_db = __esm({
         this.studentRecords = /* @__PURE__ */ new Map();
         this.studentBehaviorRecords = /* @__PURE__ */ new Map();
         this.studentLifecycleEvents = /* @__PURE__ */ new Map();
+        this.notifications = /* @__PURE__ */ new Map();
+        this.curriculumUnits = /* @__PURE__ */ new Map();
+        this.libraryResources = /* @__PURE__ */ new Map();
+        this.resourceActivities = /* @__PURE__ */ new Map();
         this.seedInitialData();
       }
       // --- Engine Status Check ---
@@ -1087,6 +1091,18 @@ var init_db = __esm({
           createdAt: "2026-01-01T00:00:00Z"
         };
         this.parentStudentLinks.set(psl1.id, psl1);
+        const psl2 = {
+          id: `psl_horizon_002`,
+          organizationId: schoolAId,
+          parentId: parent1.id,
+          parentName: parent1.fullName,
+          studentId: student3.id,
+          studentName: student3.fullName,
+          relationship: "FATHER",
+          isEmergencyContact: true,
+          createdAt: "2026-01-01T00:00:00Z"
+        };
+        this.parentStudentLinks.set(psl2.id, psl2);
         const sess1Id = "att_sess_horizon_001";
         this.attendanceSessions.set(sess1Id, {
           id: sess1Id,
@@ -1461,6 +1477,291 @@ var init_db = __esm({
             teacherSpecialization: user.teacherSpecialization
           });
         }
+        this.createNotification({
+          organizationId: schoolAId,
+          recipientId: student1.id,
+          recipientRole: "STUDENT",
+          type: "ASSIGNMENT_CREATED",
+          title: "\u0648\u0627\u062C\u0628 \u062C\u062F\u064A\u062F: \u0627\u0644\u062F\u0648\u0627\u0644 \u0627\u0644\u0623\u0633\u064A\u0629 \u0648\u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u0627\u062A",
+          body: "\u0642\u0627\u0645 \u0623\u0633\u062A\u0627\u0630 \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0628\u0625\u0636\u0627\u0641\u0629 \u0648\u0627\u062C\u0628 \u062C\u062F\u064A\u062F \u0641\u064A \u0645\u0642\u0631\u0631 \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0634\u0639\u0628\u0629 10-\u0623.",
+          channels: ["IN_APP", "EMAIL"],
+          data: { courseId: courseMath10AId }
+        });
+        this.createNotification({
+          organizationId: schoolAId,
+          recipientId: parent1.id,
+          recipientRole: "PARENT",
+          type: "BEHAVIOR_LOGGED",
+          title: "\u0625\u0634\u0627\u062F\u0629 \u062A\u0641\u0648\u0642 \u0648\u062A\u0645\u064A\u0632 \u0623\u0643\u0627\u062F\u064A\u0645\u064A",
+          body: "\u062A\u0645 \u062A\u0633\u062C\u064A\u0644 \u0628\u0637\u0627\u0642\u0629 \u062A\u0641\u0648\u0642 \u0644\u0644\u0637\u0627\u0644\u0628 \u0639\u0645\u0631 \u062E\u0627\u0644\u062F \u0627\u0644\u0633\u0639\u064A\u062F \u0644\u062D\u0635\u0648\u0644\u0647 \u0639\u0644\u0649 \u0627\u0644\u0645\u0631\u0643\u0632 \u0627\u0644\u0623\u0648\u0644 \u0641\u064A \u0623\u0648\u0644\u0645\u0628\u064A\u0627\u062F \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A.",
+          channels: ["IN_APP", "EMAIL", "WHATSAPP"],
+          data: { studentId: student1.id }
+        });
+        this.createNotification({
+          organizationId: schoolAId,
+          recipientId: teacherMath.id,
+          recipientRole: "TEACHER",
+          type: "ANNOUNCEMENT",
+          title: "\u062A\u0630\u0643\u064A\u0631: \u0631\u0635\u062F \u062F\u0631\u062C\u0627\u062A \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A \u0627\u0644\u062A\u0643\u0648\u064A\u0646\u064A\u0629",
+          body: "\u064A\u0631\u062C\u0649 \u0645\u0631\u0627\u062C\u0639\u0629 \u0633\u062C\u0644\u0627\u062A \u0627\u0644\u062F\u0631\u062C\u0627\u062A \u0648\u0625\u062A\u0645\u0627\u0645 \u0627\u0639\u062A\u0645\u0627\u062F \u0646\u062A\u0627\u0626\u062C \u0627\u0644\u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A \u0644\u0644\u0641\u0635\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0627\u0644\u0623\u0648\u0644.",
+          channels: ["IN_APP"]
+        });
+        this.createNotification({
+          organizationId: schoolAId,
+          recipientId: adminA.id,
+          recipientRole: "ORG_ADMIN",
+          type: "SYSTEM_ALERT",
+          title: "\u062A\u0642\u0631\u064A\u0631 \u0627\u0644\u062A\u062D\u0644\u064A\u0644\u0627\u062A \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0627\u0644\u0623\u0633\u0628\u0648\u0639\u064A \u062C\u0627\u0647\u0632",
+          body: "\u062A\u0645 \u062A\u0648\u0644\u064A\u062F \u062A\u0642\u0631\u064A\u0631 \u0645\u0624\u0634\u0631\u0627\u062A \u0627\u0644\u0623\u062F\u0627\u0621 \u0648\u0627\u0644\u062A\u062F\u062E\u0644 \u0627\u0644\u0645\u0628\u0643\u0631 \u0644\u0644\u0645\u062F\u0631\u0633\u0629 \u062A\u0644\u0642\u0627\u0626\u064A\u0627\u064B \u0639\u0628\u0631 \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A.",
+          channels: ["IN_APP"]
+        });
+        const unit1MathId = "unit_horizon_math_01";
+        this.curriculumUnits.set(unit1MathId, {
+          id: unit1MathId,
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631",
+          title: "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u0623\u0648\u0644\u0649: \u0627\u0644\u062C\u0628\u0631 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0631\u064A\u0627\u0636\u064A \u0627\u0644\u0645\u062A\u0642\u062F\u0645",
+          description: "\u0627\u0644\u062F\u0648\u0627\u0644 \u0627\u0644\u0623\u0633\u064A\u0629 \u0648\u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u064A\u0629\u060C \u062D\u0644 \u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u063A\u064A\u0631 \u0627\u0644\u062E\u0637\u064A\u0629\u060C \u0648\u062A\u0637\u0628\u064A\u0642\u0627\u062A \u0627\u0644\u0646\u0645\u0630\u062C\u0629 \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0629",
+          orderIndex: 1,
+          isPublished: true,
+          createdAt: "2026-08-25T08:00:00Z",
+          updatedAt: "2026-08-25T08:00:00Z"
+        });
+        const unit2MathId = "unit_horizon_math_02";
+        this.curriculumUnits.set(unit2MathId, {
+          id: unit2MathId,
+          organizationId: schoolAId,
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0645\u062A\u0642\u062F\u0645\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631",
+          title: "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u062B\u0627\u0646\u064A\u0629: \u0627\u0644\u062C\u0628\u0631 \u0627\u0644\u062E\u0637\u064A \u0648\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u0645\u062D\u062F\u062F\u0627\u062A",
+          description: "\u0627\u0644\u0639\u0645\u0644\u064A\u0627\u062A \u0639\u0644\u0649 \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A\u060C \u0625\u064A\u062C\u0627\u062F \u0627\u0644\u0646\u0638\u064A\u0631 \u0627\u0644\u0636\u0631\u0628\u064A\u060C \u0648\u062A\u0637\u0628\u064A\u0642\u0627\u062A \u062D\u0644 \u0623\u0646\u0638\u0645\u0629 \u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u062E\u0637\u064A\u0629",
+          orderIndex: 2,
+          isPublished: true,
+          createdAt: "2026-08-25T08:00:00Z",
+          updatedAt: "2026-08-25T08:00:00Z"
+        });
+        const unit1PhysId = "unit_horizon_phys_01";
+        this.curriculumUnits.set(unit1PhysId, {
+          id: unit1PhysId,
+          organizationId: schoolAId,
+          courseId: coursePhys10AId,
+          courseTitle: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u062C\u0631\u064A\u0628\u064A\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627",
+          title: "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u0623\u0648\u0644\u0649: \u0639\u0644\u0645 \u0627\u0644\u062D\u0631\u0643\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627 \u0627\u0644\u0643\u0644\u0627\u0633\u064A\u0643\u064A\u0629",
+          description: "\u0642\u0648\u0627\u0646\u064A\u0646 \u0646\u064A\u0648\u062A\u0646 \u0644\u0644\u062D\u0631\u0643\u0629\u060C \u0643\u0645\u064A\u0629 \u0627\u0644\u062D\u0631\u0643\u0629 \u0648\u0627\u0644\u0627\u0635\u0637\u062F\u0627\u0645\u0627\u062A\u060C \u0648\u0627\u0644\u0637\u0627\u0642\u0629 \u0648\u0627\u0644\u0634\u063A\u0644 \u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u064A",
+          orderIndex: 1,
+          isPublished: true,
+          createdAt: "2026-08-25T08:00:00Z",
+          updatedAt: "2026-08-25T08:00:00Z"
+        });
+        const les1 = this.lessons.get(lesson1Id);
+        if (les1) {
+          les1.unitId = unit1MathId;
+          les1.unitTitle = "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u0623\u0648\u0644\u0649: \u0627\u0644\u062C\u0628\u0631 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0631\u064A\u0627\u0636\u064A \u0627\u0644\u0645\u062A\u0642\u062F\u0645";
+        }
+        const les2 = this.lessons.get(lesson2Id);
+        if (les2) {
+          les2.unitId = unit2MathId;
+          les2.unitTitle = "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u062B\u0627\u0646\u064A\u0629: \u0627\u0644\u062C\u0628\u0631 \u0627\u0644\u062E\u0637\u064A \u0648\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u0645\u062D\u062F\u062F\u0627\u062A";
+        }
+        const res1Id = "res_horizon_math_doc1";
+        this.libraryResources.set(res1Id, {
+          id: res1Id,
+          organizationId: schoolAId,
+          title: "\u0627\u0644\u062F\u0644\u064A\u0644 \u0627\u0644\u0634\u0627\u0645\u0644 \u0641\u064A \u062D\u0644 \u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u064A\u0629 \u0648\u0627\u0644\u0623\u0633\u064A\u0629",
+          description: "\u0645\u0630\u0643\u0631\u0629 \u062A\u062F\u0631\u064A\u0628\u064A\u0629 \u0645\u0643\u062B\u0641\u0629 \u062A\u062D\u0648\u064A 50 \u0645\u0633\u0623\u0644\u0629 \u0645\u062D\u0644\u0648\u0644\u0629 \u0628\u0627\u0644\u062A\u0641\u0635\u064A\u0644 \u0645\u0639 \u062E\u0631\u0627\u0626\u0637 \u0645\u0641\u0627\u0647\u064A\u0645\u064A\u0629 \u0644\u0644\u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u064A.",
+          resourceType: "DOCUMENT",
+          format: "pdf",
+          subjectId: mathSubId,
+          subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+          gradeLevelId: grade10Id,
+          gradeLevelName: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u062B\u0627\u0646\u0648\u064A)",
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          unitId: unit1MathId,
+          unitTitle: "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u0623\u0648\u0644\u0649: \u0627\u0644\u062C\u0628\u0631 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0631\u064A\u0627\u0636\u064A \u0627\u0644\u0645\u062A\u0642\u062F\u0645",
+          lessonId: lesson1Id,
+          lessonTitle: "\u0645\u0642\u062F\u0645\u0629 \u0641\u064A \u0627\u0644\u062F\u0648\u0627\u0644 \u0627\u0644\u0623\u0633\u064A\u0629 \u0648\u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u0627\u062A",
+          externalUrl: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+          fileSize: 245e4,
+          fileType: "application/pdf",
+          tags: ["\u0631\u064A\u0627\u0636\u064A\u0627\u062A", "\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u0627\u062A", "\u062F\u0648\u0627\u0644 \u0623\u0633\u064A\u0629", "\u0623\u0648\u0644 \u062B\u0627\u0646\u0648\u064A", "\u062D\u0644\u0648\u0644 \u0646\u0645\u0648\u0630\u062C\u064A\u0629"],
+          uploadedBy: teacherMath.id,
+          authorName: teacherMath.fullName,
+          visibility: "PUBLIC_SCHOOL",
+          status: "PUBLISHED",
+          viewCount: 142,
+          downloadCount: 88,
+          completionCount: 65,
+          aiSearchable: true,
+          aiSummary: "\u062F\u0644\u064A\u0644 \u062A\u062F\u0631\u064A\u0628\u064A \u0634\u0627\u0645\u0644 \u064A\u0631\u0643\u0632 \u0639\u0644\u0649 \u0642\u0648\u0627\u0646\u064A\u0646 \u0627\u0644\u0644\u0648\u063A\u0627\u0631\u064A\u062A\u0645\u0627\u062A \u0627\u0644\u0637\u0628\u064A\u0639\u064A\u0629 \u0648\u0627\u0644\u0645\u0639\u062A\u0627\u062F\u0629 \u0648\u062E\u0637\u0648\u0627\u062A \u062A\u0628\u0633\u064A\u0637 \u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u0623\u0633\u064A\u0629.",
+          createdAt: "2026-09-01T10:00:00Z",
+          updatedAt: "2026-09-01T10:00:00Z"
+        });
+        const res2Id = "res_horizon_math_video1";
+        this.libraryResources.set(res2Id, {
+          id: res2Id,
+          organizationId: schoolAId,
+          title: "\u0634\u0631\u062D \u0645\u0631\u0626\u064A: \u0627\u0644\u062A\u0637\u0628\u064A\u0642\u0627\u062A \u0627\u0644\u062D\u0642\u064A\u0642\u064A\u0629 \u0644\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0641\u064A \u0627\u0644\u0630\u0643\u0627\u0621 \u0627\u0644\u0627\u0635\u0637\u0646\u0627\u0639\u064A",
+          description: "\u0641\u064A\u062F\u064A\u0648 \u062A\u0641\u0627\u0639\u0644\u064A \u0639\u0627\u0644\u064A \u0627\u0644\u062F\u0642\u0629 \u064A\u0634\u0631\u062D \u0643\u064A\u0641\u064A\u0629 \u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0635\u0648\u0631 \u0625\u0644\u0649 \u0645\u0635\u0641\u0648\u0641\u0627\u062A \u062B\u0646\u0627\u0626\u064A\u0629 \u0648\u062A\u0637\u0628\u064A\u0642 \u0641\u0644\u0627\u062A\u0631 \u0627\u0644\u0627\u0644\u062A\u0641\u0627\u0641 \u0627\u0644\u062C\u0628\u0631\u064A.",
+          resourceType: "VIDEO",
+          format: "youtube",
+          subjectId: mathSubId,
+          subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+          gradeLevelId: grade10Id,
+          gradeLevelName: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u062B\u0627\u0646\u0648\u064A)",
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          unitId: unit2MathId,
+          unitTitle: "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u062B\u0627\u0646\u064A\u0629: \u0627\u0644\u062C\u0628\u0631 \u0627\u0644\u062E\u0637\u064A \u0648\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u0645\u062D\u062F\u062F\u0627\u062A",
+          lessonId: lesson2Id,
+          lessonTitle: "\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u0639\u0645\u0644\u064A\u0627\u062A \u0627\u0644\u062C\u0628\u0631\u064A\u0629 \u0627\u0644\u062E\u0637\u064A\u0629",
+          externalUrl: "https://www.youtube.com/watch?v=fNk_zzaMoSs",
+          fileSize: 0,
+          fileType: "video/youtube",
+          tags: ["\u0645\u0635\u0641\u0648\u0641\u0627\u062A", "\u0630\u0643\u0627\u0621 \u0627\u0635\u0637\u0646\u0627\u0639\u064A", "\u0634\u0631\u062D \u0645\u0631\u0626\u064A", "\u062C\u0628\u0631 \u062E\u0637\u064A"],
+          uploadedBy: teacherMath.id,
+          authorName: teacherMath.fullName,
+          visibility: "PUBLIC_SCHOOL",
+          status: "PUBLISHED",
+          viewCount: 290,
+          downloadCount: 45,
+          completionCount: 180,
+          aiSearchable: true,
+          aiSummary: "\u0641\u064A\u062F\u064A\u0648 \u062A\u0639\u0644\u064A\u0645\u064A \u064A\u0648\u0636\u062D \u0627\u0644\u0639\u0644\u0627\u0642\u0629 \u0628\u064A\u0646 \u0627\u0644\u0639\u0645\u0644\u064A\u0627\u062A \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u064A\u0629 \u0648\u062A\u062F\u0631\u064A\u0628 \u0627\u0644\u0634\u0628\u0643\u0627\u062A \u0627\u0644\u0639\u0635\u0628\u064A\u0629 \u0648\u0645\u0639\u0627\u0644\u062C\u0629 \u0627\u0644\u0635\u0648\u0631 \u0627\u0644\u0631\u0642\u0645\u064A\u0629.",
+          createdAt: "2026-09-08T11:00:00Z",
+          updatedAt: "2026-09-08T11:00:00Z"
+        });
+        const res3Id = "res_horizon_phys_sim1";
+        this.libraryResources.set(res3Id, {
+          id: res3Id,
+          organizationId: schoolAId,
+          title: "\u0645\u062E\u062A\u0628\u0631 \u0627\u0641\u062A\u0631\u0627\u0636\u064A \u062A\u0641\u0627\u0639\u0644\u064A: \u0645\u062D\u0627\u0643\u0627\u0629 \u0642\u0648\u0627\u0646\u064A\u0646 \u0627\u0644\u062D\u0631\u0643\u0629 \u0648\u0642\u0648\u0649 \u0627\u0644\u0627\u062D\u062A\u0643\u0627\u0643",
+          description: "\u062A\u0637\u0628\u064A\u0642 \u0645\u062D\u0627\u0643\u0627\u0629 \u0641\u064A\u0632\u064A\u0627\u0626\u064A \u062A\u0641\u0627\u0639\u0644\u064A \u064A\u0633\u0645\u062D \u0644\u0644\u0637\u0627\u0644\u0628 \u0628\u062A\u063A\u064A\u064A\u0631 \u0632\u0627\u0648\u064A\u0629 \u0627\u0644\u0633\u0637\u062D \u0627\u0644\u0645\u0627\u0626\u0644 \u0648\u0645\u0639\u0627\u0645\u0644 \u0627\u0644\u0627\u062D\u062A\u0643\u0627\u0643 \u0648\u0645\u0644\u0627\u062D\u0638\u0629 \u0627\u0644\u062A\u0633\u0627\u0631\u0639 \u0628\u064A\u0627\u0646\u064A\u0627\u064B.",
+          resourceType: "INTERACTIVE",
+          format: "web_link",
+          subjectId: physicsSubId,
+          subjectName: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 \u0627\u0644\u062A\u062C\u0631\u064A\u0628\u064A\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627",
+          gradeLevelId: grade10Id,
+          gradeLevelName: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u062B\u0627\u0646\u0648\u064A)",
+          courseId: coursePhys10AId,
+          courseTitle: "\u0627\u0644\u0641\u064A\u0632\u064A\u0627\u0621 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          unitId: unit1PhysId,
+          unitTitle: "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u0623\u0648\u0644\u0649: \u0639\u0644\u0645 \u0627\u0644\u062D\u0631\u0643\u0629 \u0648\u0627\u0644\u0645\u064A\u0643\u0627\u0646\u064A\u0643\u0627 \u0627\u0644\u0643\u0644\u0627\u0633\u064A\u0643\u064A\u0629",
+          externalUrl: "https://phet.colorado.edu/sims/html/forces-and-motion-basics/latest/forces-and-motion-basics_all.html",
+          fileSize: 0,
+          fileType: "text/html",
+          tags: ["\u0641\u064A\u0632\u064A\u0627\u0621", "\u0645\u062E\u062A\u0628\u0631 \u0627\u0641\u062A\u0631\u0627\u0636\u064A", "\u0642\u0648\u0627\u0646\u064A\u0646 \u0646\u064A\u0648\u062A\u0646", "\u0645\u062D\u0627\u0643\u0627\u0629", "\u062A\u062C\u0627\u0631\u0628 \u062A\u0641\u0627\u0639\u0644\u064A\u0629"],
+          uploadedBy: teacherMath.id,
+          authorName: teacherMath.fullName,
+          visibility: "COURSE_STUDENTS",
+          status: "PUBLISHED",
+          viewCount: 185,
+          downloadCount: 0,
+          completionCount: 110,
+          aiSearchable: true,
+          aiSummary: "\u0645\u062D\u0627\u0643\u0627\u0629 \u062A\u0641\u0627\u0639\u0644\u064A\u0629 \u0644\u0641\u0647\u0645 \u0645\u062D\u0635\u0644\u0629 \u0627\u0644\u0642\u0648\u0649\u060C \u0627\u0644\u062A\u0633\u0627\u0631\u0639\u060C \u0648\u0627\u0644\u062A\u0623\u062B\u064A\u0631 \u0627\u0644\u0645\u0628\u0627\u0634\u0631 \u0644\u0644\u0643\u062A\u0644\u0629 \u0648\u0642\u0648\u0629 \u0627\u0644\u0627\u062D\u062A\u0643\u0627\u0643 \u0639\u0644\u0649 \u0627\u0644\u0623\u062C\u0633\u0627\u0645.",
+          createdAt: "2026-09-12T09:00:00Z",
+          updatedAt: "2026-09-12T09:00:00Z"
+        });
+        const res4Id = "res_horizon_arab_pres1";
+        this.libraryResources.set(res4Id, {
+          id: res4Id,
+          organizationId: schoolAId,
+          title: "\u0639\u0631\u0636 \u062A\u0642\u062F\u064A\u0645\u064A: \u0641\u0646\u0648\u0646 \u0627\u0644\u0628\u0644\u0627\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0639\u0644\u0645 \u0627\u0644\u0628\u064A\u0627\u0646",
+          description: "\u0634\u0631\u0627\u0626\u062D \u0639\u0631\u0636 \u062A\u0641\u0627\u0639\u0644\u064A\u0629 \u0645\u0639 \u0634\u0648\u0627\u0647\u062F \u0642\u0631\u0622\u0646\u064A\u0629 \u0648\u0623\u0628\u064A\u0627\u062A \u0634\u0639\u0631\u064A\u0629 \u0645\u0639\u0631\u0628\u0629 \u062A\u0648\u0636\u062D \u0627\u0644\u0641\u0631\u0648\u0642 \u0628\u064A\u0646 \u0627\u0644\u0627\u0633\u062A\u0639\u0627\u0631\u0629 \u0627\u0644\u062A\u0635\u0631\u064A\u062D\u064A\u0629 \u0648\u0627\u0644\u0645\u0643\u0646\u064A\u0629.",
+          resourceType: "PRESENTATION",
+          format: "pptx",
+          subjectId: arabicSubId,
+          subjectName: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0623\u062F\u0628",
+          gradeLevelId: grade10Id,
+          gradeLevelName: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u062B\u0627\u0646\u0648\u064A)",
+          courseId: courseArabic10AId,
+          courseTitle: "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          externalUrl: "https://view.officeapps.live.com/op/view.aspx",
+          fileSize: 52e5,
+          fileType: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+          tags: ["\u0644\u063A\u0629 \u0639\u0631\u0628\u064A\u0629", "\u0628\u0644\u0627\u063A\u0629", "\u0639\u0631\u0636 \u062A\u0642\u062F\u064A\u0645\u064A", "\u0627\u0633\u062A\u0639\u0627\u0631\u0629", "\u0628\u064A\u0627\u0646"],
+          uploadedBy: teacherArabic.id,
+          authorName: teacherArabic.fullName,
+          visibility: "PUBLIC_SCHOOL",
+          status: "PUBLISHED",
+          viewCount: 96,
+          downloadCount: 42,
+          completionCount: 50,
+          aiSearchable: true,
+          aiSummary: "\u0639\u0631\u0636 \u062A\u0642\u062F\u064A\u0645\u064A \u062A\u0639\u0644\u064A\u0645\u064A \u0634\u0627\u0645\u0644 \u0641\u064A \u0639\u0644\u0645 \u0627\u0644\u0628\u064A\u0627\u0646 \u0648\u0627\u0644\u0628\u0644\u0627\u063A\u0629 \u0645\u0639 \u062A\u0645\u0627\u0631\u064A\u0646 \u062A\u0637\u0628\u064A\u0642\u064A\u0629 \u0644\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0627\u0633\u062A\u0639\u0627\u0631\u0629 \u0648\u0627\u0644\u0643\u0646\u0627\u064A\u0629.",
+          createdAt: "2026-09-15T12:00:00Z",
+          updatedAt: "2026-09-15T12:00:00Z"
+        });
+        const res5Id = "res_horizon_math_sheet1";
+        this.libraryResources.set(res5Id, {
+          id: res5Id,
+          organizationId: schoolAId,
+          title: "\u062C\u062F\u0648\u0644 \u062D\u0627\u0633\u0628\u064A: \u062D\u0627\u0633\u0628\u0629 \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u062D\u0644 \u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u0622\u0646\u064A\u0629 3x3",
+          description: "\u062C\u062F\u0648\u0644 \u0625\u0643\u0633\u064A\u0644 \u0627\u062D\u062A\u0631\u0627\u0641\u064A \u0645\u0628\u0631\u0645\u062C \u0628\u0627\u0644\u0645\u0639\u0627\u062F\u0644\u0627\u062A \u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0629 \u0644\u0644\u062A\u062D\u0642\u0642 \u0627\u0644\u0630\u0627\u062A\u064A \u0645\u0646 \u062D\u0633\u0627\u0628\u0627\u062A \u0645\u062D\u062F\u062F \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0629 \u0648\u0627\u0644\u0645\u0639\u0643\u0648\u0633.",
+          resourceType: "SPREADSHEET",
+          format: "xlsx",
+          subjectId: mathSubId,
+          subjectName: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A \u0627\u0644\u0639\u0627\u0645\u0629 \u0648\u0627\u0644\u062A\u062D\u0644\u064A\u0644",
+          gradeLevelId: grade10Id,
+          gradeLevelName: "\u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0627\u0644\u0623\u0648\u0644 \u062B\u0627\u0646\u0648\u064A)",
+          courseId: courseMath10AId,
+          courseTitle: "\u0627\u0644\u0631\u064A\u0627\u0636\u064A\u0627\u062A - \u0627\u0644\u0635\u0641 \u0627\u0644\u0639\u0627\u0634\u0631 (\u0634\u0639\u0628\u0629 \u0623)",
+          unitId: unit2MathId,
+          unitTitle: "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u062B\u0627\u0646\u064A\u0629: \u0627\u0644\u062C\u0628\u0631 \u0627\u0644\u062E\u0637\u064A \u0648\u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A \u0648\u0627\u0644\u0645\u062D\u062F\u062F\u0627\u062A",
+          externalUrl: "https://view.officeapps.live.com/op/view.aspx",
+          fileSize: 85e4,
+          fileType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          tags: ["\u062C\u062F\u0627\u0648\u0644", "\u0625\u0643\u0633\u064A\u0644", "\u062D\u0627\u0633\u0628\u0629 \u0645\u0635\u0641\u0648\u0641\u0627\u062A", "\u062A\u062D\u0642\u0642 \u0630\u0627\u062A\u064A"],
+          uploadedBy: teacherMath.id,
+          authorName: teacherMath.fullName,
+          visibility: "TEACHERS_ONLY",
+          status: "PUBLISHED",
+          viewCount: 38,
+          downloadCount: 22,
+          completionCount: 15,
+          aiSearchable: true,
+          aiSummary: "\u0646\u0645\u0648\u0630\u062C \u062C\u062F\u0648\u0644 \u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u064A\u0633\u0627\u0639\u062F \u0627\u0644\u0645\u0639\u0644\u0645\u064A\u0646 \u0639\u0644\u0649 \u0625\u0639\u062F\u0627\u062F \u0648\u062A\u0635\u062D\u064A\u062D \u0645\u0633\u0627\u0626\u0644 \u0627\u0644\u0645\u0635\u0641\u0648\u0641\u0627\u062A 3x3 \u0628\u0633\u0631\u0639\u0629 \u0648\u062F\u0642\u0629.",
+          createdAt: "2026-09-18T14:00:00Z",
+          updatedAt: "2026-09-18T14:00:00Z"
+        });
+        this.resourceActivities.set("act_seed_01", {
+          id: "act_seed_01",
+          organizationId: schoolAId,
+          resourceId: res1Id,
+          userId: student1.id,
+          userName: student1.fullName,
+          userRole: "STUDENT",
+          action: "VIEWED",
+          courseId: courseMath10AId,
+          lessonId: lesson1Id,
+          timestamp: "2026-09-05T14:20:00Z"
+        });
+        this.resourceActivities.set("act_seed_02", {
+          id: "act_seed_02",
+          organizationId: schoolAId,
+          resourceId: res1Id,
+          userId: student1.id,
+          userName: student1.fullName,
+          userRole: "STUDENT",
+          action: "DOWNLOADED",
+          courseId: courseMath10AId,
+          lessonId: lesson1Id,
+          timestamp: "2026-09-05T14:25:00Z"
+        });
+        this.resourceActivities.set("act_seed_03", {
+          id: "act_seed_03",
+          organizationId: schoolAId,
+          resourceId: res2Id,
+          userId: student2.id,
+          userName: student2.fullName,
+          userRole: "STUDENT",
+          action: "COMPLETED",
+          courseId: courseMath10AId,
+          lessonId: lesson2Id,
+          timestamp: "2026-09-10T16:00:00Z"
+        });
       }
       // --- Multi-Tenant Query Helpers (Row-Level Security Enforcement) ---
       // Organizations
@@ -3767,7 +4068,74 @@ var init_db = __esm({
         this.studentRecords.clear();
         this.studentBehaviorRecords.clear();
         this.studentLifecycleEvents.clear();
+        this.notifications.clear();
         this.seedInitialData();
+      }
+      // ==========================================
+      // Notification Management Operations
+      // ==========================================
+      createNotification(data) {
+        const id = `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const notification = {
+          id,
+          organizationId: data.organizationId,
+          recipientId: data.recipientId,
+          recipientRole: data.recipientRole,
+          type: data.type,
+          title: data.title,
+          body: data.body,
+          data: data.data || {},
+          channels: data.channels || ["IN_APP"],
+          isRead: false,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.notifications.set(id, notification);
+        return notification;
+      }
+      getNotifications(orgId, recipientId, filter) {
+        let items = Array.from(this.notifications.values()).filter(
+          (n) => n.organizationId === orgId && n.recipientId === recipientId
+        );
+        if (filter?.unreadOnly) {
+          items = items.filter((n) => !n.isRead);
+        }
+        items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        if (filter?.limit) {
+          items = items.slice(0, filter.limit);
+        }
+        return items;
+      }
+      markNotificationAsRead(id, orgId, recipientId) {
+        const notif = this.notifications.get(id);
+        if (!notif || notif.organizationId !== orgId || notif.recipientId !== recipientId) {
+          return false;
+        }
+        notif.isRead = true;
+        notif.readAt = (/* @__PURE__ */ new Date()).toISOString();
+        this.notifications.set(id, notif);
+        return true;
+      }
+      markAllNotificationsAsRead(orgId, recipientId) {
+        let count = 0;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        for (const [id, notif] of this.notifications.entries()) {
+          if (notif.organizationId === orgId && notif.recipientId === recipientId && !notif.isRead) {
+            notif.isRead = true;
+            notif.readAt = now;
+            this.notifications.set(id, notif);
+            count++;
+          }
+        }
+        return count;
+      }
+      getUnreadNotificationCount(orgId, recipientId) {
+        let count = 0;
+        for (const notif of this.notifications.values()) {
+          if (notif.organizationId === orgId && notif.recipientId === recipientId && !notif.isRead) {
+            count++;
+          }
+        }
+        return count;
       }
       // Verification helpers
       isSubjectInOrg(subjectId, orgId) {
@@ -3789,6 +4157,243 @@ var init_db = __esm({
       isAcademicYearInOrg(yearId, orgId) {
         const y = this.academicYears.get(yearId);
         return Boolean(y && y.organizationId === orgId);
+      }
+      // ==========================================
+      // Phase 5.1: Curriculum Units Management
+      // ==========================================
+      getUnitsByCourse(courseId, orgId) {
+        const course = this.courses.get(courseId);
+        if (!course || course.organizationId !== orgId) return [];
+        return Array.from(this.curriculumUnits.values()).filter((u) => u.organizationId === orgId && u.courseId === courseId).map((u) => ({
+          ...u,
+          courseTitle: course.title
+        })).sort((a, b) => a.orderIndex - b.orderIndex);
+      }
+      getUnitById(unitId, orgId) {
+        const unit = this.curriculumUnits.get(unitId);
+        if (!unit || unit.organizationId !== orgId) return void 0;
+        const course = this.courses.get(unit.courseId);
+        return {
+          ...unit,
+          courseTitle: course?.title
+        };
+      }
+      createUnit(data) {
+        const id = `unit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const course = this.courses.get(data.courseId);
+        const unit = {
+          ...data,
+          id,
+          courseTitle: course?.title,
+          createdAt: now,
+          updatedAt: now
+        };
+        this.curriculumUnits.set(id, unit);
+        return unit;
+      }
+      updateUnit(id, orgId, updates) {
+        const unit = this.getUnitById(id, orgId);
+        if (!unit) return void 0;
+        const updated = {
+          ...unit,
+          ...updates,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.curriculumUnits.set(id, updated);
+        return updated;
+      }
+      deleteUnit(id, orgId) {
+        const unit = this.getUnitById(id, orgId);
+        if (!unit) return false;
+        this.curriculumUnits.delete(id);
+        return true;
+      }
+      // ==========================================
+      // Phase 5.1: Digital Learning Library Resources
+      // ==========================================
+      getLibraryResources(orgId, filter) {
+        let resources = Array.from(this.libraryResources.values()).filter((r) => r.organizationId === orgId);
+        if (filter?.role) {
+          if (filter.role === "STUDENT") {
+            resources = resources.filter((r) => {
+              if (r.status !== "PUBLISHED") return false;
+              if (r.visibility === "PUBLIC_SCHOOL") return true;
+              if (r.visibility === "COURSE_STUDENTS") {
+                if (!r.courseId) return true;
+                return filter.enrolledCourseIds?.includes(r.courseId) ?? false;
+              }
+              return false;
+            });
+          } else if (filter.role === "PARENT") {
+            resources = resources.filter((r) => {
+              if (r.status !== "PUBLISHED") return false;
+              return r.visibility === "PUBLIC_SCHOOL" || r.visibility === "COURSE_STUDENTS";
+            });
+          } else if (filter.role === "TEACHER") {
+            resources = resources.filter((r) => {
+              if (r.visibility === "PRIVATE" && r.uploadedBy !== filter.userId) return false;
+              return true;
+            });
+          }
+        }
+        if (filter?.subjectId) {
+          resources = resources.filter((r) => r.subjectId === filter.subjectId);
+        }
+        if (filter?.gradeLevelId) {
+          resources = resources.filter((r) => r.gradeLevelId === filter.gradeLevelId);
+        }
+        if (filter?.courseId) {
+          resources = resources.filter((r) => r.courseId === filter.courseId);
+        }
+        if (filter?.unitId) {
+          resources = resources.filter((r) => r.unitId === filter.unitId);
+        }
+        if (filter?.lessonId) {
+          resources = resources.filter((r) => r.lessonId === filter.lessonId);
+        }
+        if (filter?.resourceType) {
+          resources = resources.filter((r) => r.resourceType === filter.resourceType);
+        }
+        if (filter?.status) {
+          resources = resources.filter((r) => r.status === filter.status);
+        }
+        if (filter?.visibility) {
+          resources = resources.filter((r) => r.visibility === filter.visibility);
+        }
+        if (filter?.search && filter.search.trim()) {
+          const q = filter.search.trim().toLowerCase();
+          resources = resources.filter(
+            (r) => r.title.toLowerCase().includes(q) || r.description && r.description.toLowerCase().includes(q) || r.tags.some((t) => t.toLowerCase().includes(q)) || r.authorName && r.authorName.toLowerCase().includes(q)
+          );
+        }
+        return resources.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      }
+      getLibraryResourceById(id, orgId) {
+        const res = this.libraryResources.get(id);
+        if (!res || res.organizationId !== orgId) return void 0;
+        return res;
+      }
+      createLibraryResource(data) {
+        const id = `res_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const subject = data.subjectId ? this.subjects.get(data.subjectId) : void 0;
+        const gradeLevel = data.gradeLevelId ? this.gradeLevels.get(data.gradeLevelId) : void 0;
+        const course = data.courseId ? this.courses.get(data.courseId) : void 0;
+        const unit = data.unitId ? this.curriculumUnits.get(data.unitId) : void 0;
+        const lesson = data.lessonId ? this.lessons.get(data.lessonId) : void 0;
+        const uploader = this.users.get(data.uploadedBy);
+        const resource = {
+          ...data,
+          id,
+          subjectName: subject?.name,
+          gradeLevelName: gradeLevel?.name,
+          courseTitle: course?.title,
+          unitTitle: unit?.title,
+          lessonTitle: lesson?.title,
+          authorName: uploader?.fullName || data.authorName || "\u0645\u0639\u0644\u0645",
+          viewCount: 0,
+          downloadCount: 0,
+          completionCount: 0,
+          createdAt: now,
+          updatedAt: now
+        };
+        this.libraryResources.set(id, resource);
+        return resource;
+      }
+      updateLibraryResource(id, orgId, updates) {
+        const res = this.getLibraryResourceById(id, orgId);
+        if (!res) return void 0;
+        const subject = updates.subjectId ? this.subjects.get(updates.subjectId) : res.subjectId ? this.subjects.get(res.subjectId) : void 0;
+        const gradeLevel = updates.gradeLevelId ? this.gradeLevels.get(updates.gradeLevelId) : res.gradeLevelId ? this.gradeLevels.get(res.gradeLevelId) : void 0;
+        const course = updates.courseId ? this.courses.get(updates.courseId) : res.courseId ? this.courses.get(res.courseId) : void 0;
+        const unit = updates.unitId ? this.curriculumUnits.get(updates.unitId) : res.unitId ? this.curriculumUnits.get(res.unitId) : void 0;
+        const lesson = updates.lessonId ? this.lessons.get(updates.lessonId) : res.lessonId ? this.lessons.get(res.lessonId) : void 0;
+        const updated = {
+          ...res,
+          ...updates,
+          subjectName: subject?.name || res.subjectName,
+          gradeLevelName: gradeLevel?.name || res.gradeLevelName,
+          courseTitle: course?.title || res.courseTitle,
+          unitTitle: unit?.title || res.unitTitle,
+          lessonTitle: lesson?.title || res.lessonTitle,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.libraryResources.set(id, updated);
+        return updated;
+      }
+      deleteLibraryResource(id, orgId) {
+        const res = this.getLibraryResourceById(id, orgId);
+        if (!res) return false;
+        this.libraryResources.delete(id);
+        return true;
+      }
+      recordResourceActivity(data) {
+        const id = `act_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const user = this.users.get(data.userId);
+        const activity = {
+          ...data,
+          id,
+          userName: user?.fullName,
+          timestamp: now
+        };
+        this.resourceActivities.set(id, activity);
+        const res = this.libraryResources.get(data.resourceId);
+        if (res && res.organizationId === data.organizationId) {
+          if (data.action === "VIEWED") res.viewCount = (res.viewCount || 0) + 1;
+          if (data.action === "DOWNLOADED") res.downloadCount = (res.downloadCount || 0) + 1;
+          if (data.action === "COMPLETED") res.completionCount = (res.completionCount || 0) + 1;
+          this.libraryResources.set(res.id, res);
+        }
+        return activity;
+      }
+      getLibraryStats(orgId) {
+        const resources = Array.from(this.libraryResources.values()).filter((r) => r.organizationId === orgId);
+        let totalViews = 0;
+        let totalDownloads = 0;
+        let totalCompletions = 0;
+        const byType = {
+          DOCUMENT: 0,
+          PRESENTATION: 0,
+          SPREADSHEET: 0,
+          IMAGE: 0,
+          VIDEO: 0,
+          AUDIO: 0,
+          EXTERNAL_LINK: 0,
+          INTERACTIVE: 0
+        };
+        const subjectMap = /* @__PURE__ */ new Map();
+        const gradeMap = /* @__PURE__ */ new Map();
+        for (const r of resources) {
+          totalViews += r.viewCount || 0;
+          totalDownloads += r.downloadCount || 0;
+          totalCompletions += r.completionCount || 0;
+          if (r.resourceType in byType) {
+            byType[r.resourceType]++;
+          }
+          if (r.subjectId) {
+            const sName = r.subjectName || this.subjects.get(r.subjectId)?.name || "\u0639\u0627\u0645";
+            const current = subjectMap.get(r.subjectId) || { subjectId: r.subjectId, subjectName: sName, count: 0 };
+            current.count++;
+            subjectMap.set(r.subjectId, current);
+          }
+          if (r.gradeLevelId) {
+            const gName = r.gradeLevelName || this.gradeLevels.get(r.gradeLevelId)?.name || "\u0639\u0627\u0645";
+            const current = gradeMap.get(r.gradeLevelId) || { gradeLevelId: r.gradeLevelId, gradeLevelName: gName, count: 0 };
+            current.count++;
+            gradeMap.set(r.gradeLevelId, current);
+          }
+        }
+        return {
+          totalResources: resources.length,
+          totalViews,
+          totalDownloads,
+          totalCompletions,
+          byType,
+          bySubject: Array.from(subjectMap.values()),
+          byGrade: Array.from(gradeMap.values())
+        };
       }
     };
     db = new PlatformDatabase();
@@ -4427,12 +5032,12 @@ var init_migrate = __esm({
 });
 
 // server.ts
-import express14 from "express";
+import express16 from "express";
 import path2 from "path";
 import { fileURLToPath } from "url";
 
 // server/platform/index.ts
-import express13 from "express";
+import express15 from "express";
 
 // server/platform/auth.ts
 init_db();
@@ -4888,6 +5493,201 @@ async function verifyGoogleIdToken(idToken) {
     return { success: false, error: err instanceof Error ? err.message : "Google ID token verification failed" };
   }
 }
+
+// server/platform/emailService.ts
+import nodemailer from "nodemailer";
+var TransactionalEmailService = class {
+  constructor() {
+    this.transporter = null;
+    this.isConfigured = false;
+    this.defaultFrom = "Rtiqa Platform <no-reply@rtiqa.com>";
+    this.initialize();
+  }
+  initialize() {
+    const host = process.env.SMTP_HOST;
+    const port = Number(process.env.SMTP_PORT) || 587;
+    const secure = process.env.SMTP_SECURE === "true" || port === 465;
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    const from = process.env.SMTP_FROM;
+    if (from) {
+      this.defaultFrom = from;
+    }
+    if (host && user && pass) {
+      try {
+        this.transporter = nodemailer.createTransport({
+          host,
+          port,
+          secure,
+          auth: {
+            user,
+            pass
+          },
+          tls: {
+            rejectUnauthorized: process.env.NODE_ENV === "production"
+          }
+        });
+        this.isConfigured = true;
+      } catch (err) {
+        console.error("[EmailService] Failed to initialize SMTP transporter:", err?.message || err);
+        this.transporter = null;
+        this.isConfigured = false;
+      }
+    } else {
+      this.isConfigured = false;
+    }
+  }
+  isReady() {
+    return this.isConfigured && this.transporter !== null;
+  }
+  async sendMail(options) {
+    const fromAddress = options.from || this.defaultFrom;
+    if (!this.isReady()) {
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[EmailService:Dev] Simulated email to: ${options.to} | Subject: "${options.subject}"`);
+      }
+      return { success: true, messageId: `simulated-${Date.now()}` };
+    }
+    try {
+      const info = await this.transporter.sendMail({
+        from: fromAddress,
+        to: options.to,
+        subject: options.subject,
+        text: options.text || options.html.replace(/<[^>]*>?/gm, ""),
+        html: options.html
+      });
+      return { success: true, messageId: info.messageId };
+    } catch (err) {
+      console.error(`[EmailService] Failed to send email to ${options.to}:`, err?.message || err);
+      return { success: false, error: err?.message || "SMTP_SEND_FAILED" };
+    }
+  }
+  /**
+   * Sends a localized password reset instructions email.
+   */
+  async sendPasswordResetEmail(params) {
+    const appUrl = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+    const resetUrl = `${appUrl}/platform/reset-password?token=${encodeURIComponent(params.resetToken)}${params.tenantSlug ? `&tenant=${encodeURIComponent(params.tenantSlug)}` : ""}`;
+    const schoolName = params.orgName || "\u0645\u0646\u0635\u0629 \u0627\u0631\u062A\u0642\u0627\u0621 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629";
+    const name = params.recipientName || "\u0639\u0632\u064A\u0632\u0646\u0627 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645";
+    const subject = `\u0627\u0633\u062A\u0639\u0627\u062F\u0629 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 - ${schoolName}`;
+    const html = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #060b18; color: #e2e8f0; margin: 0; padding: 24px; direction: rtl; }
+          .card { max-width: 540px; margin: 0 auto; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 20px; padding: 32px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); }
+          .header { text-align: center; margin-bottom: 24px; }
+          .logo { display: inline-block; width: 44px; height: 44px; line-height: 44px; text-align: center; border-radius: 12px; background: linear-gradient(135deg, #10b981, #14b8a6); color: #022c22; font-weight: 900; font-size: 22px; }
+          h2 { color: #f8fafc; font-size: 20px; margin-top: 16px; margin-bottom: 8px; }
+          p { color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 12px 0; }
+          .btn-container { text-align: center; margin: 28px 0; }
+          .btn { display: inline-block; background-color: #10b981; color: #022c22; font-weight: 700; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-size: 14px; }
+          .footer { text-align: center; margin-top: 24px; border-top: 1px solid #1e293b; pt: 16px; font-size: 12px; color: #64748b; }
+          .warning { background-color: #1e1b4b; border: 1px solid #3730a3; border-radius: 10px; padding: 12px; font-size: 12px; color: #c7d2fe; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="header">
+            <div class="logo">R</div>
+            <h2>\u0637\u0644\u0628 \u0627\u0633\u062A\u0639\u0627\u062F\u0629 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631</h2>
+          </div>
+          <p>\u0645\u0631\u062D\u0628\u0627\u064B ${name}\u060C</p>
+          <p>\u062A\u0644\u0642\u064A\u0646\u0627 \u0637\u0644\u0628\u0627\u064B \u0644\u0625\u0639\u0627\u062F\u0629 \u062A\u0639\u064A\u064A\u0646 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u0627\u0644\u062E\u0627\u0635\u0629 \u0628\u062D\u0633\u0627\u0628\u0643 \u0641\u064A <strong>${schoolName}</strong>.</p>
+          <p>\u0644\u062A\u0639\u064A\u064A\u0646 \u0643\u0644\u0645\u0629 \u0645\u0631\u0648\u0631 \u062C\u062F\u064A\u062F\u0629\u060C \u064A\u0631\u062C\u0649 \u0627\u0644\u0636\u063A\u0637 \u0639\u0644\u0649 \u0627\u0644\u0632\u0631 \u0627\u0644\u062A\u0627\u0644\u064A (\u0627\u0644\u0631\u0627\u0628\u0637 \u0635\u0627\u0644\u062D \u0644\u0645\u062F\u0629 60 \u062F\u0642\u064A\u0642\u0629 \u0641\u0642\u0637):</p>
+          <div class="btn-container">
+            <a href="${resetUrl}" class="btn" target="_blank">\u0625\u0639\u0627\u062F\u0629 \u062A\u0639\u064A\u064A\u0646 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631</a>
+          </div>
+          <p style="font-size: 12px; color: #64748b;">\u0625\u0630\u0627 \u0644\u0645 \u062A\u0643\u0646 \u0642\u062F \u0637\u0644\u0628\u062A \u0627\u0633\u062A\u0639\u0627\u062F\u0629 \u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631\u060C \u064A\u0645\u0643\u0646\u0643 \u062A\u062C\u0627\u0647\u0644 \u0647\u0630\u0627 \u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0628\u0623\u0645\u0627\u0646.</p>
+          <div class="warning">
+            \u{1F512} \u0644\u062D\u0645\u0627\u064A\u0629 \u0623\u0645\u0627\u0646 \u062D\u0633\u0627\u0628\u0643\u060C \u0644\u0627 \u062A\u0634\u0627\u0631\u0643 \u0647\u0630\u0627 \u0627\u0644\u0631\u0627\u0628\u0637 \u0645\u0639 \u0623\u064A \u0634\u062E\u0635.
+          </div>
+          <div class="footer">
+            <p>\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schoolName} - \u0645\u062F\u0639\u0648\u0645 \u0628\u0648\u0627\u0633\u0637\u0629 \u0646\u0638\u0627\u0645 \u0627\u0631\u062A\u0642\u0627\u0621 RTIQA</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    return this.sendMail({
+      to: params.to,
+      subject,
+      html
+    });
+  }
+  /**
+   * Sends a localized invitation email to a teacher, student, or parent.
+   */
+  async sendSchoolInvitationEmail(params) {
+    const appUrl = (process.env.APP_URL || "http://localhost:3000").replace(/\/$/, "");
+    const joinUrl = `${appUrl}/platform/join?code=${encodeURIComponent(params.inviteCode)}`;
+    const schoolName = params.orgName || "\u0627\u0644\u0645\u0624\u0633\u0633\u0629 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629";
+    const name = params.recipientName || "\u0639\u0632\u064A\u0632\u0646\u0627 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645";
+    const roleMap = {
+      TEACHER: "\u0645\u0639\u0644\u0645",
+      STUDENT: "\u0637\u0627\u0644\u0628",
+      PARENT: "\u0648\u0644\u064A \u0623\u0645\u0631",
+      ORG_ADMIN: "\u0645\u0633\u0624\u0648\u0644 \u0645\u062F\u0631\u0633\u0629"
+    };
+    const roleAr = roleMap[params.role] || params.role;
+    const subject = `\u062F\u0639\u0648\u0629 \u0644\u0644\u0627\u0646\u0636\u0645\u0627\u0645 \u0625\u0644\u0649 ${schoolName} \u0643\u0640 (${roleAr})`;
+    const html = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #060b18; color: #e2e8f0; margin: 0; padding: 24px; direction: rtl; }
+          .card { max-width: 540px; margin: 0 auto; background-color: #0f172a; border: 1px solid #1e293b; border-radius: 20px; padding: 32px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); }
+          .header { text-align: center; margin-bottom: 24px; }
+          .logo { display: inline-block; width: 44px; height: 44px; line-height: 44px; text-align: center; border-radius: 12px; background: linear-gradient(135deg, #10b981, #14b8a6); color: #022c22; font-weight: 900; font-size: 22px; }
+          h2 { color: #f8fafc; font-size: 20px; margin-top: 16px; margin-bottom: 8px; }
+          p { color: #94a3b8; font-size: 14px; line-height: 1.6; margin: 12px 0; }
+          .btn-container { text-align: center; margin: 28px 0; }
+          .btn { display: inline-block; background-color: #10b981; color: #022c22; font-weight: 700; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-size: 14px; }
+          .code-box { background-color: #020617; border: 1px dashed #334155; border-radius: 12px; padding: 16px; text-align: center; margin: 20px 0; font-family: monospace; font-size: 18px; font-weight: bold; color: #34d399; letter-spacing: 2px; }
+          .footer { text-align: center; margin-top: 24px; border-top: 1px solid #1e293b; padding-top: 16px; font-size: 12px; color: #64748b; }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="header">
+            <div class="logo">R</div>
+            <h2>\u062F\u0639\u0648\u0629 \u0627\u0646\u0636\u0645\u0627\u0645 \u0625\u0644\u0649 \u0627\u0644\u0645\u0624\u0633\u0633\u0629 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629</h2>
+          </div>
+          <p>\u0645\u0631\u062D\u0628\u0627\u064B ${name}\u060C</p>
+          <p>\u064A\u0633\u0631 \u0625\u062F\u0627\u0631\u0629 <strong>${schoolName}</strong> \u062F\u0639\u0648\u062A\u0643 \u0644\u0644\u0627\u0646\u0636\u0645\u0627\u0645 \u0625\u0644\u0649 \u0646\u0638\u0627\u0645 \u0627\u0644\u0645\u062F\u0631\u0633\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0648\u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A \u0628\u0635\u0641\u062A\u0643 <strong>${roleAr}</strong>.</p>
+          
+          <div class="code-box">
+            \u0631\u0645\u0632 \u0627\u0644\u062F\u0639\u0648\u0629: ${params.inviteCode}
+          </div>
+
+          <p>\u064A\u0645\u0643\u0646\u0643 \u062A\u0641\u0639\u064A\u0644 \u062D\u0633\u0627\u0628\u0643 \u0648\u0627\u0644\u0627\u0646\u0636\u0645\u0627\u0645 \u0641\u0648\u0631\u0627\u064B \u0639\u0628\u0631 \u0627\u0644\u0636\u063A\u0637 \u0639\u0644\u0649 \u0627\u0644\u0632\u0631 \u0623\u062F\u0646\u0627\u0647:</p>
+          <div class="btn-container">
+            <a href="${joinUrl}" class="btn" target="_blank">\u0642\u0628\u0648\u0644 \u0627\u0644\u062F\u0639\u0648\u0629 \u0648\u062A\u0641\u0639\u064A\u0644 \u0627\u0644\u062D\u0633\u0627\u0628</a>
+          </div>
+          <div class="footer">
+            <p>\xA9 ${(/* @__PURE__ */ new Date()).getFullYear()} ${schoolName} - \u0645\u0646\u0635\u0629 \u0627\u0631\u062A\u0642\u0627\u0621 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629 \u0627\u0644\u0630\u0643\u064A\u0629</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+    return this.sendMail({
+      to: params.to,
+      subject,
+      html
+    });
+  }
+};
+var emailService = new TransactionalEmailService();
 
 // server/platform/routes/authRoutes.ts
 var authRouter = express.Router();
@@ -5495,6 +6295,16 @@ authRouter.post("/forgot-password", forgotPasswordLimiter, (req, res) => {
       const tokenHash = hashOtp(rawToken);
       db.createPasswordResetToken(user.id, user.email, tokenHash, 60);
       resetTokenValue = rawToken;
+      const org = user.organizationId ? db.getOrganizationById(user.organizationId) : void 0;
+      emailService.sendPasswordResetEmail({
+        to: user.email,
+        recipientName: user.fullName,
+        resetToken: rawToken,
+        tenantSlug: org?.slug,
+        orgName: org?.name
+      }).catch((err) => {
+        console.error("[Auth] Failed to send password reset email:", err);
+      });
       db.logAction(user.organizationId, user.id, user.email, "REQUEST_PASSWORD_RESET", "User", user.id, {}, req.ip);
     }
     return res.json({
@@ -6038,6 +6848,15 @@ authRouter.post(
         { email: normalizedEmail, role, inviteCode },
         req.ip
       );
+      emailService.sendSchoolInvitationEmail({
+        to: normalizedEmail,
+        recipientName: fullName ? sanitizeString(fullName) : void 0,
+        inviteCode,
+        role,
+        orgName: req.organization?.name
+      }).catch((err) => {
+        console.error("[Auth] Failed to send invitation email:", err);
+      });
       return res.json({
         success: true,
         data: {
@@ -8273,6 +9092,37 @@ dashboardRouter.get("/stats", (req, res) => {
         }
       });
     }
+    if (user.role === "PARENT") {
+      const links = db.getParentStudentLinks(orgId, { parentId: user.id });
+      const childrenSummaries = links.map((link) => {
+        const studentUser = db.getUserById(link.studentId, orgId);
+        const performance = db.getStudentAcademicPerformance(link.studentId, orgId);
+        const attendance = db.getAttendanceSummaryForStudent(link.studentId, orgId);
+        const behaviorRecords = db.getStudentBehaviorRecords(orgId, { studentId: link.studentId });
+        const behaviorPoints = behaviorRecords.reduce((sum, b) => sum + (b.points || 0), 0);
+        return {
+          linkId: link.id,
+          studentId: link.studentId,
+          studentName: studentUser?.fullName || link.studentName || "\u0637\u0627\u0644\u0628",
+          relationship: link.relationship,
+          isEmergencyContact: link.isEmergencyContact,
+          classroomId: studentUser?.classroomId,
+          gpaPercent: performance.overallGpaPercent,
+          letterGrade: performance.letterGrade,
+          attendanceRate: attendance.attendanceRate,
+          behaviorPoints,
+          activeCoursesCount: performance.courses.length
+        };
+      });
+      return res.json({
+        success: true,
+        data: {
+          role: "PARENT",
+          linkedChildrenCount: links.length,
+          children: childrenSummaries
+        }
+      });
+    }
     const academicPerformance = db.getStudentAcademicPerformance(user.id, orgId);
     const attendanceSummary = db.getAttendanceSummaryForStudent(user.id, orgId);
     const myCourses = academicPerformance.courses.map((c) => {
@@ -8346,6 +9196,87 @@ dashboardRouter.get("/audit-logs", requireRoles(["ORG_ADMIN", "SUPER_ADMIN"]), (
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
+dashboardRouter.get(
+  "/analytics",
+  requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]),
+  (req, res) => {
+    try {
+      const orgId = req.organization.id;
+      const students = db.getUsersByOrg(orgId, "STUDENT");
+      const courses = db.getCourses(orgId);
+      let totalGpa = 0;
+      let evaluatedStudentsCount = 0;
+      const atRiskStudents = [];
+      const topPerformers = [];
+      for (const student of students) {
+        const perf = db.getStudentAcademicPerformance(student.id, orgId);
+        const att = db.getAttendanceSummaryForStudent(student.id, orgId);
+        if (perf.enrolledCoursesCount > 0) {
+          totalGpa += perf.overallGpaPercent;
+          evaluatedStudentsCount++;
+          if (perf.overallGpaPercent >= 90) {
+            topPerformers.push({
+              studentId: student.id,
+              studentName: student.fullName,
+              gpaPercent: perf.overallGpaPercent,
+              letterGrade: perf.letterGrade
+            });
+          }
+          if (perf.overallGpaPercent < 70 || att.attendanceRate < 85) {
+            let reason = "";
+            if (perf.overallGpaPercent < 70 && att.attendanceRate < 85) {
+              reason = "\u0627\u0646\u062E\u0641\u0627\u0636 \u0641\u064A \u0627\u0644\u062A\u062D\u0635\u064A\u0644 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0648\u0646\u0633\u0628\u0629 \u0627\u0644\u062D\u0636\u0648\u0631";
+            } else if (perf.overallGpaPercent < 70) {
+              reason = "\u0627\u0646\u062E\u0641\u0627\u0636 \u0627\u0644\u0645\u0639\u062F\u0644 \u0627\u0644\u062A\u0631\u0627\u0643\u0645\u064A \u0639\u0646 \u0627\u0644\u062D\u062F \u0627\u0644\u0623\u062F\u0646\u0649";
+            } else {
+              reason = "\u062A\u062C\u0627\u0648\u0632 \u0646\u0633\u0628\u0629 \u0627\u0644\u063A\u064A\u0627\u0628 \u0627\u0644\u0645\u0633\u0645\u0648\u062D \u0628\u0647\u0627";
+            }
+            atRiskStudents.push({
+              studentId: student.id,
+              studentName: student.fullName,
+              gpaPercent: perf.overallGpaPercent,
+              attendanceRate: att.attendanceRate,
+              reason
+            });
+          }
+        }
+      }
+      const averageGpa = evaluatedStudentsCount > 0 ? Math.round(totalGpa / evaluatedStudentsCount) : 85;
+      const coursePerformance = courses.map((course) => {
+        const grades = db.getAssessmentGrades(orgId).filter((g) => {
+          const ass = db.getAssessmentById(g.assessmentId, orgId);
+          return ass?.courseId === course.id;
+        });
+        const avgScore = grades.length > 0 ? Math.round(grades.reduce((s, g) => s + g.percentage, 0) / grades.length) : 85;
+        return {
+          courseId: course.id,
+          courseTitle: course.title,
+          subjectName: course.subjectName,
+          averageScore: avgScore,
+          gradedItemsCount: grades.length
+        };
+      });
+      res.json({
+        success: true,
+        data: {
+          averageGpa,
+          totalStudentsCount: students.length,
+          evaluatedStudentsCount,
+          atRiskCount: atRiskStudents.length,
+          topPerformersCount: topPerformers.length,
+          atRiskStudents,
+          topPerformers: topPerformers.slice(0, 10),
+          coursePerformance
+        }
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        error: err.message || "ANALYTICS_ERROR"
+      });
+    }
+  }
+);
 
 // server/platform/routes/aiRoutes.ts
 import express10 from "express";
@@ -8650,9 +9581,20 @@ var AIPromptTemplates = class {
       case "lesson_summary":
         return this.getLessonSummaryInstruction(options);
       case "question_generator":
+      case "quiz_generator":
         return this.getQuestionGeneratorInstruction(options);
       case "content_explainer":
         return this.getContentExplainerInstruction(options);
+      case "parent_assistant":
+        return this.getParentAssistantInstruction(options);
+      case "feedback_generator":
+        return this.getFeedbackGeneratorInstruction(options);
+      case "learning_recommendations":
+        return this.getLearningRecommendationsInstruction(options);
+      case "lesson_planner":
+        return this.getLessonPlannerInstruction(options);
+      case "diagnostic_intervention":
+        return this.getDiagnosticInterventionInstruction(options);
       case "chat":
       default:
         return this.getGeneralChatInstruction(options);
@@ -8746,6 +9688,54 @@ ${options.courseTitle ? `\u0627\u0644\u0645\u0642\u0631\u0631: ${options.courseT
 ${options.courseTitle ? `\u0633\u064A\u0627\u0642 \u0627\u0644\u0645\u0642\u0631\u0631: ${options.courseTitle}` : ""}
 
 \u0645\u0647\u0645\u062A\u0643 \u062A\u0642\u062F\u064A\u0645 \u0625\u0631\u0634\u0627\u062F\u0627\u062A \u062A\u0639\u0644\u064A\u0645\u064A\u0629 \u0648\u062A\u0646\u0638\u064A\u0645\u064A\u0629 \u0648\u0625\u062C\u0627\u0628\u0627\u062A \u062F\u0642\u064A\u0642\u0629 \u0648\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 \u0628\u0627\u0644\u0644\u063A\u062A\u064A\u0646 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0648\u0627\u0644\u0625\u0646\u062C\u0644\u064A\u0632\u064A\u0629 \u0645\u0639 \u0625\u0639\u0637\u0627\u0621 \u0627\u0644\u0623\u0648\u0644\u0648\u064A\u0629 \u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0627\u0644\u0641\u0635\u062D\u0649.`;
+  }
+  static getParentAssistantInstruction(options) {
+    return `\u0623\u0646\u062A "\u0645\u0633\u062A\u0634\u0627\u0631 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631 \u0627\u0644\u062A\u0631\u0628\u0648\u064A \u0648\u0627\u0644\u0630\u0643\u064A" \u0641\u064A \u0645\u0646\u0635\u0629 \u0631\u062A\u0642\u0627\u0621 (Rtiqa AI Parent Advisor).
+\u0623\u0646\u062A \u062A\u062E\u0627\u0637\u0628 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631: ${options.userName} \u0641\u064A \u0645\u0624\u0633\u0633\u0629: ${options.orgName}.
+
+\u0645\u0647\u0645\u062A\u0643 \u0627\u0644\u062A\u0631\u0628\u0648\u064A\u0629 \u0648\u0627\u0644\u0625\u0631\u0634\u0627\u062F\u064A\u0629:
+1. \u0634\u0631\u062D \u0648\u062A\u062D\u0644\u064A\u0644 \u0627\u0644\u0645\u0633\u062A\u0648\u0649 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0648\u0633\u062C\u0644\u0627\u062A \u0627\u0644\u062D\u0636\u0648\u0631 \u0648\u0627\u0644\u0633\u0644\u0648\u0643 \u0644\u0644\u0623\u0628\u0646\u0627\u0621 \u0628\u0644\u063A\u0629 \u062A\u0631\u0628\u0648\u064A\u0629 \u0648\u0627\u0636\u062D\u0629 \u0648\u062F\u0627\u0639\u0645\u0629 \u0648\u0645\u062D\u0641\u0632\u0629.
+2. \u062A\u0642\u062F\u064A\u0645 \u0646\u0635\u0627\u0626\u062D \u0639\u0645\u0644\u064A\u0629 \u0644\u0623\u0648\u0644\u064A\u0627\u0621 \u0627\u0644\u0623\u0645\u0648\u0631 \u0644\u0645\u0633\u0627\u0639\u062F\u0629 \u0623\u0628\u0646\u0627\u0626\u0647\u0645 \u0641\u064A \u062A\u0646\u0638\u064A\u0645 \u0623\u0648\u0642\u0627\u062A \u0627\u0644\u0645\u0630\u0627\u0643\u0631\u0629 \u0627\u0644\u0645\u0646\u0632\u0644\u064A\u0629 \u0648\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u062A\u062D\u0635\u064A\u0644 \u0627\u0644\u062F\u0631\u0627\u0633\u064A.
+3. \u0627\u0642\u062A\u0631\u0627\u062D \u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0627\u062A \u0644\u0644\u062A\u0639\u0627\u0645\u0644 \u0645\u0639 \u0627\u0644\u062A\u062D\u062F\u064A\u0627\u062A \u0627\u0644\u0633\u0644\u0648\u0643\u064A\u0629 \u0623\u0648 \u0646\u0642\u0635 \u0627\u0644\u062F\u0627\u0641\u0639\u064A\u0629 \u0623\u0648 \u062A\u0639\u062B\u0631 \u0627\u0644\u0641\u0647\u0645 \u0641\u064A \u0645\u0648\u0627\u062F \u0645\u0639\u064A\u0646\u0629.
+4. \u0627\u0644\u0625\u062C\u0627\u0628\u0629 \u0639\u0646 \u0627\u0633\u062A\u0641\u0633\u0627\u0631\u0627\u062A \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631 \u062D\u0648\u0644 \u0627\u0644\u0645\u0646\u0647\u0627\u062C\u060C \u0648\u0627\u0644\u062A\u0642\u064A\u064A\u0645\u0627\u062A\u060C \u0648\u0623\u0646\u0634\u0637\u0629 \u0627\u0644\u0645\u062F\u0631\u0633\u0629.
+5. \u0627\u0633\u062A\u062E\u062F\u0627\u0645 \u0646\u0628\u0631\u0629 \u0637\u0645\u0623\u0646\u064A\u0646\u0629 \u0648\u062A\u0639\u0627\u0648\u0646 \u0648\u0634\u0631\u0627\u0643\u0629 \u0625\u064A\u062C\u0627\u0628\u064A\u0629 \u0628\u064A\u0646 \u0627\u0644\u0623\u0633\u0631\u0629 \u0648\u0627\u0644\u0645\u062F\u0631\u0633\u0629.`;
+  }
+  static getFeedbackGeneratorInstruction(options) {
+    return `\u0623\u0646\u062A "\u0645\u062D\u0631\u0643 \u0635\u064A\u0627\u063A\u0629 \u0627\u0644\u062A\u063A\u0630\u064A\u0629 \u0627\u0644\u0631\u0627\u062C\u0639\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629 \u0627\u0644\u0628\u0646\u0627\u0621\u0629" \u0641\u064A \u0645\u0646\u0635\u0629 \u0631\u062A\u0642\u0627\u0621.
+\u0623\u0646\u062A \u062A\u0633\u0627\u0639\u062F \u0627\u0644\u0645\u0639\u0644\u0645 \u0641\u064A \u062A\u0642\u062F\u064A\u0645 \u0645\u0644\u0627\u062D\u0638\u0627\u062A \u062A\u0642\u064A\u064A\u0645\u064A\u0629 \u0646\u0648\u0639\u064A\u0629 \u0648\u0645\u062D\u0641\u0632\u0629 \u0644\u0644\u0637\u0644\u0627\u0628 \u0639\u0644\u0649 \u0648\u0627\u062C\u0628\u0627\u062A\u0647\u0645 \u0648\u0627\u062E\u062A\u0628\u0627\u0631\u0627\u062A\u0647\u0645.
+
+\u0647\u064A\u0643\u0644\u064A\u0629 \u0627\u0644\u062A\u063A\u0630\u064A\u0629 \u0627\u0644\u0631\u0627\u062C\u0639\u0629:
+1. **\u0646\u0642\u0627\u0637 \u0627\u0644\u0642\u0648\u0629 \u0648\u0627\u0644\u0625\u0634\u0627\u062F\u0629 \u0627\u0644\u0625\u064A\u062C\u0627\u0628\u064A\u0629 (Strengths)**: \u0627\u0644\u0625\u0634\u0627\u062F\u0629 \u0627\u0644\u0645\u062D\u062F\u062F\u0629 \u0628\u0645\u0627 \u0623\u0628\u062F\u0639 \u0641\u064A\u0647 \u0627\u0644\u0637\u0627\u0644\u0628.
+2. **\u0641\u0631\u0635 \u0627\u0644\u062A\u062D\u0633\u064A\u0646 \u0648\u0627\u0644\u062A\u0637\u0648\u064A\u0631 (Areas for Growth)**: \u062A\u0648\u0636\u064A\u062D \u0627\u0644\u0646\u0642\u0627\u0637 \u0627\u0644\u062A\u064A \u062A\u062D\u062A\u0627\u062C \u062A\u0639\u0632\u064A\u0632\u064B\u0627 \u0628\u062F\u0642\u0629 \u062F\u0648\u0646 \u0625\u062D\u0628\u0627\u0637.
+3. **\u0627\u0644\u062E\u0637\u0648\u0629 \u0627\u0644\u0639\u0645\u0644\u064A\u0629 \u0627\u0644\u0642\u0627\u062F\u0645\u0629 (Actionable Next Step)**: \u062A\u0645\u0631\u064A\u0646 \u0645\u0642\u062A\u0631\u062D \u0623\u0648 \u0645\u0648\u0631\u062F \u0645\u062D\u062F\u062F \u0644\u0644\u0645\u0631\u0627\u062C\u0639\u0629.
+4. \u0627\u0644\u062A\u062D\u062F\u062B \u0628\u0623\u0633\u0644\u0648\u0628 \u0645\u062D\u0641\u0632 \u064A\u0631\u0643\u0632 \u0639\u0644\u0649 \u0639\u0642\u0644\u064A\u0629 \u0627\u0644\u0646\u0645\u0648 (Growth Mindset).`;
+  }
+  static getLearningRecommendationsInstruction(options) {
+    return `\u0623\u0646\u062A "\u0645\u062D\u0631\u0643 \u0627\u0644\u062A\u0648\u0635\u064A\u0627\u062A \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629 \u0627\u0644\u0630\u0643\u064A\u0629 \u0648\u062E\u0637\u0637 \u0627\u0644\u062A\u062F\u062E\u0644 \u0627\u0644\u0641\u0631\u062F\u064A" \u0641\u064A \u0645\u0646\u0635\u0629 \u0631\u062A\u0642\u0627\u0621.
+\u0645\u0647\u0645\u062A\u0643 \u062A\u062D\u0644\u064A\u0644 \u0623\u062F\u0627\u0621 \u0627\u0644\u0637\u0627\u0644\u0628 \u0648\u0627\u0642\u062A\u0631\u0627\u062D \u0645\u0633\u0627\u0631\u0627\u062A \u062A\u0639\u0644\u0645 \u0625\u062B\u0631\u0627\u0626\u064A\u0629 \u0623\u0648 \u0639\u0644\u0627\u062C\u064A\u0629 \u0645\u062E\u0635\u0635\u0629 \u0628\u0646\u0627\u0621\u064B \u0639\u0644\u0649 \u0645\u0633\u062A\u0648\u0649 \u0623\u062F\u0627\u0626\u0647.
+
+\u064A\u062C\u0628 \u0623\u0646 \u062A\u062A\u0636\u0645\u0646 \u0627\u0644\u062A\u0648\u0635\u064A\u0627\u062A:
+1. \u062A\u0634\u062E\u064A\u0635 \u062F\u0642\u064A\u0642 \u0644\u0644\u0645\u0647\u0627\u0631\u0627\u062A \u0627\u0644\u0645\u062A\u0642\u0646\u0629 \u0648\u0627\u0644\u0645\u0647\u0627\u0631\u0627\u062A \u0627\u0644\u062A\u064A \u062A\u062D\u062A\u0627\u062C \u0644\u062F\u0639\u0645.
+2. \u062E\u0637\u0629 \u0623\u0633\u0628\u0648\u0639\u064A\u0629 \u0645\u0642\u062A\u0631\u062D\u0629 \u0645\u0646 3 \u062E\u0637\u0648\u0627\u062A \u0639\u0645\u0644\u064A\u0629 \u0644\u062A\u062D\u0633\u064A\u0646 \u0627\u0644\u0645\u0639\u062F\u0644.
+3. \u0645\u0642\u062A\u0631\u062D\u0627\u062A \u0644\u0645\u0635\u0627\u062F\u0631 \u062A\u0639\u0644\u0645 \u0631\u0642\u0645\u064A\u0629 \u0648\u0623\u0646\u0634\u0637\u0629 \u062A\u0637\u0628\u064A\u0642\u064A\u0629 \u0645\u0633\u0627\u0646\u062F\u0629.`;
+  }
+  static getLessonPlannerInstruction(options) {
+    return `\u0623\u0646\u062A "\u062E\u0628\u064A\u0631 \u062A\u0635\u0645\u064A\u0645 \u0627\u0644\u062A\u062F\u0631\u064A\u0633 \u0648\u0627\u0644\u062A\u062E\u0637\u064A\u0637 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A \u0627\u0644\u0627\u062D\u062A\u0631\u0627\u0641\u064A" \u0641\u064A \u0645\u0646\u0635\u0629 \u0631\u062A\u0642\u0627\u0621.
+\u0645\u0647\u0645\u062A\u0643 \u0625\u0639\u062F\u0627\u062F \u062E\u0637\u0629 \u062F\u0631\u0633 \u0646\u0645\u0648\u0630\u062C\u064A\u0629 \u0645\u062A\u0643\u0627\u0645\u0644\u0629 \u0648\u0641\u0642 \u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0627\u062A \u0627\u0644\u062A\u0639\u0644\u0645 \u0627\u0644\u0646\u0634\u0637 \u0648\u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u062C\u0648\u062F\u0629 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A\u0629.
+
+\u0627\u0644\u0647\u064A\u0643\u0644 \u0627\u0644\u0646\u0645\u0648\u0630\u062C\u064A \u0644\u062E\u0637\u0629 \u0627\u0644\u062F\u0631\u0633:
+1. **\u0645\u0639\u0644\u0648\u0645\u0627\u062A \u0627\u0644\u062F\u0631\u0633 \u0648\u0627\u0644\u0623\u0647\u062F\u0627\u0641**:
+   - \u0627\u0644\u0645\u0648\u0636\u0648\u0639 \u0648\u0627\u0644\u0635\u0641 \u0648\u0627\u0644\u0645\u0627\u062F\u0629.
+   - 3 \u0623\u0647\u062F\u0627\u0641 \u0633\u0644\u0648\u0643\u064A\u0629 \u0645\u0642\u0627\u0633\u0629 (\u0645\u0639\u0631\u0641\u064A\u060C \u0645\u0647\u0627\u0631\u064A\u060C \u0648\u062C\u062F\u0627\u0646\u064A).
+2. **\u0627\u0644\u062A\u0647\u064A\u0626\u0629 \u0627\u0644\u062D\u0627\u0641\u0632\u0629 \u0648\u0627\u0644\u0645\u062F\u062E\u0644 (5 \u062F\u0642\u0627\u0626\u0642)**: \u0633\u0624\u0627\u0644 \u0645\u062D\u0641\u0632 \u0623\u0648 \u0646\u0634\u0627\u0637 \u0627\u0633\u062A\u0647\u0644\u0627\u0644\u064A \u064A\u0631\u0628\u0637 \u0628\u0627\u0644\u062E\u0628\u0631\u0627\u062A \u0627\u0644\u0633\u0627\u0628\u0642\u0629.
+3. **\u0627\u0644\u062A\u062F\u0631\u064A\u0633 \u0627\u0644\u0645\u0628\u0627\u0634\u0631 \u0648\u0639\u0631\u0636 \u0627\u0644\u0645\u0641\u0627\u0647\u064A\u0645 (15 \u062F\u0642\u064A\u0642\u0629)**: \u0627\u0644\u0627\u0633\u062A\u0631\u0627\u062A\u064A\u062C\u064A\u0629 \u0648\u0627\u0644\u0648\u0633\u0627\u0626\u0644 \u0627\u0644\u0645\u0633\u062A\u062E\u062F\u0645\u0629.
+4. **\u0627\u0644\u0623\u0646\u0634\u0637\u0629 \u0627\u0644\u0635\u0641\u064A\u0629 \u0648\u0627\u0644\u062A\u0639\u0644\u0645 \u0627\u0644\u062A\u0639\u0627\u0648\u0646\u064A (15 \u062F\u0642\u064A\u0642\u0629)**: \u0646\u0634\u0627\u0637 \u0641\u0631\u062F\u064A \u0623\u0648 \u062C\u0645\u0627\u0639\u064A \u0645\u062A\u0645\u0627\u064A\u0632.
+5. **\u0627\u0644\u062A\u0642\u0648\u064A\u0645 \u0627\u0644\u062A\u0643\u0648\u064A\u0646\u064A \u0648\u0627\u0644\u062E\u062A\u0627\u0645\u064A (8 \u062F\u0642\u0627\u0626\u0642)**: \u062A\u0630\u0643\u0631\u0629 \u062E\u0631\u0648\u062C (Exit Ticket) \u0623\u0648 \u0633\u0624\u0627\u0644 \u062A\u0642\u064A\u064A\u0645\u064A \u0633\u0631\u064A\u0639.
+6. **\u0627\u0644\u0648\u0627\u062C\u0628 \u0627\u0644\u0645\u0646\u0632\u0644\u064A \u0627\u0644\u0625\u062B\u0631\u0627\u0626\u064A \u0648\u0627\u0644\u0639\u0644\u0627\u062C\u064A (2 \u062F\u0642\u064A\u0642\u0629)**.`;
+  }
+  static getDiagnosticInterventionInstruction(options) {
+    return `\u0623\u0646\u062A "\u0645\u0633\u062A\u0634\u0627\u0631 \u0627\u0644\u062A\u0634\u062E\u064A\u0635 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0648\u0627\u0644\u062A\u062F\u062E\u0644 \u0627\u0644\u0645\u0628\u0643\u0631" \u0641\u064A \u0645\u0646\u0635\u0629 \u0631\u062A\u0642\u0627\u0621.
+\u0645\u0647\u0645\u062A\u0643 \u0645\u0633\u0627\u0639\u062F\u0629 \u0627\u0644\u0625\u062F\u0627\u0631\u0629 \u0648\u0627\u0644\u0645\u0639\u0644\u0645\u064A\u0646 \u0641\u064A \u0631\u0635\u062F \u0645\u0624\u0634\u0631\u0627\u062A \u0627\u0644\u062A\u0639\u062B\u0631 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0623\u0648 \u0627\u0644\u063A\u064A\u0627\u0628 \u0648\u0648\u0636\u0639 \u062E\u0637\u0637 \u062A\u062F\u062E\u0644 \u0641\u0648\u0631\u064A\u0629 \u0648\u0642\u0627\u0628\u0644\u0629 \u0644\u0644\u0642\u064A\u0627\u0633 \u0644\u062D\u0645\u0627\u064A\u0629 \u0627\u0644\u0637\u0627\u0644\u0628 \u0645\u0646 \u0627\u0644\u0631\u0633\u0648\u0628 \u0623\u0648 \u0627\u0644\u062A\u0633\u0631\u0628.`;
   }
 };
 
@@ -9448,6 +10438,186 @@ aiRouter.post(
     }
   }
 );
+aiRouter.post("/parent-advisor", async (req, res) => {
+  try {
+    const { studentId, question, includePerformance } = req.body;
+    if (!question || typeof question !== "string" || question.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        error: "QUESTION_REQUIRED",
+        message: "Question or inquiry is required."
+      });
+    }
+    let extraContext = "";
+    if (studentId) {
+      if (req.user.role === "PARENT") {
+        const links = db.getParentStudentLinks(req.user.organizationId, { parentId: req.user.id, studentId });
+        if (links.length === 0) {
+          return res.status(403).json({
+            success: false,
+            error: "ACCESS_DENIED",
+            message: "You are not linked to this student."
+          });
+        }
+      }
+      const student = db.getUserById(studentId, req.user.organizationId);
+      if (student && includePerformance !== false) {
+        const perf = db.getStudentAcademicPerformance(studentId, req.user.organizationId);
+        const att = db.getAttendanceSummaryForStudent(studentId, req.user.organizationId);
+        const behavior = db.getStudentBehaviorRecords(req.user.organizationId, { studentId });
+        extraContext = `\u0628\u064A\u0627\u0646\u0627\u062A \u0623\u062F\u0627\u0621 \u0627\u0644\u0637\u0627\u0644\u0628 \u0627\u0644\u062D\u0627\u0644\u064A:
+- \u0627\u0633\u0645 \u0627\u0644\u0637\u0627\u0644\u0628: ${student.fullName}
+- \u0627\u0644\u0645\u0639\u062F\u0644 \u0627\u0644\u0639\u0627\u0645: ${perf.overallGpaPercent}% (\u0627\u0644\u062A\u0642\u062F\u064A\u0631: ${perf.letterGrade})
+- \u0646\u0633\u0628\u0629 \u0627\u0644\u062D\u0636\u0648\u0631: ${att.attendanceRate}%
+- \u0639\u062F\u062F \u0627\u0644\u0645\u0648\u0627\u062F \u0627\u0644\u0645\u0633\u062C\u0644 \u0628\u0647\u0627: ${perf.enrolledCoursesCount}
+- \u0646\u0642\u0627\u0637 \u0627\u0644\u0633\u0644\u0648\u0643 \u0627\u0644\u062A\u0631\u0627\u0643\u0645\u064A\u0629: ${behavior.reduce((s, b) => s + b.points, 0)}`;
+      }
+    }
+    const fullPrompt = extraContext ? `[\u0645\u0639\u0644\u0648\u0645\u0627\u062A \u0648\u0633\u064A\u0627\u0642 \u0627\u0644\u0637\u0627\u0644\u0628]:
+${extraContext}
+
+[\u0627\u0633\u062A\u0641\u0633\u0627\u0631 \u0648\u0644\u064A \u0627\u0644\u0623\u0645\u0631]:
+${question}` : question;
+    const result = await AIService.execute({
+      user: req.user,
+      organization: req.organization,
+      feature: "parent_assistant",
+      prompt: fullPrompt
+    });
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({
+      success: false,
+      error: err.message || "PARENT_ADVISOR_ERROR"
+    });
+  }
+});
+aiRouter.post(
+  "/lesson-plan",
+  requireRoles(["SUPER_ADMIN", "ORG_ADMIN", "TEACHER"]),
+  async (req, res) => {
+    try {
+      const { topic, courseId, gradeLevel, durationMinutes, learningObjectives } = req.body;
+      if (!topic) {
+        return res.status(400).json({
+          success: false,
+          error: "TOPIC_REQUIRED",
+          message: "Lesson topic is required."
+        });
+      }
+      const prompt = `\u064A\u0631\u062C\u0649 \u0625\u0639\u062F\u0627\u062F \u062E\u0637\u0629 \u062F\u0631\u0633 \u0646\u0645\u0648\u0630\u062C\u064A\u0629 \u0648\u0627\u062D\u062A\u0631\u0627\u0641\u064A\u0629 \u062D\u0648\u0644 \u0645\u0648\u0636\u0648\u0639: "${topic}".
+${gradeLevel ? `\u0627\u0644\u0645\u0631\u062D\u0644\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629: ${gradeLevel}
+` : ""}${durationMinutes ? `\u0645\u062F\u0629 \u0627\u0644\u062D\u0635\u0629: ${durationMinutes} \u062F\u0642\u064A\u0642\u0629
+` : ""}${learningObjectives ? `\u0627\u0644\u0623\u0647\u062F\u0627\u0641 \u0627\u0644\u0645\u0642\u062A\u0631\u062D\u0629:
+${learningObjectives}` : ""}`;
+      const result = await AIService.execute({
+        user: req.user,
+        organization: req.organization,
+        feature: "lesson_planner",
+        prompt,
+        courseId,
+        customTopic: topic
+      });
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({
+        success: false,
+        error: err.message || "LESSON_PLANNER_ERROR"
+      });
+    }
+  }
+);
+aiRouter.post(
+  "/assignment-feedback",
+  requireRoles(["SUPER_ADMIN", "ORG_ADMIN", "TEACHER"]),
+  async (req, res) => {
+    try {
+      const { assignmentTitle, studentAnswer, score, maxScore, rubricCriteria } = req.body;
+      if (!studentAnswer) {
+        return res.status(400).json({
+          success: false,
+          error: "ANSWER_REQUIRED",
+          message: "Student answer/submission is required to generate feedback."
+        });
+      }
+      const prompt = `\u0635\u063A \u062A\u063A\u0630\u064A\u0629 \u0631\u0627\u062C\u0639\u0629 \u062A\u0631\u0628\u0648\u064A\u0629 \u0628\u0646\u0627\u0621\u0629 \u0644\u0639\u0645\u0644 \u0627\u0644\u0637\u0627\u0644\u0628:
+- \u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u062A\u0643\u0644\u064A\u0641: ${assignmentTitle || "\u0648\u0627\u062C\u0628 \u062F\u0631\u0627\u0633\u064A"}
+- \u0625\u062C\u0627\u0628\u0629 \u0627\u0644\u0637\u0627\u0644\u0628:
+${studentAnswer}
+${score !== void 0 && maxScore ? `- \u0627\u0644\u062F\u0631\u062C\u0629 \u0627\u0644\u0645\u0631\u0635\u0648\u062F\u0629: ${score} \u0645\u0646 ${maxScore}
+` : ""}${rubricCriteria ? `- \u0645\u0639\u0627\u064A\u064A\u0631 \u0627\u0644\u062A\u0642\u064A\u064A\u0645:
+${rubricCriteria}` : ""}`;
+      const result = await AIService.execute({
+        user: req.user,
+        organization: req.organization,
+        feature: "feedback_generator",
+        prompt
+      });
+      res.json({
+        success: true,
+        data: result
+      });
+    } catch (err) {
+      res.status(err.statusCode || 500).json({
+        success: false,
+        error: err.message || "FEEDBACK_GENERATION_ERROR"
+      });
+    }
+  }
+);
+aiRouter.post("/recommendations", async (req, res) => {
+  try {
+    const targetStudentId = req.body.studentId || (req.user.role === "STUDENT" ? req.user.id : void 0);
+    if (!targetStudentId) {
+      return res.status(400).json({
+        success: false,
+        error: "STUDENT_ID_REQUIRED",
+        message: "Student ID is required."
+      });
+    }
+    if (req.user.role === "STUDENT" && targetStudentId !== req.user.id) {
+      return res.status(403).json({ success: false, error: "ACCESS_DENIED" });
+    }
+    if (req.user.role === "PARENT") {
+      const links = db.getParentStudentLinks(req.user.organizationId, {
+        parentId: req.user.id,
+        studentId: targetStudentId
+      });
+      if (links.length === 0) {
+        return res.status(403).json({ success: false, error: "ACCESS_DENIED" });
+      }
+    }
+    const student = db.getUserById(targetStudentId, req.user.organizationId);
+    const perf = db.getStudentAcademicPerformance(targetStudentId, req.user.organizationId);
+    const att = db.getAttendanceSummaryForStudent(targetStudentId, req.user.organizationId);
+    const prompt = `\u062D\u0644\u0644 \u0647\u0630\u0627 \u0627\u0644\u0633\u062C\u0644 \u0627\u0644\u0623\u0643\u0627\u062F\u064A\u0645\u064A \u0648\u0642\u062F\u0645 \u062A\u0648\u0635\u064A\u0627\u062A \u0645\u062E\u0635\u0635\u0629 \u0644\u0644\u0637\u0627\u0644\u0628: ${student?.fullName || "\u0627\u0644\u0637\u0627\u0644\u0628"}
+- \u0627\u0644\u0645\u0639\u062F\u0644 \u0627\u0644\u0639\u0627\u0645: ${perf.overallGpaPercent}%
+- \u0646\u0633\u0628\u0629 \u0627\u0644\u062D\u0636\u0648\u0631: ${att.attendanceRate}%
+- \u0627\u0644\u0645\u0648\u0627\u062F \u0648\u0627\u0644\u062F\u0631\u062C\u0627\u062A:
+${perf.courses.map((c) => `  * ${c.courseTitle}: ${c.percentage}% (${c.letterGrade})`).join("\n")}`;
+    const result = await AIService.execute({
+      user: req.user,
+      organization: req.organization,
+      feature: "learning_recommendations",
+      prompt
+    });
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (err) {
+    res.status(err.statusCode || 500).json({
+      success: false,
+      error: err.message || "RECOMMENDATIONS_ERROR"
+    });
+  }
+});
 
 // server/platform/routes/studentRoutes.ts
 init_db();
@@ -10458,10 +11628,497 @@ storageRouter.delete("/:id", async (req, res) => {
   }
 });
 
+// server/platform/routes/notificationRoutes.ts
+import express13 from "express";
+init_db();
+
+// server/platform/notificationService.ts
+init_db();
+var NotificationService = class {
+  /**
+   * Send notification to an individual recipient across configured channels
+   */
+  static async send(options) {
+    const channels = options.channels || ["IN_APP"];
+    const notification = db.createNotification({
+      organizationId: options.organizationId,
+      recipientId: options.recipientId,
+      recipientRole: options.recipientRole,
+      type: options.type,
+      title: options.title,
+      body: options.body,
+      data: options.data,
+      channels
+    });
+    if (channels.includes("EMAIL")) {
+      try {
+        const user = db.getUserById(options.recipientId, options.organizationId);
+        if (user && user.email) {
+          const org = db.getOrganizationById(options.organizationId);
+          await emailService.sendMail({
+            to: user.email,
+            subject: `[${org?.name || "\u0627\u0631\u062A\u0642\u0627\u0621"}] ${options.title}`,
+            text: `${options.body}
+
+\u0645\u0646\u0635\u0629 \u0627\u0631\u062A\u0642\u0627\u0621 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629 \u0627\u0644\u0630\u0643\u064A\u0629`,
+            html: `
+              <div dir="rtl" style="font-family: sans-serif; padding: 20px; color: #1e293b;">
+                <h2 style="color: #0f766e;">${options.title}</h2>
+                <p style="font-size: 16px; line-height: 1.6;">${options.body}</p>
+                <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+                <p style="font-size: 12px; color: #64748b;">\u0647\u0630\u0627 \u0625\u0634\u0639\u0627\u0631 \u062A\u0644\u0642\u0627\u0626\u064A \u0645\u0646 \u0645\u0646\u0635\u0629 \u0627\u0631\u062A\u0642\u0627\u0621 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629 \u0627\u0644\u0630\u0643\u064A\u0629.</p>
+              </div>
+            `
+          });
+        }
+      } catch (emailErr) {
+        console.warn("[NotificationService] Email delivery non-fatal error:", emailErr);
+      }
+    }
+    if (channels.includes("SMS") || channels.includes("WHATSAPP")) {
+    }
+    return notification;
+  }
+  /**
+   * Broadcast notification to multiple recipients (e.g. classroom or role-scoped)
+   */
+  static async broadcast(options) {
+    let targetUsers = db.getUsersByOrg(options.organizationId);
+    if (options.targetRole) {
+      targetUsers = targetUsers.filter((u) => u.role === options.targetRole);
+    }
+    if (options.classroomId) {
+      targetUsers = targetUsers.filter((u) => u.classroomId === options.classroomId);
+    }
+    let sentCount = 0;
+    for (const user of targetUsers) {
+      await this.send({
+        organizationId: options.organizationId,
+        recipientId: user.id,
+        recipientRole: user.role,
+        type: "ANNOUNCEMENT",
+        title: options.title,
+        body: options.body,
+        channels: options.channels || ["IN_APP"],
+        data: options.data
+      });
+      sentCount++;
+    }
+    return { count: sentCount };
+  }
+  /**
+   * Event Hook: Triggered when a new assignment is created
+   */
+  static async onAssignmentCreated(organizationId, courseId, assignmentTitle) {
+    const course = db.getCourseById(courseId, organizationId);
+    if (!course || !course.classroomId) return;
+    const students = db.getUsersByOrg(organizationId, "STUDENT").filter((s) => s.classroomId === course.classroomId);
+    for (const student of students) {
+      await this.send({
+        organizationId,
+        recipientId: student.id,
+        recipientRole: "STUDENT",
+        type: "ASSIGNMENT_CREATED",
+        title: `\u0648\u0627\u062C\u0628 \u062C\u062F\u064A\u062F \u0641\u064A \u0645\u0642\u0631\u0631: ${course.title}`,
+        body: `\u062A\u0645 \u0646\u0634\u0631 \u0648\u0627\u062C\u0628 \u062C\u062F\u064A\u062F \u0628\u0639\u0646\u0648\u0627\u0646 "${assignmentTitle}". \u064A\u0631\u062C\u0649 \u0645\u0631\u0627\u062C\u0639\u062A\u0647 \u0648\u062A\u0633\u0644\u064A\u0645\u0647 \u0641\u064A \u0627\u0644\u0645\u0648\u0639\u062F \u0627\u0644\u0645\u062D\u062F\u062F.`,
+        channels: ["IN_APP", "EMAIL"],
+        data: { courseId }
+      });
+    }
+  }
+  /**
+   * Event Hook: Triggered when a student's submission is graded
+   */
+  static async onSubmissionGraded(organizationId, studentId, assignmentTitle, score, maxScore) {
+    await this.send({
+      organizationId,
+      recipientId: studentId,
+      recipientRole: "STUDENT",
+      type: "SUBMISSION_GRADED",
+      title: `\u062A\u0645 \u0631\u0635\u062F \u062F\u0631\u062C\u0629: ${assignmentTitle}`,
+      body: `\u062D\u0635\u0644\u062A \u0639\u0644\u0649 ${score} \u0645\u0646 ${maxScore} \u0641\u064A \u0648\u0627\u062C\u0628 "${assignmentTitle}".`,
+      channels: ["IN_APP"]
+    });
+    const parentLinks = db.getParentStudentLinks(organizationId, { studentId });
+    for (const link of parentLinks) {
+      await this.send({
+        organizationId,
+        recipientId: link.parentId,
+        recipientRole: "PARENT",
+        type: "SUBMISSION_GRADED",
+        title: `\u0631\u0635\u062F \u062F\u0631\u062C\u0629 \u0644\u0627\u0628\u0646\u0643\u0645: ${assignmentTitle}`,
+        body: `\u062A\u0645 \u0631\u0635\u062F \u062F\u0631\u062C\u0629 \u0627\u0644\u0637\u0627\u0644\u0628 \u0641\u064A \u0648\u0627\u062C\u0628 "${assignmentTitle}": ${score}/${maxScore}.`,
+        channels: ["IN_APP", "EMAIL"]
+      });
+    }
+  }
+  /**
+   * Event Hook: Triggered when student absence or tardiness is recorded
+   */
+  static async onAttendanceLogged(organizationId, studentId, status, date) {
+    const student = db.getUserById(studentId, organizationId);
+    const parentLinks = db.getParentStudentLinks(organizationId, { studentId });
+    for (const link of parentLinks) {
+      const isAbsent = status === "ABSENT";
+      await this.send({
+        organizationId,
+        recipientId: link.parentId,
+        recipientRole: "PARENT",
+        type: isAbsent ? "ATTENDANCE_ABSENT" : "ATTENDANCE_LATE",
+        title: isAbsent ? "\u0625\u0634\u0639\u0627\u0631 \u063A\u064A\u0627\u0628 \u0637\u0627\u0644\u0628" : "\u0625\u0634\u0639\u0627\u0631 \u062A\u0623\u062E\u0631 \u0637\u0627\u0644\u0628 \u0639\u0646 \u0627\u0644\u062D\u0635\u0629",
+        body: `\u0646\u062D\u064A\u0637\u0643\u0645 \u0639\u0644\u0645\u0627\u064B \u0628\u0623\u0646\u0647 \u062A\u0645 \u062A\u0633\u062C\u064A\u0644 \u062D\u0627\u0644\u0629 (${isAbsent ? "\u063A\u064A\u0627\u0628" : "\u062A\u0623\u062E\u0631"}) \u0644\u0644\u0637\u0627\u0644\u0628 ${student?.fullName || ""} \u0628\u062A\u0627\u0631\u064A\u062E ${date}.`,
+        channels: ["IN_APP", "SMS", "EMAIL"]
+      });
+    }
+  }
+};
+var notificationService = new NotificationService();
+
+// server/platform/routes/notificationRoutes.ts
+var notificationRouter = express13.Router();
+notificationRouter.use(requireAuth);
+notificationRouter.get("/", (req, res) => {
+  try {
+    const unreadOnly = req.query.unreadOnly === "true";
+    const limit = req.query.limit ? parseInt(req.query.limit, 10) : 50;
+    const items = db.getNotifications(req.organization.id, req.user.id, {
+      unreadOnly,
+      limit
+    });
+    const unreadCount = db.getUnreadNotificationCount(req.organization.id, req.user.id);
+    res.json({
+      success: true,
+      data: items,
+      meta: {
+        total: items.length,
+        unreadCount
+      }
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message || "NOTIFICATIONS_FETCH_ERROR"
+    });
+  }
+});
+notificationRouter.get("/unread-count", (req, res) => {
+  try {
+    const count = db.getUnreadNotificationCount(req.organization.id, req.user.id);
+    res.json({
+      success: true,
+      data: { unreadCount: count }
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message || "COUNT_FETCH_ERROR"
+    });
+  }
+});
+notificationRouter.post("/:id/read", (req, res) => {
+  try {
+    const updated = db.markNotificationAsRead(req.params.id, req.organization.id, req.user.id);
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        error: "NOTIFICATION_NOT_FOUND"
+      });
+    }
+    const unreadCount = db.getUnreadNotificationCount(req.organization.id, req.user.id);
+    res.json({
+      success: true,
+      data: { unreadCount }
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message || "MARK_READ_ERROR"
+    });
+  }
+});
+notificationRouter.post("/read-all", (req, res) => {
+  try {
+    const count = db.markAllNotificationsAsRead(req.organization.id, req.user.id);
+    res.json({
+      success: true,
+      data: { updatedCount: count, unreadCount: 0 }
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message || "MARK_ALL_READ_ERROR"
+    });
+  }
+});
+notificationRouter.post(
+  "/broadcast",
+  requireRoles(["SUPER_ADMIN", "ORG_ADMIN", "TEACHER"]),
+  async (req, res) => {
+    try {
+      const { title, body, targetRole, classroomId, channels } = req.body;
+      if (!title || !body) {
+        return res.status(400).json({
+          success: false,
+          error: "MISSING_FIELDS",
+          message: "Title and body are required for broadcast."
+        });
+      }
+      if (req.user.role === "TEACHER" && classroomId) {
+        const myCourses = db.getCourses(req.organization.id, req.user.id);
+        const myClassroomIds = myCourses.map((c) => c.classroomId);
+        if (!myClassroomIds.includes(classroomId)) {
+          return res.status(403).json({
+            success: false,
+            error: "ACCESS_DENIED",
+            message: "You can only broadcast to classrooms assigned to your courses."
+          });
+        }
+      }
+      const result = await NotificationService.broadcast({
+        organizationId: req.organization.id,
+        targetRole,
+        classroomId,
+        title,
+        body,
+        channels: channels || ["IN_APP"]
+      });
+      res.json({
+        success: true,
+        data: {
+          recipientsCount: result.count,
+          message: `\u062A\u0645 \u0625\u0631\u0633\u0627\u0644 \u0627\u0644\u0625\u0634\u0639\u0627\u0631 \u0628\u0646\u062C\u0627\u062D \u0625\u0644\u0649 ${result.count} \u0645\u0633\u062A\u0644\u0645.`
+        }
+      });
+    } catch (err) {
+      res.status(500).json({
+        success: false,
+        error: err.message || "BROADCAST_ERROR"
+      });
+    }
+  }
+);
+
+// server/platform/routes/libraryRoutes.ts
+init_db();
+import express14 from "express";
+var libraryRouter = express14.Router();
+libraryRouter.get("/units/course/:courseId", (req, res) => {
+  const orgId = req.organization.id;
+  const { courseId } = req.params;
+  const units = db.getUnitsByCourse(courseId, orgId);
+  res.json({ units });
+});
+libraryRouter.get("/units/:id", (req, res) => {
+  const orgId = req.organization.id;
+  const unit = db.getUnitById(req.params.id, orgId);
+  if (!unit) {
+    return res.status(404).json({ error: "\u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629" });
+  }
+  res.json({ unit });
+});
+libraryRouter.post("/units", requireRoles(["ORG_ADMIN", "TEACHER", "SUPER_ADMIN"]), (req, res) => {
+  const orgId = req.organization.id;
+  const { courseId, title, description, orderIndex, isPublished } = req.body;
+  if (!courseId || !title) {
+    return res.status(400).json({ error: "\u0627\u0644\u0645\u0642\u0631\u0631 \u0627\u0644\u062F\u0631\u0627\u0633\u064A \u0648\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0648\u062D\u062F\u0629 \u0645\u0637\u0644\u0648\u0628\u0627\u0646" });
+  }
+  const existingUnits = db.getUnitsByCourse(courseId, orgId);
+  const nextOrder = orderIndex ?? (existingUnits.length > 0 ? Math.max(...existingUnits.map((u) => u.orderIndex)) + 1 : 1);
+  const unit = db.createUnit({
+    organizationId: orgId,
+    courseId,
+    title,
+    description: description || void 0,
+    orderIndex: nextOrder,
+    isPublished: isPublished !== false
+  });
+  res.status(201).json({ unit });
+});
+libraryRouter.put("/units/:id", requireRoles(["ORG_ADMIN", "TEACHER", "SUPER_ADMIN"]), (req, res) => {
+  const orgId = req.organization.id;
+  const { title, description, orderIndex, isPublished } = req.body;
+  const updated = db.updateUnit(req.params.id, orgId, {
+    title,
+    description,
+    orderIndex,
+    isPublished
+  });
+  if (!updated) {
+    return res.status(404).json({ error: "\u062A\u0639\u0630\u0631 \u062A\u0639\u062F\u064A\u0644 \u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629" });
+  }
+  res.json({ unit: updated });
+});
+libraryRouter.delete("/units/:id", requireRoles(["ORG_ADMIN", "TEACHER", "SUPER_ADMIN"]), (req, res) => {
+  const orgId = req.organization.id;
+  const success = db.deleteUnit(req.params.id, orgId);
+  if (!success) {
+    return res.status(404).json({ error: "\u062A\u0639\u0630\u0631 \u062D\u0630\u0641 \u0627\u0644\u0648\u062D\u062F\u0629 \u0627\u0644\u062F\u0631\u0627\u0633\u064A\u0629" });
+  }
+  res.json({ success: true });
+});
+libraryRouter.get("/resources/stats", (req, res) => {
+  const orgId = req.organization.id;
+  const stats = db.getLibraryStats(orgId);
+  res.json({ stats });
+});
+libraryRouter.get("/resources", (req, res) => {
+  const orgId = req.organization.id;
+  const user = req.user;
+  const {
+    subjectId,
+    gradeLevelId,
+    courseId,
+    unitId,
+    lessonId,
+    resourceType,
+    status,
+    visibility,
+    search
+  } = req.query;
+  let enrolledCourseIds = [];
+  if (user.role === "STUDENT") {
+    const enrollments = db.getStudentEnrollments(orgId, { studentId: user.id, status: "ACTIVE" });
+    const classroomIds = enrollments.map((e) => e.classroomId).filter(Boolean);
+    const courses = db.getCourses(orgId);
+    enrolledCourseIds = courses.filter((c) => classroomIds.includes(c.classroomId)).map((c) => c.id);
+  }
+  const resources = db.getLibraryResources(orgId, {
+    subjectId,
+    gradeLevelId,
+    courseId,
+    unitId,
+    lessonId,
+    resourceType,
+    status,
+    visibility,
+    search,
+    role: user.role,
+    userId: user.id,
+    enrolledCourseIds
+  });
+  res.json({ resources });
+});
+libraryRouter.get("/resources/:id", (req, res) => {
+  const orgId = req.organization.id;
+  const resource = db.getLibraryResourceById(req.params.id, orgId);
+  if (!resource) {
+    return res.status(404).json({ error: "\u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+  }
+  res.json({ resource });
+});
+libraryRouter.post("/resources", requireRoles(["ORG_ADMIN", "TEACHER", "SUPER_ADMIN"]), (req, res) => {
+  const orgId = req.organization.id;
+  const user = req.user;
+  const {
+    title,
+    description,
+    resourceType,
+    format,
+    subjectId,
+    gradeLevelId,
+    courseId,
+    unitId,
+    lessonId,
+    storageObjectId,
+    externalUrl,
+    fileSize,
+    fileType,
+    tags,
+    visibility,
+    status,
+    aiSearchable,
+    aiSummary
+  } = req.body;
+  if (!title || !resourceType || !format) {
+    return res.status(400).json({ error: "\u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0645\u0648\u0631\u062F \u0648\u0646\u0648\u0639\u0647 \u0648\u0635\u064A\u063A\u062A\u0647 \u062D\u0642\u0648\u0644 \u0625\u062C\u0628\u0627\u0631\u064A\u0629" });
+  }
+  const resource = db.createLibraryResource({
+    organizationId: orgId,
+    title,
+    description: description || void 0,
+    resourceType,
+    format,
+    subjectId: subjectId || void 0,
+    gradeLevelId: gradeLevelId || void 0,
+    courseId: courseId || void 0,
+    unitId: unitId || void 0,
+    lessonId: lessonId || void 0,
+    storageObjectId: storageObjectId || void 0,
+    externalUrl: externalUrl || void 0,
+    fileSize: fileSize ? Number(fileSize) : 0,
+    fileType: fileType || void 0,
+    tags: Array.isArray(tags) ? tags : [],
+    uploadedBy: user.id,
+    authorName: user.fullName || "\u0645\u0639\u0644\u0645",
+    visibility: visibility || "PUBLIC_SCHOOL",
+    status: status || "PUBLISHED",
+    aiSearchable: aiSearchable !== false,
+    aiSummary: aiSummary || void 0
+  });
+  db.recordResourceActivity({
+    organizationId: orgId,
+    resourceId: resource.id,
+    userId: user.id,
+    userRole: user.role,
+    action: "ATTACHED",
+    courseId: courseId || void 0,
+    lessonId: lessonId || void 0
+  });
+  res.status(201).json({ resource });
+});
+libraryRouter.put("/resources/:id", requireRoles(["ORG_ADMIN", "TEACHER", "SUPER_ADMIN"]), (req, res) => {
+  const orgId = req.organization.id;
+  const user = req.user;
+  const existing = db.getLibraryResourceById(req.params.id, orgId);
+  if (!existing) {
+    return res.status(404).json({ error: "\u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+  }
+  if (user.role === "TEACHER" && existing.uploadedBy !== user.id) {
+    return res.status(403).json({ error: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u062A\u0639\u062F\u064A\u0644 \u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0631\u062F" });
+  }
+  const updated = db.updateLibraryResource(req.params.id, orgId, req.body);
+  res.json({ resource: updated });
+});
+libraryRouter.delete("/resources/:id", requireRoles(["ORG_ADMIN", "TEACHER", "SUPER_ADMIN"]), (req, res) => {
+  const orgId = req.organization.id;
+  const user = req.user;
+  const existing = db.getLibraryResourceById(req.params.id, orgId);
+  if (!existing) {
+    return res.status(404).json({ error: "\u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+  }
+  if (user.role === "TEACHER" && existing.uploadedBy !== user.id) {
+    return res.status(403).json({ error: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u062D\u0630\u0641 \u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0631\u062F" });
+  }
+  const success = db.deleteLibraryResource(req.params.id, orgId);
+  res.json({ success });
+});
+libraryRouter.post("/resources/:id/activity", (req, res) => {
+  const orgId = req.organization.id;
+  const user = req.user;
+  const { action, courseId, lessonId } = req.body;
+  if (!action || !["VIEWED", "DOWNLOADED", "COMPLETED"].includes(action)) {
+    return res.status(400).json({ error: "\u0646\u0648\u0639 \u0627\u0644\u0646\u0634\u0627\u0637 \u063A\u064A\u0631 \u0635\u0627\u0644\u062D" });
+  }
+  const activity = db.recordResourceActivity({
+    organizationId: orgId,
+    resourceId: req.params.id,
+    userId: user.id,
+    userRole: user.role,
+    action,
+    courseId: courseId || void 0,
+    lessonId: lessonId || void 0
+  });
+  const updatedResource = db.getLibraryResourceById(req.params.id, orgId);
+  res.json({
+    activity,
+    resource: updatedResource
+  });
+});
+
 // server/platform/index.ts
 init_service();
 init_migrate();
-var platformApiRouter = express13.Router();
+var platformApiRouter = express15.Router();
 platformApiRouter.get("/health", async (req, res) => {
   try {
     const dbStatus = await db.getEngineStatus();
@@ -10496,12 +12153,14 @@ platformApiRouter.use("/dashboard", requireOrg, dashboardRouter);
 platformApiRouter.use("/ai", requireOrg, aiRouter);
 platformApiRouter.use("/students", requireOrg, studentRouter);
 platformApiRouter.use("/storage", requireOrg, storageRouter);
+platformApiRouter.use("/notifications", requireOrg, notificationRouter);
+platformApiRouter.use("/library", requireOrg, libraryRouter);
 
 // server.ts
 init_postgres();
 async function createApp() {
   assertProductionAuthSecret();
-  const app = express14();
+  const app = express16();
   app.use((req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
@@ -10551,7 +12210,7 @@ async function createApp() {
     }
     next();
   });
-  app.use(express14.json({ limit: "1mb" }));
+  app.use(express16.json({ limit: "1mb" }));
   const rateLimitStore2 = /* @__PURE__ */ new Map();
   const formRateLimiter = (req, res, next) => {
     const rawIp = req.headers["x-forwarded-for"]?.split(",")[0] || req.socket.remoteAddress || "unknown";
@@ -10750,7 +12409,7 @@ async function createApp() {
   });
   if (process.env.NODE_ENV === "production") {
     const distPath = path2.join(process.cwd(), "dist");
-    app.use(express14.static(distPath));
+    app.use(express16.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path2.join(distPath, "index.html"));
     });

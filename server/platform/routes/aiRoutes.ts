@@ -334,3 +334,218 @@ aiRouter.post(
     }
   }
 );
+
+/**
+ * POST /api/v1/ai/parent-advisor
+ * Smart Parent Advisory & Progress Interpretation (Parents, Teachers, Admins)
+ */
+aiRouter.post('/parent-advisor', async (req: PlatformRequest, res: express.Response) => {
+  try {
+    const { studentId, question, includePerformance } = req.body;
+
+    if (!question || typeof question !== 'string' || question.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'QUESTION_REQUIRED',
+        message: 'Question or inquiry is required.',
+      });
+    }
+
+    let extraContext = '';
+    if (studentId) {
+      // Validate that parent is actually linked to this student if role is PARENT
+      if (req.user!.role === 'PARENT') {
+        const links = db.getParentStudentLinks(req.user!.organizationId, { parentId: req.user!.id, studentId });
+        if (links.length === 0) {
+          return res.status(403).json({
+            success: false,
+            error: 'ACCESS_DENIED',
+            message: 'You are not linked to this student.',
+          });
+        }
+      }
+
+      const student = db.getUserById(studentId, req.user!.organizationId);
+      if (student && includePerformance !== false) {
+        const perf = db.getStudentAcademicPerformance(studentId, req.user!.organizationId);
+        const att = db.getAttendanceSummaryForStudent(studentId, req.user!.organizationId);
+        const behavior = db.getStudentBehaviorRecords(req.user!.organizationId, { studentId });
+
+        extraContext = `بيانات أداء الطالب الحالي:\n- اسم الطالب: ${student.fullName}\n- المعدل العام: ${perf.overallGpaPercent}% (التقدير: ${perf.letterGrade})\n- نسبة الحضور: ${att.attendanceRate}%\n- عدد المواد المسجل بها: ${perf.enrolledCoursesCount}\n- نقاط السلوك التراكمية: ${behavior.reduce((s, b) => s + b.points, 0)}`;
+      }
+    }
+
+    const fullPrompt = extraContext
+      ? `[معلومات وسياق الطالب]:\n${extraContext}\n\n[استفسار ولي الأمر]:\n${question}`
+      : question;
+
+    const result = await AIService.execute({
+      user: req.user!,
+      organization: req.organization!,
+      feature: 'parent_assistant',
+      prompt: fullPrompt,
+    });
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err: any) {
+    res.status(err.statusCode || 500).json({
+      success: false,
+      error: err.message || 'PARENT_ADVISOR_ERROR',
+    });
+  }
+});
+
+/**
+ * POST /api/v1/ai/lesson-plan
+ * Structured 5-Stage Lesson Planner (Teachers & Admins)
+ */
+aiRouter.post(
+  '/lesson-plan',
+  requireRoles(['SUPER_ADMIN', 'ORG_ADMIN', 'TEACHER']),
+  async (req: PlatformRequest, res: express.Response) => {
+    try {
+      const { topic, courseId, gradeLevel, durationMinutes, learningObjectives } = req.body;
+
+      if (!topic) {
+        return res.status(400).json({
+          success: false,
+          error: 'TOPIC_REQUIRED',
+          message: 'Lesson topic is required.',
+        });
+      }
+
+      const prompt = `يرجى إعداد خطة درس نموذجية واحترافية حول موضوع: "${topic}".\n${
+        gradeLevel ? `المرحلة الدراسية: ${gradeLevel}\n` : ''
+      }${durationMinutes ? `مدة الحصة: ${durationMinutes} دقيقة\n` : ''}${
+        learningObjectives ? `الأهداف المقترحة:\n${learningObjectives}` : ''
+      }`;
+
+      const result = await AIService.execute({
+        user: req.user!,
+        organization: req.organization!,
+        feature: 'lesson_planner',
+        prompt,
+        courseId,
+        customTopic: topic,
+      });
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (err: any) {
+      res.status(err.statusCode || 500).json({
+        success: false,
+        error: err.message || 'LESSON_PLANNER_ERROR',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/ai/assignment-feedback
+ * Rubric-based Student Assignment Feedback Generator (Teachers & Admins)
+ */
+aiRouter.post(
+  '/assignment-feedback',
+  requireRoles(['SUPER_ADMIN', 'ORG_ADMIN', 'TEACHER']),
+  async (req: PlatformRequest, res: express.Response) => {
+    try {
+      const { assignmentTitle, studentAnswer, score, maxScore, rubricCriteria } = req.body;
+
+      if (!studentAnswer) {
+        return res.status(400).json({
+          success: false,
+          error: 'ANSWER_REQUIRED',
+          message: 'Student answer/submission is required to generate feedback.',
+        });
+      }
+
+      const prompt = `صغ تغذية راجعة تربوية بناءة لعمل الطالب:\n- عنوان التكليف: ${
+        assignmentTitle || 'واجب دراسي'
+      }\n- إجابة الطالب:\n${studentAnswer}\n${
+        score !== undefined && maxScore ? `- الدرجة المرصودة: ${score} من ${maxScore}\n` : ''
+      }${rubricCriteria ? `- معايير التقييم:\n${rubricCriteria}` : ''}`;
+
+      const result = await AIService.execute({
+        user: req.user!,
+        organization: req.organization!,
+        feature: 'feedback_generator',
+        prompt,
+      });
+
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (err: any) {
+      res.status(err.statusCode || 500).json({
+        success: false,
+        error: err.message || 'FEEDBACK_GENERATION_ERROR',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/v1/ai/recommendations
+ * Personalized Learning Path & Recommendations Engine
+ */
+aiRouter.post('/recommendations', async (req: PlatformRequest, res: express.Response) => {
+  try {
+    const targetStudentId = req.body.studentId || (req.user!.role === 'STUDENT' ? req.user!.id : undefined);
+
+    if (!targetStudentId) {
+      return res.status(400).json({
+        success: false,
+        error: 'STUDENT_ID_REQUIRED',
+        message: 'Student ID is required.',
+      });
+    }
+
+    // Role checks
+    if (req.user!.role === 'STUDENT' && targetStudentId !== req.user!.id) {
+      return res.status(403).json({ success: false, error: 'ACCESS_DENIED' });
+    }
+    if (req.user!.role === 'PARENT') {
+      const links = db.getParentStudentLinks(req.user!.organizationId, {
+        parentId: req.user!.id,
+        studentId: targetStudentId,
+      });
+      if (links.length === 0) {
+        return res.status(403).json({ success: false, error: 'ACCESS_DENIED' });
+      }
+    }
+
+    const student = db.getUserById(targetStudentId, req.user!.organizationId);
+    const perf = db.getStudentAcademicPerformance(targetStudentId, req.user!.organizationId);
+    const att = db.getAttendanceSummaryForStudent(targetStudentId, req.user!.organizationId);
+
+    const prompt = `حلل هذا السجل الأكاديمي وقدم توصيات مخصصة للطالب: ${student?.fullName || 'الطالب'}\n- المعدل العام: ${
+      perf.overallGpaPercent
+    }%\n- نسبة الحضور: ${att.attendanceRate}%\n- المواد والدرجات:\n${perf.courses
+      .map((c) => `  * ${c.courseTitle}: ${c.percentage}% (${c.letterGrade})`)
+      .join('\n')}`;
+
+    const result = await AIService.execute({
+      user: req.user!,
+      organization: req.organization!,
+      feature: 'learning_recommendations',
+      prompt,
+    });
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (err: any) {
+    res.status(err.statusCode || 500).json({
+      success: false,
+      error: err.message || 'RECOMMENDATIONS_ERROR',
+    });
+  }
+});
+

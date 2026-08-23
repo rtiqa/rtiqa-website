@@ -13,6 +13,8 @@ import { dashboardRouter } from './routes/dashboardRoutes.ts';
 import { aiRouter } from './routes/aiRoutes.ts';
 import { studentRouter } from './routes/studentRoutes.ts';
 import { storageRouter } from './routes/storageRoutes.ts';
+import { notificationRouter } from './routes/notificationRoutes.ts';
+import { libraryRouter } from './routes/libraryRoutes.ts';
 import { getStorageService } from './storage/service.ts';
 import { getMigrationStatus } from '../../src/db/migrate.ts';
 
@@ -63,6 +65,8 @@ platformApiRouter.use('/dashboard', requireOrg, dashboardRouter);
 platformApiRouter.use('/ai', requireOrg, aiRouter);
 platformApiRouter.use('/students', requireOrg, studentRouter);
 platformApiRouter.use('/storage', requireOrg, storageRouter);
+platformApiRouter.use('/notifications', requireOrg, notificationRouter);
+platformApiRouter.use('/library', requireOrg, libraryRouter);
 
 
 

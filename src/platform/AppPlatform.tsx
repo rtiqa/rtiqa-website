@@ -18,6 +18,7 @@ import { OnboardingWizardPage } from './pages/OnboardingWizardPage';
 import { AIAssistantPage } from './pages/AIAssistantPage';
 import { StudentsPage } from './pages/StudentsPage';
 import { ParentDashboardPage } from './pages/ParentDashboardPage';
+import { DigitalLibraryPage } from './pages/DigitalLibraryPage';
 
 interface AppPlatformProps {
   onExitPlatform: () => void;
@@ -73,6 +74,9 @@ const PlatformRoot: React.FC<AppPlatformProps> = ({ onExitPlatform }) => {
 
       case 'lessons':
         return <LessonsManagerPage />;
+
+      case 'library':
+        return <DigitalLibraryPage />;
 
       case 'assignments':
         return <AssignmentsPage />;

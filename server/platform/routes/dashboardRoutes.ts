@@ -193,3 +193,115 @@ dashboardRouter.get('/audit-logs', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN']), (
     res.status(500).json({ success: false, error: 'SERVER_ERROR' });
   }
 });
+
+/**
+ * GET /api/v1/dashboard/analytics
+ * Comprehensive academic analytics, risk detection, and intervention intelligence
+ */
+dashboardRouter.get(
+  '/analytics',
+  requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']),
+  (req: PlatformRequest, res: express.Response) => {
+    try {
+      const orgId = req.organization!.id;
+      const students = db.getUsersByOrg(orgId, 'STUDENT');
+      const courses = db.getCourses(orgId);
+
+      let totalGpa = 0;
+      let evaluatedStudentsCount = 0;
+      const atRiskStudents: Array<{
+        studentId: string;
+        studentName: string;
+        gpaPercent: number;
+        attendanceRate: number;
+        reason: string;
+      }> = [];
+      const topPerformers: Array<{
+        studentId: string;
+        studentName: string;
+        gpaPercent: number;
+        letterGrade: string;
+      }> = [];
+
+      for (const student of students) {
+        const perf = db.getStudentAcademicPerformance(student.id, orgId);
+        const att = db.getAttendanceSummaryForStudent(student.id, orgId);
+
+        if (perf.enrolledCoursesCount > 0) {
+          totalGpa += perf.overallGpaPercent;
+          evaluatedStudentsCount++;
+
+          if (perf.overallGpaPercent >= 90) {
+            topPerformers.push({
+              studentId: student.id,
+              studentName: student.fullName,
+              gpaPercent: perf.overallGpaPercent,
+              letterGrade: perf.letterGrade,
+            });
+          }
+
+          if (perf.overallGpaPercent < 70 || att.attendanceRate < 85) {
+            let reason = '';
+            if (perf.overallGpaPercent < 70 && att.attendanceRate < 85) {
+              reason = 'انخفاض في التحصيل الأكاديمي ونسبة الحضور';
+            } else if (perf.overallGpaPercent < 70) {
+              reason = 'انخفاض المعدل التراكمي عن الحد الأدنى';
+            } else {
+              reason = 'تجاوز نسبة الغياب المسموح بها';
+            }
+
+            atRiskStudents.push({
+              studentId: student.id,
+              studentName: student.fullName,
+              gpaPercent: perf.overallGpaPercent,
+              attendanceRate: att.attendanceRate,
+              reason,
+            });
+          }
+        }
+      }
+
+      const averageGpa = evaluatedStudentsCount > 0 ? Math.round(totalGpa / evaluatedStudentsCount) : 85;
+
+      const coursePerformance = courses.map((course) => {
+        const grades = db.getAssessmentGrades(orgId).filter((g) => {
+          const ass = db.getAssessmentById(g.assessmentId, orgId);
+          return ass?.courseId === course.id;
+        });
+
+        const avgScore =
+          grades.length > 0
+            ? Math.round(grades.reduce((s, g) => s + g.percentage, 0) / grades.length)
+            : 85;
+
+        return {
+          courseId: course.id,
+          courseTitle: course.title,
+          subjectName: course.subjectName,
+          averageScore: avgScore,
+          gradedItemsCount: grades.length,
+        };
+      });
+
+      res.json({
+        success: true,
+        data: {
+          averageGpa,
+          totalStudentsCount: students.length,
+          evaluatedStudentsCount,
+          atRiskCount: atRiskStudents.length,
+          topPerformersCount: topPerformers.length,
+          atRiskStudents,
+          topPerformers: topPerformers.slice(0, 10),
+          coursePerformance,
+        },
+      });
+    } catch (err: any) {
+      res.status(500).json({
+        success: false,
+        error: err.message || 'ANALYTICS_ERROR',
+      });
+    }
+  }
+);
+

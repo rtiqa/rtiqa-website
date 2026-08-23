@@ -17,6 +17,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { CsvImportModal } from '../components/CsvImportModal';
+import { AcademicAnalyticsPanel } from '../components/AcademicAnalyticsPanel';
 
 interface AdminDashboardPageProps {
   onNavigate: (page: PlatformPage) => void;
@@ -119,6 +120,9 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ onNaviga
           trend="مستقر"
         />
       </div>
+
+      {/* Academic Analytics & Early Warning System */}
+      <AcademicAnalyticsPanel onNavigate={onNavigate} />
 
       {/* Quick Action Bento Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
