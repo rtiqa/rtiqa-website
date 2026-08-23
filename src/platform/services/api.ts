@@ -66,6 +66,14 @@ class PlatformApiClient {
     }
   }
 
+  hasToken(): boolean {
+    return Boolean(this.token);
+  }
+
+  getToken(): string | null {
+    return this.token;
+  }
+
   setTenantSlug(slug: string) {
     this.tenantSlug = slug;
     localStorage.setItem('rtiqa_tenant_slug', slug);
@@ -1385,6 +1393,10 @@ class PlatformApiClient {
 
   async getLibraryResourceById(id: string) {
     return this.request<{ resource: LibraryResource }>(`/library/resources/${id}`);
+  }
+
+  async getLibraryResource(id: string) {
+    return this.getLibraryResourceById(id);
   }
 
   async createLibraryResource(payload: Partial<LibraryResource>) {

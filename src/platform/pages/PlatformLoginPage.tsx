@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { usePlatformAuth } from '../context/PlatformAuthContext';
+import { getIntendedDestination } from '../router/platformRouter';
 import {
   ShieldCheck,
   Sparkles,
@@ -14,6 +15,7 @@ import {
   Smartphone,
   AlertCircle,
   UserPlus,
+  Info,
 } from 'lucide-react';
 import { AcceptInvitePage } from './AcceptInvitePage';
 import { OnboardingWizardPage } from './OnboardingWizardPage';
@@ -29,13 +31,26 @@ interface PlatformLoginPageProps {
 type AuthTab = 'PASSWORD' | 'OTP' | 'REGISTER' | 'ACCEPT_INVITE' | 'ONBOARDING_WIZARD';
 
 export const PlatformLoginPage: React.FC<PlatformLoginPageProps> = ({ onBackToMarketing }) => {
-  const { login, demoSwitch, isLoading, error, clearError } = usePlatformAuth();
+  const { login, demoSwitch, isLoading, error, clearError, tenantSlug, setTenantSlug } = usePlatformAuth();
   const [activeTab, setActiveTab] = useState<AuthTab>('PASSWORD');
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [selectedTenant, setSelectedTenant] = useState('horizon');
+  const [selectedTenant, setSelectedTenant] = useState(tenantSlug || 'horizon');
   const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
+  const [intendedPath, setIntendedPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    const intended = getIntendedDestination();
+    if (intended) {
+      setIntendedPath(intended);
+    }
+  }, []);
+
+  const handleTenantChange = (newSlug: string) => {
+    setSelectedTenant(newSlug);
+    setTenantSlug(newSlug);
+  };
 
   if (activeTab === 'ACCEPT_INVITE') {
     return (
@@ -89,6 +104,14 @@ export const PlatformLoginPage: React.FC<PlatformLoginPageProps> = ({ onBackToMa
             بوابة تسجيل الدخول وإدارة الهوية الموحدة للمدارس والمعلمين والطلاب
           </p>
         </div>
+
+        {/* Intended Destination Notice */}
+        {intendedPath && (
+          <div className="p-3 rounded-2xl bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs flex items-center gap-2">
+            <Info className="w-4 h-4 shrink-0 text-blue-400" />
+            <span>يرجى تسجيل الدخول للوصول إلى الوجهة المطلوبة: <code className="bg-blue-950/60 px-1.5 py-0.5 rounded text-[11px] font-mono text-blue-200">{intendedPath}</code></span>
+          </div>
+        )}
 
         {/* Primary Auth Navigation Tabs */}
         <div className="grid grid-cols-5 gap-1 p-1 rounded-2xl bg-slate-950 border border-slate-800 text-[11px] font-bold">
@@ -252,7 +275,7 @@ export const PlatformLoginPage: React.FC<PlatformLoginPageProps> = ({ onBackToMa
             </span>
             <select
               value={selectedTenant}
-              onChange={(e) => setSelectedTenant(e.target.value)}
+              onChange={(e) => handleTenantChange(e.target.value)}
               className="bg-slate-900 border border-slate-700 text-slate-200 rounded-xl px-3 py-1.5 text-xs focus:border-emerald-500 focus:outline-none"
             >
               <option value="horizon">مدارس الأفق الذكية (Horizon Smart Schools)</option>

@@ -103,16 +103,15 @@ const MainAppContent: React.FC = () => {
       try {
         window.history.pushState(null, '', '/platform');
       } catch {
-        // Fallback for isolated contexts
+        window.location.hash = 'platform';
       }
-      window.location.hash = 'platform';
     } else {
       const isCurrentlyOnSubpath = window.location.pathname.startsWith('/platform') || window.location.pathname.startsWith('/app');
       if (isCurrentlyOnSubpath) {
         try {
           window.history.pushState(null, '', '/');
         } catch {
-          // Fallback for isolated contexts
+          // Fallback
         }
       }
 

@@ -82,6 +82,17 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  React.useEffect(() => {
+    const handlePopState = () => {
+      if (mobileSidebarOpen) setMobileSidebarOpen(false);
+      if (profileModalOpen) setProfileModalOpen(false);
+      if (personaDropdownOpen) setPersonaDropdownOpen(false);
+      if (schoolDropdownOpen) setSchoolDropdownOpen(false);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [mobileSidebarOpen, profileModalOpen, personaDropdownOpen, schoolDropdownOpen]);
+
   const handleSwitchPersona = (p: 'admin' | 'teacher' | 'student' | 'parent') => {
     demoSwitch(p, tenantSlug);
     setPersonaDropdownOpen(false);
@@ -90,6 +101,16 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
   const handleSwitchSchool = (slug: string) => {
     setTenantSlug(slug);
     setSchoolDropdownOpen(false);
+    if (process.env.NODE_ENV !== 'production' && user) {
+      const roleMap: Record<string, 'admin' | 'teacher' | 'student' | 'parent'> = {
+        SUPER_ADMIN: 'admin',
+        ORG_ADMIN: 'admin',
+        TEACHER: 'teacher',
+        STUDENT: 'student',
+        PARENT: 'parent',
+      };
+      demoSwitch(roleMap[user.role] || 'admin', slug);
+    }
   };
 
   return (

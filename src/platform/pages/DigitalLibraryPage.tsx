@@ -43,7 +43,17 @@ import {
   Compass,
 } from 'lucide-react';
 
-export const DigitalLibraryPage: React.FC = () => {
+import { PlatformPage } from '../types';
+
+interface DigitalLibraryPageProps {
+  initialResourceId?: string;
+  onNavigate?: (page: PlatformPage, detail?: { subPage?: string; id?: string }) => void;
+}
+
+export const DigitalLibraryPage: React.FC<DigitalLibraryPageProps> = ({
+  initialResourceId,
+  onNavigate,
+}) => {
   const { user } = usePlatformAuth();
 
   const [resources, setResources] = useState<LibraryResource[]>([]);
@@ -171,9 +181,40 @@ export const DigitalLibraryPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (initialResourceId) {
+      if (resources.length > 0) {
+        const found = resources.find((r) => r.id === initialResourceId);
+        if (found) {
+          setPreviewResource(found);
+          handleRecordActivity(found, 'VIEWED');
+        } else {
+          platformApi.getLibraryResource(initialResourceId).then((res) => {
+            if (res.resource) {
+              setPreviewResource(res.resource);
+              handleRecordActivity(res.resource, 'VIEWED');
+            }
+          }).catch(() => {});
+        }
+      }
+    } else {
+      setPreviewResource(null);
+    }
+  }, [initialResourceId, resources]);
+
   const handleOpenPreview = (res: LibraryResource) => {
     setPreviewResource(res);
     handleRecordActivity(res, 'VIEWED');
+    if (onNavigate) {
+      onNavigate('library', { subPage: 'resource', id: res.id });
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewResource(null);
+    if (onNavigate) {
+      onNavigate('library');
+    }
   };
 
   const handleAIAssistSummary = async () => {
@@ -835,7 +876,7 @@ export const DigitalLibraryPage: React.FC = () => {
       {previewResource && (
         <Modal
           isOpen={true}
-          onClose={() => setPreviewResource(null)}
+          onClose={handleClosePreview}
           title={previewResource.title}
           size="lg"
         >

@@ -72,30 +72,29 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const initAuth = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await platformApi.getMe();
-      if (res.success) {
-        setUser(res.user);
-        setOrganization(res.organization);
-      }
-    } catch {
-      // In dev environment only, provide fallback if needed
-      if (process.env.NODE_ENV !== 'production') {
-        try {
-          const demoRes = await platformApi.demoSwitch('admin', tenantSlug);
-          setUser(demoRes.user);
-          setOrganization(demoRes.organization);
-        } catch {
-          setUser(null);
-          setOrganization(null);
+      if (platformApi.hasToken()) {
+        const res = await platformApi.getMe();
+        if (res.success && res.user) {
+          setUser(res.user);
+          setOrganization(res.organization);
+          if (res.organization?.slug) {
+            setTenantSlugState(res.organization.slug);
+          }
+          return;
         }
-      } else {
-        setUser(null);
-        setOrganization(null);
       }
+      // Unauthenticated state
+      setUser(null);
+      setOrganization(null);
+    } catch {
+      // Invalid/expired token - clean up
+      platformApi.setToken(null);
+      setUser(null);
+      setOrganization(null);
     } finally {
       setIsLoading(false);
     }
-  }, [tenantSlug]);
+  }, []);
 
   useEffect(() => {
     initAuth();
@@ -401,9 +400,6 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const setTenantSlug = (slug: string) => {
     platformApi.setTenantSlug(slug);
     setTenantSlugState(slug);
-    if (process.env.NODE_ENV !== 'production') {
-      demoSwitch('admin', slug);
-    }
   };
 
   const clearError = () => setError(null);

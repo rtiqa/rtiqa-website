@@ -4264,7 +4264,7 @@ var init_db = __esm({
         if (filter?.search && filter.search.trim()) {
           const q = filter.search.trim().toLowerCase();
           resources = resources.filter(
-            (r) => r.title.toLowerCase().includes(q) || r.description && r.description.toLowerCase().includes(q) || r.tags.some((t) => t.toLowerCase().includes(q)) || r.authorName && r.authorName.toLowerCase().includes(q)
+            (r) => r.title.toLowerCase().includes(q) || r.description && r.description.toLowerCase().includes(q) || Array.isArray(r.tags) && r.tags.some((t) => t.toLowerCase().includes(q)) || r.authorName && r.authorName.toLowerCase().includes(q)
           );
         }
         return resources.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -4286,6 +4286,8 @@ var init_db = __esm({
         const resource = {
           ...data,
           id,
+          tags: Array.isArray(data.tags) ? data.tags : [],
+          aiSearchable: data.aiSearchable !== false,
           subjectName: subject?.name,
           gradeLevelName: gradeLevel?.name,
           courseTitle: course?.title,
@@ -12000,9 +12002,35 @@ libraryRouter.get("/resources", (req, res) => {
 });
 libraryRouter.get("/resources/:id", (req, res) => {
   const orgId = req.organization.id;
+  const user = req.user;
   const resource = db.getLibraryResourceById(req.params.id, orgId);
   if (!resource) {
     return res.status(404).json({ error: "\u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F" });
+  }
+  if (user.role === "STUDENT") {
+    if (resource.status !== "PUBLISHED") {
+      return res.status(403).json({ error: "\u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A \u063A\u064A\u0631 \u0645\u062A\u0627\u062D" });
+    }
+    if (resource.visibility === "TEACHERS_ONLY" || resource.visibility === "PRIVATE") {
+      return res.status(403).json({ error: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0631\u062F" });
+    }
+    if (resource.visibility === "COURSE_STUDENTS" && resource.courseId) {
+      const enrollments = db.getStudentEnrollments(orgId, { studentId: user.id, status: "ACTIVE" });
+      const classroomIds = enrollments.map((e) => e.classroomId).filter(Boolean);
+      const courses = db.getCourses(orgId);
+      const enrolledCourseIds = courses.filter((c) => classroomIds.includes(c.classroomId)).map((c) => c.id);
+      if (!enrolledCourseIds.includes(resource.courseId)) {
+        return res.status(403).json({ error: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0645\u0648\u0631\u062F \u0647\u0630\u0627 \u0627\u0644\u0645\u0642\u0631\u0631" });
+      }
+    }
+  } else if (user.role === "PARENT") {
+    if (resource.status !== "PUBLISHED" || resource.visibility === "TEACHERS_ONLY" || resource.visibility === "PRIVATE") {
+      return res.status(403).json({ error: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0631\u062F" });
+    }
+  } else if (user.role === "TEACHER") {
+    if (resource.visibility === "PRIVATE" && resource.uploadedBy !== user.id) {
+      return res.status(403).json({ error: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0627\u0644\u0648\u0635\u0648\u0644 \u0625\u0644\u0649 \u0647\u0630\u0627 \u0627\u0644\u0645\u0648\u0631\u062F \u0627\u0644\u062E\u0627\u0635" });
+    }
   }
   res.json({ resource });
 });
