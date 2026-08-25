@@ -6020,6 +6020,12 @@ function formatUserResponse(user) {
     createdAt: user.createdAt
   };
 }
+function isSuperAdminEmail(email) {
+  if (!email || typeof email !== "string") return false;
+  const configuredAdmins = (process.env.SUPER_ADMIN_EMAILS || "").split(",").map((e) => e.trim().toLowerCase()).filter(Boolean);
+  if (configuredAdmins.length === 0) return false;
+  return configuredAdmins.includes(email.trim().toLowerCase());
+}
 authRouter.post("/login", loginLimiter, (req, res) => {
   try {
     const { email, identifier, phone, password, tenantSlug } = req.body;
@@ -6062,6 +6068,12 @@ authRouter.post("/login", loginLimiter, (req, res) => {
           error: "INVALID_CREDENTIALS",
           message: "\u0643\u0644\u0645\u0629 \u0627\u0644\u0645\u0631\u0648\u0631 \u063A\u064A\u0631 \u0635\u062D\u064A\u062D\u0629"
         });
+      }
+    }
+    if (isSuperAdminEmail(user.email) && user.role !== "SUPER_ADMIN") {
+      const updatedUser = db.updateUser(user.id, void 0, { role: "SUPER_ADMIN" });
+      if (updatedUser) {
+        user = updatedUser;
       }
     }
     const org = db.getOrganizationById(user.organizationId);
@@ -6386,17 +6398,27 @@ var handleGoogleCallback = async (req, res) => {
       if (profile.picture && !user.avatarUrl) {
         db.updateUser(user.id, void 0, { avatarUrl: profile.picture });
       }
+      if (profile.email_verified && !user.emailVerified) {
+        db.updateUser(user.id, void 0, { emailVerified: true });
+      }
+      if (profile.email_verified && isSuperAdminEmail(emailNorm) && user.role !== "SUPER_ADMIN") {
+        const updatedUser = db.updateUser(user.id, void 0, { role: "SUPER_ADMIN" });
+        if (updatedUser) {
+          user = updatedUser;
+        }
+      }
       user = db.getUserById(user.id);
     } else {
       const pendingInvitations = db.getPendingInvitationsByEmail(emailNorm);
       if (pendingInvitations.length > 0) {
         const invitation = pendingInvitations[0];
+        const assignedRole = profile.email_verified && isSuperAdminEmail(emailNorm) ? "SUPER_ADMIN" : invitation.role;
         user = db.createUser({
           organizationId: invitation.organizationId,
           email: emailNorm,
           fullName: invitation.fullName || profile.name || emailNorm.split("@")[0],
           avatarUrl: profile.picture,
-          role: invitation.role,
+          role: assignedRole,
           classroomId: invitation.classroomId,
           teacherSpecialization: invitation.teacherSpecialization,
           studentIdNumber: invitation.studentIdNumber || (invitation.role === "STUDENT" ? `STD-${Date.now().toString().slice(-5)}` : void 0),
@@ -6408,11 +6430,12 @@ var handleGoogleCallback = async (req, res) => {
         });
         db.markInvitationUsed(invitation.id, invitation.organizationId);
       } else {
+        const assignedRole = profile.email_verified && isSuperAdminEmail(emailNorm) ? "SUPER_ADMIN" : "PENDING";
         user = db.createUser({
           email: emailNorm,
           fullName: profile.name || emailNorm.split("@")[0],
           avatarUrl: profile.picture,
-          role: "PENDING",
+          role: assignedRole,
           emailVerified: profile.email_verified,
           phoneVerified: false,
           authProviders: ["google"],
@@ -6500,17 +6523,27 @@ authRouter.post("/google/verify-credential", loginLimiter, async (req, res) => {
       if (profile.picture && !user.avatarUrl) {
         db.updateUser(user.id, void 0, { avatarUrl: profile.picture });
       }
+      if (profile.email_verified && !user.emailVerified) {
+        db.updateUser(user.id, void 0, { emailVerified: true });
+      }
+      if (profile.email_verified && isSuperAdminEmail(emailNorm) && user.role !== "SUPER_ADMIN") {
+        const updatedUser = db.updateUser(user.id, void 0, { role: "SUPER_ADMIN" });
+        if (updatedUser) {
+          user = updatedUser;
+        }
+      }
       user = db.getUserById(user.id);
     } else {
       const pendingInvitations = db.getPendingInvitationsByEmail(emailNorm);
       if (pendingInvitations.length > 0) {
         const invitation = pendingInvitations[0];
+        const assignedRole = profile.email_verified && isSuperAdminEmail(emailNorm) ? "SUPER_ADMIN" : invitation.role;
         user = db.createUser({
           organizationId: invitation.organizationId,
           email: emailNorm,
           fullName: invitation.fullName || profile.name || emailNorm.split("@")[0],
           avatarUrl: profile.picture,
-          role: invitation.role,
+          role: assignedRole,
           classroomId: invitation.classroomId,
           teacherSpecialization: invitation.teacherSpecialization,
           studentIdNumber: invitation.studentIdNumber || (invitation.role === "STUDENT" ? `STD-${Date.now().toString().slice(-5)}` : void 0),
@@ -6522,11 +6555,12 @@ authRouter.post("/google/verify-credential", loginLimiter, async (req, res) => {
         });
         db.markInvitationUsed(invitation.id, invitation.organizationId);
       } else {
+        const assignedRole = profile.email_verified && isSuperAdminEmail(emailNorm) ? "SUPER_ADMIN" : "PENDING";
         user = db.createUser({
           email: emailNorm,
           fullName: profile.name || emailNorm.split("@")[0],
           avatarUrl: profile.picture,
-          role: "PENDING",
+          role: assignedRole,
           emailVerified: profile.email_verified,
           phoneVerified: false,
           authProviders: ["google"],

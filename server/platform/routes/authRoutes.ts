@@ -89,6 +89,21 @@ function formatUserResponse(user: User) {
   };
 }
 
+/**
+ * Unified Super Admin Email Verifier
+ * Reads exclusively from SUPER_ADMIN_EMAILS environment variable (comma-separated).
+ * Performs case-insensitive matching and trimming. Never assumes any fallback or hardcoded email.
+ */
+export function isSuperAdminEmail(email?: string): boolean {
+  if (!email || typeof email !== 'string') return false;
+  const configuredAdmins = (process.env.SUPER_ADMIN_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (configuredAdmins.length === 0) return false;
+  return configuredAdmins.includes(email.trim().toLowerCase());
+}
+
 // ====================================================================
 // 1. STANDARD CREDENTIALS AUTH (EMAIL / PHONE & PASSWORD)
 // ====================================================================
@@ -145,6 +160,14 @@ authRouter.post('/login', loginLimiter, (req: PlatformRequest, res: express.Resp
           error: 'INVALID_CREDENTIALS',
           message: 'كلمة المرور غير صحيحة',
         });
+      }
+    }
+
+    // Auto-promote user to SUPER_ADMIN if email is configured in SUPER_ADMIN_EMAILS
+    if (isSuperAdminEmail(user.email) && user.role !== 'SUPER_ADMIN') {
+      const updatedUser = db.updateUser(user.id, undefined, { role: 'SUPER_ADMIN' });
+      if (updatedUser) {
+        user = updatedUser;
       }
     }
 
@@ -549,6 +572,18 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
       if (profile.picture && !user.avatarUrl) {
         db.updateUser(user.id, undefined, { avatarUrl: profile.picture });
       }
+      if (profile.email_verified && !user.emailVerified) {
+        db.updateUser(user.id, undefined, { emailVerified: true });
+      }
+
+      // Auto-promote existing user if email is verified by Google and matches SUPER_ADMIN_EMAILS
+      if (profile.email_verified && isSuperAdminEmail(emailNorm) && user.role !== 'SUPER_ADMIN') {
+        const updatedUser = db.updateUser(user.id, undefined, { role: 'SUPER_ADMIN' });
+        if (updatedUser) {
+          user = updatedUser;
+        }
+      }
+
       user = db.getUserById(user.id)!;
     } else {
       // 2. Check for pending invitations for this email
@@ -557,12 +592,15 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
       if (pendingInvitations.length > 0) {
         // Automatically claim the valid invitation
         const invitation = pendingInvitations[0];
+        const assignedRole: UserRole =
+          profile.email_verified && isSuperAdminEmail(emailNorm) ? 'SUPER_ADMIN' : invitation.role;
+
         user = db.createUser({
           organizationId: invitation.organizationId,
           email: emailNorm,
           fullName: invitation.fullName || profile.name || emailNorm.split('@')[0],
           avatarUrl: profile.picture,
-          role: invitation.role,
+          role: assignedRole,
           classroomId: invitation.classroomId,
           teacherSpecialization: invitation.teacherSpecialization,
           studentIdNumber: invitation.studentIdNumber || (invitation.role === 'STUDENT' ? `STD-${Date.now().toString().slice(-5)}` : undefined),
@@ -575,12 +613,16 @@ const handleGoogleCallback = async (req: express.Request, res: express.Response)
 
         db.markInvitationUsed(invitation.id, invitation.organizationId);
       } else {
-        // 3. New User WITHOUT organization membership (Pending Onboarding / Guest state)
+        // 3. New User WITHOUT organization membership
+        // If email is verified by Google and configured in SUPER_ADMIN_EMAILS, assign SUPER_ADMIN; otherwise PENDING
+        const assignedRole: UserRole =
+          profile.email_verified && isSuperAdminEmail(emailNorm) ? 'SUPER_ADMIN' : 'PENDING';
+
         user = db.createUser({
           email: emailNorm,
           fullName: profile.name || emailNorm.split('@')[0],
           avatarUrl: profile.picture,
-          role: 'PENDING',
+          role: assignedRole,
           emailVerified: profile.email_verified,
           phoneVerified: false,
           authProviders: ['google'],
@@ -681,18 +723,33 @@ authRouter.post('/google/verify-credential', loginLimiter, async (req: express.R
       if (profile.picture && !user.avatarUrl) {
         db.updateUser(user.id, undefined, { avatarUrl: profile.picture });
       }
+      if (profile.email_verified && !user.emailVerified) {
+        db.updateUser(user.id, undefined, { emailVerified: true });
+      }
+
+      // Auto-promote existing user if email is verified by Google and matches SUPER_ADMIN_EMAILS
+      if (profile.email_verified && isSuperAdminEmail(emailNorm) && user.role !== 'SUPER_ADMIN') {
+        const updatedUser = db.updateUser(user.id, undefined, { role: 'SUPER_ADMIN' });
+        if (updatedUser) {
+          user = updatedUser;
+        }
+      }
+
       user = db.getUserById(user.id)!;
     } else {
       const pendingInvitations = db.getPendingInvitationsByEmail(emailNorm);
 
       if (pendingInvitations.length > 0) {
         const invitation = pendingInvitations[0];
+        const assignedRole: UserRole =
+          profile.email_verified && isSuperAdminEmail(emailNorm) ? 'SUPER_ADMIN' : invitation.role;
+
         user = db.createUser({
           organizationId: invitation.organizationId,
           email: emailNorm,
           fullName: invitation.fullName || profile.name || emailNorm.split('@')[0],
           avatarUrl: profile.picture,
-          role: invitation.role,
+          role: assignedRole,
           classroomId: invitation.classroomId,
           teacherSpecialization: invitation.teacherSpecialization,
           studentIdNumber: invitation.studentIdNumber || (invitation.role === 'STUDENT' ? `STD-${Date.now().toString().slice(-5)}` : undefined),
@@ -705,11 +762,15 @@ authRouter.post('/google/verify-credential', loginLimiter, async (req: express.R
 
         db.markInvitationUsed(invitation.id, invitation.organizationId);
       } else {
+        // If email is verified by Google and configured in SUPER_ADMIN_EMAILS, assign SUPER_ADMIN; otherwise PENDING
+        const assignedRole: UserRole =
+          profile.email_verified && isSuperAdminEmail(emailNorm) ? 'SUPER_ADMIN' : 'PENDING';
+
         user = db.createUser({
           email: emailNorm,
           fullName: profile.name || emailNorm.split('@')[0],
           avatarUrl: profile.picture,
-          role: 'PENDING',
+          role: assignedRole,
           emailVerified: profile.email_verified,
           phoneVerified: false,
           authProviders: ['google'],
