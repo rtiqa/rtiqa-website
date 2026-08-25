@@ -26,6 +26,8 @@ import type {
   AuditLog,
   Invitation,
   OrganizationMembership,
+  StudentProfile,
+  ParentLinkToken,
   PasswordResetToken,
   EmailVerificationToken,
   PhoneVerificationOtp,
@@ -88,6 +90,8 @@ class PlatformDatabase {
   private auditLogs: Map<string, AuditLog> = new Map();
   private invitations: Map<string, Invitation> = new Map();
   private organizationMemberships: Map<string, OrganizationMembership> = new Map();
+  private studentProfiles: Map<string, StudentProfile> = new Map();
+  private parentLinkTokens: Map<string, ParentLinkToken> = new Map();
   private passwordResetTokens: Map<string, PasswordResetToken> = new Map();
   private emailVerificationTokens: Map<string, EmailVerificationToken> = new Map();
   private phoneVerificationOtps: Map<string, PhoneVerificationOtp> = new Map();
@@ -1863,6 +1867,17 @@ class PlatformDatabase {
       });
   }
 
+  getMembershipById(id: string): OrganizationMembership | undefined {
+    const mem = this.organizationMemberships.get(id);
+    if (!mem || mem.status === 'REVOKED') return undefined;
+    const org = this.getOrganizationById(mem.organizationId);
+    return {
+      ...mem,
+      organizationName: org?.name,
+      organizationSlug: org?.slug,
+    };
+  }
+
   getMembership(userId: string, organizationId: string): OrganizationMembership | undefined {
     return Array.from(this.organizationMemberships.values()).find(
       (m) => m.userId === userId && m.organizationId === organizationId && m.status !== 'REVOKED'
@@ -1894,6 +1909,122 @@ class PlatformDatabase {
 
   removeMembership(id: string): boolean {
     return this.organizationMemberships.delete(id);
+  }
+
+  // --- Student Profiles (School-owned SIS records claimed by Users) ---
+  getStudentProfileById(id: string, organizationId?: string): StudentProfile | undefined {
+    const profile = this.studentProfiles.get(id);
+    if (!profile) return undefined;
+    if (organizationId && profile.organizationId !== organizationId) return undefined;
+    return profile;
+  }
+
+  getStudentProfiles(
+    organizationId: string,
+    filters?: { classroomId?: string; gradeLevelId?: string; isClaimed?: boolean; search?: string }
+  ): StudentProfile[] {
+    return Array.from(this.studentProfiles.values()).filter((p) => {
+      if (p.organizationId !== organizationId) return false;
+      if (filters?.classroomId && p.classroomId !== filters.classroomId) return false;
+      if (filters?.gradeLevelId && p.gradeLevelId !== filters.gradeLevelId) return false;
+      if (filters?.isClaimed !== undefined && p.isClaimed !== filters.isClaimed) return false;
+      if (filters?.search) {
+        const q = filters.search.toLowerCase().trim();
+        const matchName = p.fullName.toLowerCase().includes(q);
+        const matchNumber = p.studentIdNumber?.toLowerCase().includes(q);
+        if (!matchName && !matchNumber) return false;
+      }
+      return true;
+    });
+  }
+
+  getStudentProfileByClaimToken(tokenHash: string): StudentProfile | undefined {
+    const now = new Date().toISOString();
+    return Array.from(this.studentProfiles.values()).find(
+      (p) =>
+        p.claimTokenHash === tokenHash &&
+        !p.isClaimed &&
+        (!p.claimTokenExpiresAt || p.claimTokenExpiresAt > now)
+    );
+  }
+
+  createStudentProfile(data: Omit<StudentProfile, 'id' | 'createdAt' | 'updatedAt' | 'isClaimed'>): StudentProfile {
+    const id = `stp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const now = new Date().toISOString();
+    const profile: StudentProfile = {
+      ...data,
+      id,
+      isClaimed: false,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.studentProfiles.set(id, profile);
+    return profile;
+  }
+
+  updateStudentProfile(id: string, organizationId: string, updates: Partial<StudentProfile>): StudentProfile | undefined {
+    const profile = this.getStudentProfileById(id, organizationId);
+    if (!profile) return undefined;
+    const updated: StudentProfile = {
+      ...profile,
+      ...updates,
+      updatedAt: new Date().toISOString(),
+    };
+    this.studentProfiles.set(id, updated);
+    return updated;
+  }
+
+  claimStudentProfile(studentProfileId: string, organizationId: string, userId: string): StudentProfile | undefined {
+    const profile = this.getStudentProfileById(studentProfileId, organizationId);
+    if (!profile || profile.isClaimed) return undefined;
+
+    const now = new Date().toISOString();
+    const updated: StudentProfile = {
+      ...profile,
+      isClaimed: true,
+      claimedByUserId: userId,
+      claimedAt: now,
+      claimTokenHash: undefined,
+      claimTokenExpiresAt: undefined,
+      updatedAt: now,
+    };
+    this.studentProfiles.set(studentProfileId, updated);
+    return updated;
+  }
+
+  // --- Parent Link Tokens (Secure, Temporary, School-Scoped) ---
+  createParentLinkToken(
+    data: Omit<ParentLinkToken, 'id' | 'isUsed' | 'createdAt'>
+  ): ParentLinkToken {
+    const id = `plt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const token: ParentLinkToken = {
+      ...data,
+      id,
+      isUsed: false,
+      createdAt: new Date().toISOString(),
+    };
+    this.parentLinkTokens.set(id, token);
+    return token;
+  }
+
+  getParentLinkTokenByHash(tokenHash: string): ParentLinkToken | undefined {
+    const now = new Date().toISOString();
+    return Array.from(this.parentLinkTokens.values()).find(
+      (t) => t.tokenHash === tokenHash && !t.isUsed && t.expiresAt > now
+    );
+  }
+
+  markParentLinkTokenUsed(id: string, usedByUserId: string): ParentLinkToken | undefined {
+    const token = this.parentLinkTokens.get(id);
+    if (!token) return undefined;
+    const updated: ParentLinkToken = {
+      ...token,
+      isUsed: true,
+      usedByUserId,
+      usedAt: new Date().toISOString(),
+    };
+    this.parentLinkTokens.set(id, updated);
+    return updated;
   }
 
   // --- Password Reset Tokens ---

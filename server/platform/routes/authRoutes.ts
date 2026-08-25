@@ -1145,12 +1145,87 @@ authRouter.put('/profile', requireAuth, (req: PlatformRequest, res: express.Resp
   }
 });
 
-// POST /api/v1/auth/switch-organization (Switch Active Multi-Tenant Context)
-authRouter.post('/switch-organization', requireAuth, (req: PlatformRequest, res: express.Response) => {
+// POST /api/v1/auth/switch-context & /api/v1/auth/switch-organization (Universal Context Switcher)
+const handleSwitchContext = (req: PlatformRequest, res: express.Response) => {
   try {
-    const { organizationId, organizationSlug } = req.body;
+    const { membershipId, contextType, organizationId, organizationSlug } = req.body;
     const user = req.user!;
 
+    // Case 1: Switch to PERSONAL Space
+    if (contextType === 'PERSONAL' || (!membershipId && !organizationId && !organizationSlug && contextType !== 'ORGANIZATION')) {
+      const token = generateToken(user, undefined, 'GUEST', undefined, 'PERSONAL');
+      return res.json({
+        success: true,
+        token,
+        activeContext: {
+          type: 'PERSONAL',
+          role: 'GUEST',
+          isPersonal: true,
+        },
+        organization: null,
+        activeRole: 'GUEST',
+        user: formatUserResponse(user),
+        message: 'تم التبديل بنجاح إلى المساحة الشخصية',
+      });
+    }
+
+    // Case 2: Switch using verified membershipId (Strict Server-Side Membership Lookup)
+    if (membershipId) {
+      const membership = db.getMembershipById(membershipId);
+      if (!membership || membership.userId !== user.id) {
+        return res.status(403).json({
+          success: false,
+          error: 'INVALID_MEMBERSHIP',
+          message: 'العضوية المحددة غير صحيحة أو لا تخص هذا الحساب',
+        });
+      }
+
+      if (membership.status !== 'ACTIVE') {
+        return res.status(403).json({
+          success: false,
+          error: 'MEMBERSHIP_NOT_ACTIVE',
+          message:
+            membership.status === 'PENDING_APPROVAL'
+              ? 'طلب الانضمام قيد المراجعة والاعتماد من إدارة المدرسة'
+              : 'هذه العضوية غير مفعلة حالياً',
+        });
+      }
+
+      const targetOrg = db.getOrganizationById(membership.organizationId);
+      if (!targetOrg || !targetOrg.isActive) {
+        return res.status(404).json({
+          success: false,
+          error: 'ORGANIZATION_NOT_FOUND',
+          message: 'المؤسسة التعليمية غير موجودة أو غير نشطة',
+        });
+      }
+
+      const targetRole = membership.role;
+      const token = generateToken(user, targetOrg.id, targetRole, membership.id, 'ORGANIZATION');
+
+      db.logAction(targetOrg.id, user.id, user.email, 'SWITCH_CONTEXT', 'Membership', membership.id, {}, req.ip);
+
+      return res.json({
+        success: true,
+        token,
+        activeContext: {
+          type: 'ORGANIZATION',
+          membershipId: membership.id,
+          organizationId: targetOrg.id,
+          organization: targetOrg,
+          role: targetRole,
+          studentProfileId: membership.studentProfileId,
+          classroomId: membership.classroomId,
+          isPersonal: false,
+        },
+        organization: targetOrg,
+        activeRole: targetRole,
+        user: formatUserResponse(user),
+        message: `تم التبديل بنجاح إلى: ${targetOrg.name}`,
+      });
+    }
+
+    // Case 3: Switch using organizationId or organizationSlug (Backward compatibility & Super Admin)
     let targetOrg = organizationId ? db.getOrganizationById(organizationId) : undefined;
     if (!targetOrg && organizationSlug) {
       targetOrg = db.getOrganizationBySlug(organizationSlug);
@@ -1160,7 +1235,6 @@ authRouter.post('/switch-organization', requireAuth, (req: PlatformRequest, res:
       return res.status(404).json({ success: false, error: 'ORGANIZATION_NOT_FOUND', message: 'المؤسسة غير موجودة' });
     }
 
-    // Check membership in target organization
     const membership = db.getMembership(user.id, targetOrg.id);
     if (!membership && user.role !== 'SUPER_ADMIN') {
       return res.status(403).json({
@@ -1170,29 +1244,61 @@ authRouter.post('/switch-organization', requireAuth, (req: PlatformRequest, res:
       });
     }
 
+    if (membership && membership.status !== 'ACTIVE' && user.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({
+        success: false,
+        error: 'MEMBERSHIP_NOT_ACTIVE',
+        message: 'عضويتك في هذه المؤسسة قيد المراجعة أو غير نشطة',
+      });
+    }
+
     const targetRole = membership?.role || user.role;
-    const token = generateToken(user, targetOrg.id, targetRole);
+    const membershipIdResolved = membership?.id;
+    const token = generateToken(user, targetOrg.id, targetRole, membershipIdResolved, 'ORGANIZATION');
 
     db.logAction(targetOrg.id, user.id, user.email, 'SWITCH_ORGANIZATION', 'Organization', targetOrg.id, {}, req.ip);
 
     return res.json({
       success: true,
       token,
+      activeContext: {
+        type: 'ORGANIZATION',
+        membershipId: membershipIdResolved,
+        organizationId: targetOrg.id,
+        organization: targetOrg,
+        role: targetRole,
+        studentProfileId: membership?.studentProfileId,
+        classroomId: membership?.classroomId,
+        isPersonal: false,
+      },
       organization: targetOrg,
       activeRole: targetRole,
+      user: formatUserResponse(user),
       message: `تم التبديل بنجاح إلى: ${targetOrg.name}`,
     });
   } catch {
     return res.status(500).json({ success: false, error: 'SERVER_ERROR' });
   }
-});
+};
+
+authRouter.post('/switch-context', requireAuth, handleSwitchContext);
+authRouter.post('/switch-organization', requireAuth, handleSwitchContext);
 
 // GET /api/v1/auth/me (Legacy / Context verification)
 authRouter.get('/me', requireAuth, (req: PlatformRequest, res: express.Response) => {
+  const activeCtx = req.activeContext || {
+    type: req.organization ? ('ORGANIZATION' as const) : ('PERSONAL' as const),
+    role: req.user!.role,
+    organizationId: req.organization?.id,
+    organization: req.organization,
+    isPersonal: !req.organization,
+  };
   return res.json({
     success: true,
     user: formatUserResponse(req.user!),
     organization: req.organization,
+    activeContext: activeCtx,
+    activeRole: req.user!.role,
   });
 });
 

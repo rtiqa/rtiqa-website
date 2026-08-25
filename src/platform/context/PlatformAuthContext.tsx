@@ -1,10 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Organization, AuthProviderType } from '../types';
+import { User, Organization, AuthProviderType, ActiveContext } from '../types';
 import { platformApi } from '../services/api';
 
 interface AuthContextType {
   user: User | null;
   organization: Organization | null;
+  activeContext: ActiveContext | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   tenantSlug: string;
@@ -30,6 +31,14 @@ interface AuthContextType {
   linkProvider: (provider: AuthProviderType, data: { credential?: string; code?: string; phone?: string }) => Promise<void>;
   unlinkProvider: (provider: AuthProviderType) => Promise<void>;
   switchOrganization: (organizationId?: string, organizationSlug?: string) => Promise<void>;
+  switchContext: (params: {
+    membershipId?: string;
+    contextType?: 'PERSONAL' | 'ORGANIZATION';
+    organizationId?: string;
+    organizationSlug?: string;
+  }) => Promise<void>;
+  switchToPersonal: () => Promise<void>;
+  switchMembership: (membershipId: string) => Promise<void>;
   updateProfile: (data: { fullName?: string; avatarUrl?: string; phone?: string }) => Promise<void>;
   demoSwitch: (persona: 'admin' | 'teacher' | 'teacher2' | 'student' | 'student2' | 'parent', tenantSlug?: string) => Promise<void>;
   registerSchool: (data: {
@@ -53,6 +62,7 @@ const PlatformAuthContext = createContext<AuthContextType | undefined>(undefined
 export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
+  const [activeContext, setActiveContext] = useState<ActiveContext | null>(null);
   const [tenantSlug, setTenantSlugState] = useState<string>(platformApi.getTenantSlug());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -63,6 +73,15 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       if (res.success) {
         setUser(res.user);
         setOrganization(res.organization);
+        if (res.activeContext) {
+          setActiveContext(res.activeContext);
+        } else {
+          setActiveContext(
+            res.organization
+              ? { type: 'ORGANIZATION', organizationId: res.organization.id, organization: res.organization, role: res.user?.role || 'STUDENT', isPersonal: false }
+              : { type: 'PERSONAL', role: 'GUEST', isPersonal: true }
+          );
+        }
       }
     } catch {
       // Ignore
@@ -77,6 +96,15 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         if (res.success && res.user) {
           setUser(res.user);
           setOrganization(res.organization);
+          if (res.activeContext) {
+            setActiveContext(res.activeContext);
+          } else {
+            setActiveContext(
+              res.organization
+                ? { type: 'ORGANIZATION', organizationId: res.organization.id, organization: res.organization, role: res.user.role, isPersonal: false }
+                : { type: 'PERSONAL', role: 'GUEST', isPersonal: true }
+            );
+          }
           if (res.organization?.slug) {
             setTenantSlugState(res.organization.slug);
           }
@@ -86,11 +114,13 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Unauthenticated state
       setUser(null);
       setOrganization(null);
+      setActiveContext(null);
     } catch {
       // Invalid/expired token - clean up
       platformApi.setToken(null);
       setUser(null);
       setOrganization(null);
+      setActiveContext(null);
     } finally {
       setIsLoading(false);
     }
@@ -309,6 +339,17 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       const res = await platformApi.switchOrganization(organizationId, organizationSlug);
       setOrganization(res.organization);
+      if (res.activeContext) {
+        setActiveContext(res.activeContext);
+      } else {
+        setActiveContext({
+          type: 'ORGANIZATION',
+          organizationId: res.organization.id,
+          organization: res.organization,
+          role: (res.activeRole || user?.role || 'STUDENT') as any,
+          isPersonal: false,
+        });
+      }
       setTenantSlugState(res.organization.slug);
       await refreshUser();
     } catch (err: any) {
@@ -317,6 +358,42 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const switchContext = async (params: {
+    membershipId?: string;
+    contextType?: 'PERSONAL' | 'ORGANIZATION';
+    organizationId?: string;
+    organizationSlug?: string;
+  }) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await platformApi.switchContext(params);
+      if (res.organization) {
+        setOrganization(res.organization);
+        setTenantSlugState(res.organization.slug);
+      } else {
+        setOrganization(null);
+        setTenantSlugState('');
+      }
+      setActiveContext(res.activeContext);
+      if (res.user) setUser(res.user);
+      await refreshUser();
+    } catch (err: any) {
+      setError(err.message || 'فشل تبديل مساحة العمل');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const switchToPersonal = async () => {
+    return switchContext({ contextType: 'PERSONAL' });
+  };
+
+  const switchMembership = async (membershipId: string) => {
+    return switchContext({ membershipId, contextType: 'ORGANIZATION' });
   };
 
   const updateProfile = async (data: { fullName?: string; avatarUrl?: string; phone?: string }) => {
@@ -409,6 +486,7 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       value={{
         user,
         organization,
+        activeContext,
         isLoading,
         isAuthenticated: Boolean(user),
         tenantSlug,
@@ -427,6 +505,9 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         linkProvider,
         unlinkProvider,
         switchOrganization,
+        switchContext,
+        switchToPersonal,
+        switchMembership,
         updateProfile,
         demoSwitch,
         registerSchool,

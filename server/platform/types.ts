@@ -1,5 +1,9 @@
 export type UserRole = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'TEACHER' | 'STUDENT' | 'PARENT' | 'GUEST' | 'PENDING';
 
+export type MembershipStatus = 'ACTIVE' | 'PENDING_APPROVAL' | 'PENDING' | 'INVITED' | 'SUSPENDED' | 'REVOKED';
+
+export type ContextType = 'PERSONAL' | 'ORGANIZATION';
+
 export type AuthProviderType = 'email' | 'phone' | 'google';
 
 export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
@@ -24,13 +28,63 @@ export interface OrganizationMembership {
   organizationId: string;
   role: UserRole;
   isDefault: boolean;
-  status: 'ACTIVE' | 'PENDING' | 'REVOKED';
+  status: MembershipStatus;
+  studentProfileId?: string;
   classroomId?: string;
   studentIdNumber?: string;
   teacherSpecialization?: string;
   organizationName?: string;
   organizationSlug?: string;
   joinedAt: string;
+}
+
+export interface ActiveContext {
+  type: ContextType;
+  membershipId?: string;
+  organizationId?: string;
+  organization?: Organization;
+  role: UserRole;
+  studentProfileId?: string;
+  classroomId?: string;
+  isPersonal: boolean;
+}
+
+export interface StudentProfile {
+  id: string;
+  organizationId: string;
+  firstName: string;
+  lastName: string;
+  fullName: string;
+  studentIdNumber?: string;
+  dateOfBirth?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  gradeLevelId?: string;
+  classroomId?: string;
+  gradeLevelName?: string;
+  classroomName?: string;
+  admissionDate?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'GRADUATED' | 'TRANSFERRED';
+  claimTokenHash?: string;
+  claimTokenExpiresAt?: string;
+  isClaimed: boolean;
+  claimedByUserId?: string;
+  claimedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ParentLinkToken {
+  id: string;
+  organizationId: string;
+  studentProfileId: string;
+  tokenHash: string;
+  relationship: 'FATHER' | 'MOTHER' | 'GUARDIAN';
+  expiresAt: string;
+  isUsed: boolean;
+  usedByUserId?: string;
+  usedAt?: string;
+  createdBy: string;
+  createdAt: string;
 }
 
 export interface PasswordResetToken {
@@ -84,6 +138,7 @@ export interface User {
   phoneVerified?: boolean;
   authProviders?: AuthProviderType[];
   googleId?: string;
+  timezone?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;

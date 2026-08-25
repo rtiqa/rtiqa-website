@@ -45,6 +45,9 @@ import {
   LibraryResourceVisibility,
   LibraryResourceStatus,
   ResourceActivityAction,
+  ActiveContext,
+  StudentProfile,
+  ParentLinkToken,
 } from '../types';
 
 class PlatformApiClient {
@@ -265,7 +268,7 @@ class PlatformApiClient {
   }
 
   async getProfile() {
-    return this.request<{ success: boolean; user: User; organization: Organization }>('/auth/profile');
+    return this.request<{ success: boolean; user: User; organization: Organization; activeContext?: ActiveContext; activeRole?: string }>('/auth/profile');
   }
 
   async updateProfile(data: { fullName?: string; avatarUrl?: string; phone?: string }) {
@@ -282,12 +285,42 @@ class PlatformApiClient {
       organization: Organization;
       activeRole: string;
       message: string;
+      activeContext?: ActiveContext;
     }>('/auth/switch-organization', {
       method: 'POST',
       body: JSON.stringify({ organizationId, organizationSlug }),
     });
     this.setToken(res.token);
-    this.setTenantSlug(res.organization.slug);
+    if (res.organization?.slug) {
+      this.setTenantSlug(res.organization.slug);
+    }
+    return res;
+  }
+
+  async switchContext(params: {
+    membershipId?: string;
+    contextType?: 'PERSONAL' | 'ORGANIZATION';
+    organizationId?: string;
+    organizationSlug?: string;
+  }) {
+    const res = await this.request<{
+      success: boolean;
+      token: string;
+      activeContext: ActiveContext;
+      organization?: Organization;
+      activeRole: string;
+      message: string;
+      user?: User;
+    }>('/auth/switch-context', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+    this.setToken(res.token);
+    if (res.organization?.slug) {
+      this.setTenantSlug(res.organization.slug);
+    } else if (res.activeContext?.type === 'PERSONAL') {
+      this.setTenantSlug('');
+    }
     return res;
   }
 
@@ -330,7 +363,7 @@ class PlatformApiClient {
   }
 
   async getMe() {
-    return this.request<{ success: boolean; user: User; organization: Organization }>('/auth/me');
+    return this.request<{ success: boolean; user: User; organization: Organization; activeContext?: ActiveContext; activeRole?: string }>('/auth/me');
   }
 
   async logout() {

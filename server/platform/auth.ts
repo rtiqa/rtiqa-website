@@ -1,12 +1,14 @@
 import express from 'express';
 import crypto from 'crypto';
 import { db } from './db.ts';
-import type { User, UserRole, Organization } from './types.ts';
+import type { User, UserRole, Organization, OrganizationMembership, ActiveContext, ContextType } from './types.ts';
 
 // Extended Express Request with Tenant and Auth Context
 export interface PlatformRequest extends express.Request {
   user?: User;
   organization?: Organization;
+  activeContext?: ActiveContext;
+  membership?: OrganizationMembership;
 }
 
 // In-memory runtime ephemeral secret generated on the fly for non-production environments when AUTH_SECRET is not set
@@ -52,19 +54,30 @@ export function getAuthSecret(): string {
 interface TokenPayload {
   uid: string;
   oid?: string;
+  mid?: string;
+  ctx?: ContextType;
   role: UserRole;
   email: string;
   exp: number;
 }
 
 // Generate cryptographically signed HMAC-SHA256 Token
-export function generateToken(user: User, overrideOrgId?: string, overrideRole?: UserRole): string {
+export function generateToken(
+  user: User,
+  overrideOrgId?: string,
+  overrideRole?: UserRole,
+  overrideMembershipId?: string,
+  contextType?: ContextType
+): string {
   const effectiveOrgId = overrideOrgId !== undefined ? overrideOrgId : user.organizationId;
   const effectiveRole = overrideRole || user.role;
+  const effectiveCtx: ContextType = contextType || (effectiveOrgId ? 'ORGANIZATION' : 'PERSONAL');
 
   const payload: TokenPayload = {
     uid: user.id,
     oid: effectiveOrgId || undefined,
+    mid: overrideMembershipId || undefined,
+    ctx: effectiveCtx,
     role: effectiveRole,
     email: user.email,
     exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days expiration
@@ -105,7 +118,7 @@ export function decodeAndVerifyToken(token: string): TokenPayload | null {
     const jsonStr = Buffer.from(payloadEncoded, 'base64url').toString('utf-8');
     const parsed: TokenPayload = JSON.parse(jsonStr);
 
-    // Validate payload fields and expiry (oid is optional for unassigned/pending users)
+    // Validate payload fields and expiry (oid and mid are optional)
     if (!parsed.uid || !parsed.role || !parsed.exp) {
       return null;
     }
@@ -136,13 +149,102 @@ export const platformAuthMiddleware = (
     const verified = decodeAndVerifyToken(token);
 
     if (verified) {
-      const user = db.getUserById(verified.uid, verified.oid);
-      if (user && user.isActive) {
-        req.user = user;
-        // If user has organizationId, tenant context is strictly bound to that organization
-        if (user.organizationId) {
-          req.organization = db.getOrganizationById(user.organizationId);
+      const baseUser = db.getUserById(verified.uid, verified.oid);
+      if (baseUser && baseUser.isActive) {
+        // If the context is explicitly PERSONAL:
+        if (verified.ctx === 'PERSONAL' || (!verified.oid && !verified.mid)) {
+          const userRole = baseUser.role || 'GUEST';
+          req.user = {
+            ...baseUser,
+            organizationId: undefined,
+            role: userRole,
+          };
+          req.organization = undefined;
+          req.activeContext = {
+            type: 'PERSONAL',
+            role: userRole,
+            isPersonal: true,
+          };
+          return next();
         }
+
+        // If a specific membershipId was provided in the token:
+        let activeMembership: OrganizationMembership | undefined;
+        if (verified.mid) {
+          const m = db.getMembershipById(verified.mid);
+          if (m && m.userId === baseUser.id && m.status === 'ACTIVE') {
+            activeMembership = m;
+          }
+        }
+
+        // Fallback: If no valid mid, check by (userId, oid)
+        if (!activeMembership && verified.oid) {
+          const m = db.getMembership(baseUser.id, verified.oid);
+          if (m && m.status === 'ACTIVE') {
+            activeMembership = m;
+          }
+        }
+
+        if (activeMembership) {
+          const org = db.getOrganizationById(activeMembership.organizationId);
+          if (org && org.isActive) {
+            req.organization = org;
+            req.membership = activeMembership;
+            req.user = {
+              ...baseUser,
+              organizationId: org.id,
+              role: activeMembership.role,
+              classroomId: activeMembership.classroomId || baseUser.classroomId,
+              studentIdNumber: activeMembership.studentIdNumber || baseUser.studentIdNumber,
+              teacherSpecialization: activeMembership.teacherSpecialization || baseUser.teacherSpecialization,
+            };
+            req.activeContext = {
+              type: 'ORGANIZATION',
+              membershipId: activeMembership.id,
+              organizationId: org.id,
+              organization: org,
+              role: activeMembership.role,
+              studentProfileId: activeMembership.studentProfileId,
+              classroomId: activeMembership.classroomId,
+              isPersonal: false,
+            };
+            return next();
+          }
+        }
+
+        // Fallback for super admin or users with organizationId on user model
+        if (verified.oid) {
+          const org = db.getOrganizationById(verified.oid);
+          if (org) {
+            req.organization = org;
+            req.user = {
+              ...baseUser,
+              organizationId: org.id,
+              role: verified.role || baseUser.role,
+            };
+            req.activeContext = {
+              type: 'ORGANIZATION',
+              organizationId: org.id,
+              organization: org,
+              role: req.user.role,
+              isPersonal: false,
+            };
+            return next();
+          }
+        }
+
+        // If no active membership in specified org, user is authenticated in personal context
+        req.user = {
+          ...baseUser,
+          organizationId: undefined,
+          role: 'GUEST',
+        };
+        req.organization = undefined;
+        req.activeContext = {
+          type: 'PERSONAL',
+          role: 'GUEST',
+          isPersonal: true,
+        };
         return next();
       }
     }

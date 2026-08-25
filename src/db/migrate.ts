@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { getPostgresPool, checkPostgresConnection } from './postgres';
 
-export async function runMigrations(): Promise<{ success: boolean; message: string; tablesCount?: number }> {
+export async function runMigrations(): Promise<{ success: boolean; message: string; tablesCount?: number; appliedMigrations?: string[] }> {
   const status = await checkPostgresConnection();
   if (!status.connected) {
     return {
@@ -18,13 +18,6 @@ export async function runMigrations(): Promise<{ success: boolean; message: stri
 
   const client = await pool.connect();
   try {
-    const schemaPath = path.join(process.cwd(), 'src', 'db', 'schema.sql');
-    if (!fs.existsSync(schemaPath)) {
-      throw new Error(`Schema file not found at ${schemaPath}`);
-    }
-
-    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-
     await client.query('BEGIN');
 
     // Create migrations tracking table
@@ -36,15 +29,49 @@ export async function runMigrations(): Promise<{ success: boolean; message: stri
       );
     `);
 
-    // Execute the schema DDL (creates tables, indexes, extensions, RLS policies)
-    await client.query(schemaSql);
+    // Get list of already applied migrations
+    const appliedRes = await client.query<{ version: string }>(
+      `SELECT version FROM _schema_migrations;`
+    );
+    const appliedSet = new Set(appliedRes.rows.map((r) => r.version));
+    const appliedMigrations: string[] = [];
 
-    // Record migration version
-    await client.query(`
-      INSERT INTO _schema_migrations (version)
-      VALUES ('001_initial_schema_and_rls')
-      ON CONFLICT (version) DO UPDATE SET executed_at = CURRENT_TIMESTAMP;
-    `);
+    // 1. Run base schema if 001 not recorded
+    const schemaPath = path.join(process.cwd(), 'src', 'db', 'schema.sql');
+    if (!appliedSet.has('001_initial_schema') && fs.existsSync(schemaPath)) {
+      const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+      await client.query(schemaSql);
+      await client.query(
+        `INSERT INTO _schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING;`,
+        ['001_initial_schema']
+      );
+      appliedMigrations.push('001_initial_schema');
+    }
+
+    // 2. Run versioned migrations from migrations directory
+    const migrationsDir = path.join(process.cwd(), 'src', 'db', 'migrations');
+    if (fs.existsSync(migrationsDir)) {
+      const migrationFiles = fs
+        .readdirSync(migrationsDir)
+        .filter((f) => f.endsWith('.sql'))
+        .sort();
+
+      for (const file of migrationFiles) {
+        const version = path.basename(file, '.sql');
+        if (!appliedSet.has(version) && !appliedMigrations.includes(version)) {
+          const filePath = path.join(migrationsDir, file);
+          const sql = fs.readFileSync(filePath, 'utf8');
+          if (sql.trim()) {
+            await client.query(sql);
+          }
+          await client.query(
+            `INSERT INTO _schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING;`,
+            [version]
+          );
+          appliedMigrations.push(version);
+        }
+      }
+    }
 
     await client.query('COMMIT');
 
@@ -59,8 +86,9 @@ export async function runMigrations(): Promise<{ success: boolean; message: stri
 
     return {
       success: true,
-      message: `PostgreSQL schema and RLS policies applied successfully. (${count} tables in public schema)`,
+      message: `PostgreSQL schema and migrations applied successfully. (${count} tables in public schema)`,
       tablesCount: count,
+      appliedMigrations,
     };
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {});

@@ -303,6 +303,8 @@ var init_db = __esm({
         this.auditLogs = /* @__PURE__ */ new Map();
         this.invitations = /* @__PURE__ */ new Map();
         this.organizationMemberships = /* @__PURE__ */ new Map();
+        this.studentProfiles = /* @__PURE__ */ new Map();
+        this.parentLinkTokens = /* @__PURE__ */ new Map();
         this.passwordResetTokens = /* @__PURE__ */ new Map();
         this.emailVerificationTokens = /* @__PURE__ */ new Map();
         this.phoneVerificationOtps = /* @__PURE__ */ new Map();
@@ -1913,6 +1915,16 @@ var init_db = __esm({
           };
         });
       }
+      getMembershipById(id) {
+        const mem = this.organizationMemberships.get(id);
+        if (!mem || mem.status === "REVOKED") return void 0;
+        const org = this.getOrganizationById(mem.organizationId);
+        return {
+          ...mem,
+          organizationName: org?.name,
+          organizationSlug: org?.slug
+        };
+      }
       getMembership(userId, organizationId) {
         return Array.from(this.organizationMemberships.values()).find(
           (m) => m.userId === userId && m.organizationId === organizationId && m.status !== "REVOKED"
@@ -1940,6 +1952,104 @@ var init_db = __esm({
       }
       removeMembership(id) {
         return this.organizationMemberships.delete(id);
+      }
+      // --- Student Profiles (School-owned SIS records claimed by Users) ---
+      getStudentProfileById(id, organizationId) {
+        const profile = this.studentProfiles.get(id);
+        if (!profile) return void 0;
+        if (organizationId && profile.organizationId !== organizationId) return void 0;
+        return profile;
+      }
+      getStudentProfiles(organizationId, filters) {
+        return Array.from(this.studentProfiles.values()).filter((p) => {
+          if (p.organizationId !== organizationId) return false;
+          if (filters?.classroomId && p.classroomId !== filters.classroomId) return false;
+          if (filters?.gradeLevelId && p.gradeLevelId !== filters.gradeLevelId) return false;
+          if (filters?.isClaimed !== void 0 && p.isClaimed !== filters.isClaimed) return false;
+          if (filters?.search) {
+            const q = filters.search.toLowerCase().trim();
+            const matchName = p.fullName.toLowerCase().includes(q);
+            const matchNumber = p.studentIdNumber?.toLowerCase().includes(q);
+            if (!matchName && !matchNumber) return false;
+          }
+          return true;
+        });
+      }
+      getStudentProfileByClaimToken(tokenHash) {
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        return Array.from(this.studentProfiles.values()).find(
+          (p) => p.claimTokenHash === tokenHash && !p.isClaimed && (!p.claimTokenExpiresAt || p.claimTokenExpiresAt > now)
+        );
+      }
+      createStudentProfile(data) {
+        const id = `stp_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const profile = {
+          ...data,
+          id,
+          isClaimed: false,
+          createdAt: now,
+          updatedAt: now
+        };
+        this.studentProfiles.set(id, profile);
+        return profile;
+      }
+      updateStudentProfile(id, organizationId, updates) {
+        const profile = this.getStudentProfileById(id, organizationId);
+        if (!profile) return void 0;
+        const updated = {
+          ...profile,
+          ...updates,
+          updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.studentProfiles.set(id, updated);
+        return updated;
+      }
+      claimStudentProfile(studentProfileId, organizationId, userId) {
+        const profile = this.getStudentProfileById(studentProfileId, organizationId);
+        if (!profile || profile.isClaimed) return void 0;
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        const updated = {
+          ...profile,
+          isClaimed: true,
+          claimedByUserId: userId,
+          claimedAt: now,
+          claimTokenHash: void 0,
+          claimTokenExpiresAt: void 0,
+          updatedAt: now
+        };
+        this.studentProfiles.set(studentProfileId, updated);
+        return updated;
+      }
+      // --- Parent Link Tokens (Secure, Temporary, School-Scoped) ---
+      createParentLinkToken(data) {
+        const id = `plt_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+        const token = {
+          ...data,
+          id,
+          isUsed: false,
+          createdAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.parentLinkTokens.set(id, token);
+        return token;
+      }
+      getParentLinkTokenByHash(tokenHash) {
+        const now = (/* @__PURE__ */ new Date()).toISOString();
+        return Array.from(this.parentLinkTokens.values()).find(
+          (t) => t.tokenHash === tokenHash && !t.isUsed && t.expiresAt > now
+        );
+      }
+      markParentLinkTokenUsed(id, usedByUserId) {
+        const token = this.parentLinkTokens.get(id);
+        if (!token) return void 0;
+        const updated = {
+          ...token,
+          isUsed: true,
+          usedByUserId,
+          usedAt: (/* @__PURE__ */ new Date()).toISOString()
+        };
+        this.parentLinkTokens.set(id, updated);
+        return updated;
       }
       // --- Password Reset Tokens ---
       createPasswordResetToken(userId, email, tokenHash, expiresInMinutes = 60) {
@@ -4949,11 +5059,6 @@ async function runMigrations() {
   }
   const client = await pool2.connect();
   try {
-    const schemaPath = path.join(process.cwd(), "src", "db", "schema.sql");
-    if (!fs.existsSync(schemaPath)) {
-      throw new Error(`Schema file not found at ${schemaPath}`);
-    }
-    const schemaSql = fs.readFileSync(schemaPath, "utf8");
     await client.query("BEGIN");
     await client.query(`
       CREATE TABLE IF NOT EXISTS _schema_migrations (
@@ -4962,12 +5067,40 @@ async function runMigrations() {
         executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
       );
     `);
-    await client.query(schemaSql);
-    await client.query(`
-      INSERT INTO _schema_migrations (version)
-      VALUES ('001_initial_schema_and_rls')
-      ON CONFLICT (version) DO UPDATE SET executed_at = CURRENT_TIMESTAMP;
-    `);
+    const appliedRes = await client.query(
+      `SELECT version FROM _schema_migrations;`
+    );
+    const appliedSet = new Set(appliedRes.rows.map((r) => r.version));
+    const appliedMigrations = [];
+    const schemaPath = path.join(process.cwd(), "src", "db", "schema.sql");
+    if (!appliedSet.has("001_initial_schema") && fs.existsSync(schemaPath)) {
+      const schemaSql = fs.readFileSync(schemaPath, "utf8");
+      await client.query(schemaSql);
+      await client.query(
+        `INSERT INTO _schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING;`,
+        ["001_initial_schema"]
+      );
+      appliedMigrations.push("001_initial_schema");
+    }
+    const migrationsDir = path.join(process.cwd(), "src", "db", "migrations");
+    if (fs.existsSync(migrationsDir)) {
+      const migrationFiles = fs.readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
+      for (const file of migrationFiles) {
+        const version = path.basename(file, ".sql");
+        if (!appliedSet.has(version) && !appliedMigrations.includes(version)) {
+          const filePath = path.join(migrationsDir, file);
+          const sql = fs.readFileSync(filePath, "utf8");
+          if (sql.trim()) {
+            await client.query(sql);
+          }
+          await client.query(
+            `INSERT INTO _schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING;`,
+            [version]
+          );
+          appliedMigrations.push(version);
+        }
+      }
+    }
     await client.query("COMMIT");
     const tableRes = await client.query(`
       SELECT COUNT(*) as count 
@@ -4977,8 +5110,9 @@ async function runMigrations() {
     const count = parseInt(tableRes.rows[0]?.count || "0", 10);
     return {
       success: true,
-      message: `PostgreSQL schema and RLS policies applied successfully. (${count} tables in public schema)`,
-      tablesCount: count
+      message: `PostgreSQL schema and migrations applied successfully. (${count} tables in public schema)`,
+      tablesCount: count,
+      appliedMigrations
     };
   } catch (err) {
     await client.query("ROLLBACK").catch(() => {
@@ -5074,12 +5208,15 @@ function getAuthSecret() {
   }
   return devRuntimeSecret;
 }
-function generateToken(user, overrideOrgId, overrideRole) {
+function generateToken(user, overrideOrgId, overrideRole, overrideMembershipId, contextType) {
   const effectiveOrgId = overrideOrgId !== void 0 ? overrideOrgId : user.organizationId;
   const effectiveRole = overrideRole || user.role;
+  const effectiveCtx = contextType || (effectiveOrgId ? "ORGANIZATION" : "PERSONAL");
   const payload = {
     uid: user.id,
     oid: effectiveOrgId || void 0,
+    mid: overrideMembershipId || void 0,
+    ctx: effectiveCtx,
     role: effectiveRole,
     email: user.email,
     exp: Date.now() + 7 * 24 * 60 * 60 * 1e3
@@ -5123,12 +5260,92 @@ var platformAuthMiddleware = (req, res, next) => {
     const token = authHeader.substring(7).trim();
     const verified = decodeAndVerifyToken(token);
     if (verified) {
-      const user = db.getUserById(verified.uid, verified.oid);
-      if (user && user.isActive) {
-        req.user = user;
-        if (user.organizationId) {
-          req.organization = db.getOrganizationById(user.organizationId);
+      const baseUser = db.getUserById(verified.uid, verified.oid);
+      if (baseUser && baseUser.isActive) {
+        if (verified.ctx === "PERSONAL" || !verified.oid && !verified.mid) {
+          const userRole = baseUser.role || "GUEST";
+          req.user = {
+            ...baseUser,
+            organizationId: void 0,
+            role: userRole
+          };
+          req.organization = void 0;
+          req.activeContext = {
+            type: "PERSONAL",
+            role: userRole,
+            isPersonal: true
+          };
+          return next();
         }
+        let activeMembership;
+        if (verified.mid) {
+          const m = db.getMembershipById(verified.mid);
+          if (m && m.userId === baseUser.id && m.status === "ACTIVE") {
+            activeMembership = m;
+          }
+        }
+        if (!activeMembership && verified.oid) {
+          const m = db.getMembership(baseUser.id, verified.oid);
+          if (m && m.status === "ACTIVE") {
+            activeMembership = m;
+          }
+        }
+        if (activeMembership) {
+          const org = db.getOrganizationById(activeMembership.organizationId);
+          if (org && org.isActive) {
+            req.organization = org;
+            req.membership = activeMembership;
+            req.user = {
+              ...baseUser,
+              organizationId: org.id,
+              role: activeMembership.role,
+              classroomId: activeMembership.classroomId || baseUser.classroomId,
+              studentIdNumber: activeMembership.studentIdNumber || baseUser.studentIdNumber,
+              teacherSpecialization: activeMembership.teacherSpecialization || baseUser.teacherSpecialization
+            };
+            req.activeContext = {
+              type: "ORGANIZATION",
+              membershipId: activeMembership.id,
+              organizationId: org.id,
+              organization: org,
+              role: activeMembership.role,
+              studentProfileId: activeMembership.studentProfileId,
+              classroomId: activeMembership.classroomId,
+              isPersonal: false
+            };
+            return next();
+          }
+        }
+        if (verified.oid) {
+          const org = db.getOrganizationById(verified.oid);
+          if (org) {
+            req.organization = org;
+            req.user = {
+              ...baseUser,
+              organizationId: org.id,
+              role: verified.role || baseUser.role
+            };
+            req.activeContext = {
+              type: "ORGANIZATION",
+              organizationId: org.id,
+              organization: org,
+              role: req.user.role,
+              isPersonal: false
+            };
+            return next();
+          }
+        }
+        req.user = {
+          ...baseUser,
+          organizationId: void 0,
+          role: "GUEST"
+        };
+        req.organization = void 0;
+        req.activeContext = {
+          type: "PERSONAL",
+          role: "GUEST",
+          isPersonal: true
+        };
         return next();
       }
     }
@@ -6591,10 +6808,72 @@ authRouter.put("/profile", requireAuth, (req, res) => {
     return res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-authRouter.post("/switch-organization", requireAuth, (req, res) => {
+var handleSwitchContext = (req, res) => {
   try {
-    const { organizationId, organizationSlug } = req.body;
+    const { membershipId, contextType, organizationId, organizationSlug } = req.body;
     const user = req.user;
+    if (contextType === "PERSONAL" || !membershipId && !organizationId && !organizationSlug && contextType !== "ORGANIZATION") {
+      const token2 = generateToken(user, void 0, "GUEST", void 0, "PERSONAL");
+      return res.json({
+        success: true,
+        token: token2,
+        activeContext: {
+          type: "PERSONAL",
+          role: "GUEST",
+          isPersonal: true
+        },
+        organization: null,
+        activeRole: "GUEST",
+        user: formatUserResponse(user),
+        message: "\u062A\u0645 \u0627\u0644\u062A\u0628\u062F\u064A\u0644 \u0628\u0646\u062C\u0627\u062D \u0625\u0644\u0649 \u0627\u0644\u0645\u0633\u0627\u062D\u0629 \u0627\u0644\u0634\u062E\u0635\u064A\u0629"
+      });
+    }
+    if (membershipId) {
+      const membership2 = db.getMembershipById(membershipId);
+      if (!membership2 || membership2.userId !== user.id) {
+        return res.status(403).json({
+          success: false,
+          error: "INVALID_MEMBERSHIP",
+          message: "\u0627\u0644\u0639\u0636\u0648\u064A\u0629 \u0627\u0644\u0645\u062D\u062F\u062F\u0629 \u063A\u064A\u0631 \u0635\u062D\u064A\u062D\u0629 \u0623\u0648 \u0644\u0627 \u062A\u062E\u0635 \u0647\u0630\u0627 \u0627\u0644\u062D\u0633\u0627\u0628"
+        });
+      }
+      if (membership2.status !== "ACTIVE") {
+        return res.status(403).json({
+          success: false,
+          error: "MEMBERSHIP_NOT_ACTIVE",
+          message: membership2.status === "PENDING_APPROVAL" ? "\u0637\u0644\u0628 \u0627\u0644\u0627\u0646\u0636\u0645\u0627\u0645 \u0642\u064A\u062F \u0627\u0644\u0645\u0631\u0627\u062C\u0639\u0629 \u0648\u0627\u0644\u0627\u0639\u062A\u0645\u0627\u062F \u0645\u0646 \u0625\u062F\u0627\u0631\u0629 \u0627\u0644\u0645\u062F\u0631\u0633\u0629" : "\u0647\u0630\u0647 \u0627\u0644\u0639\u0636\u0648\u064A\u0629 \u063A\u064A\u0631 \u0645\u0641\u0639\u0644\u0629 \u062D\u0627\u0644\u064A\u0627\u064B"
+        });
+      }
+      const targetOrg2 = db.getOrganizationById(membership2.organizationId);
+      if (!targetOrg2 || !targetOrg2.isActive) {
+        return res.status(404).json({
+          success: false,
+          error: "ORGANIZATION_NOT_FOUND",
+          message: "\u0627\u0644\u0645\u0624\u0633\u0633\u0629 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629 \u063A\u064A\u0631 \u0645\u0648\u062C\u0648\u062F\u0629 \u0623\u0648 \u063A\u064A\u0631 \u0646\u0634\u0637\u0629"
+        });
+      }
+      const targetRole2 = membership2.role;
+      const token2 = generateToken(user, targetOrg2.id, targetRole2, membership2.id, "ORGANIZATION");
+      db.logAction(targetOrg2.id, user.id, user.email, "SWITCH_CONTEXT", "Membership", membership2.id, {}, req.ip);
+      return res.json({
+        success: true,
+        token: token2,
+        activeContext: {
+          type: "ORGANIZATION",
+          membershipId: membership2.id,
+          organizationId: targetOrg2.id,
+          organization: targetOrg2,
+          role: targetRole2,
+          studentProfileId: membership2.studentProfileId,
+          classroomId: membership2.classroomId,
+          isPersonal: false
+        },
+        organization: targetOrg2,
+        activeRole: targetRole2,
+        user: formatUserResponse(user),
+        message: `\u062A\u0645 \u0627\u0644\u062A\u0628\u062F\u064A\u0644 \u0628\u0646\u062C\u0627\u062D \u0625\u0644\u0649: ${targetOrg2.name}`
+      });
+    }
     let targetOrg = organizationId ? db.getOrganizationById(organizationId) : void 0;
     if (!targetOrg && organizationSlug) {
       targetOrg = db.getOrganizationBySlug(organizationSlug);
@@ -6610,25 +6889,55 @@ authRouter.post("/switch-organization", requireAuth, (req, res) => {
         message: "\u0644\u064A\u0633 \u0644\u062F\u064A\u0643 \u0639\u0636\u0648\u064A\u0629 \u0641\u064A \u0647\u0630\u0647 \u0627\u0644\u0645\u0624\u0633\u0633\u0629 \u0627\u0644\u062A\u0639\u0644\u064A\u0645\u064A\u0629"
       });
     }
+    if (membership && membership.status !== "ACTIVE" && user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "MEMBERSHIP_NOT_ACTIVE",
+        message: "\u0639\u0636\u0648\u064A\u062A\u0643 \u0641\u064A \u0647\u0630\u0647 \u0627\u0644\u0645\u0624\u0633\u0633\u0629 \u0642\u064A\u062F \u0627\u0644\u0645\u0631\u0627\u062C\u0639\u0629 \u0623\u0648 \u063A\u064A\u0631 \u0646\u0634\u0637\u0629"
+      });
+    }
     const targetRole = membership?.role || user.role;
-    const token = generateToken(user, targetOrg.id, targetRole);
+    const membershipIdResolved = membership?.id;
+    const token = generateToken(user, targetOrg.id, targetRole, membershipIdResolved, "ORGANIZATION");
     db.logAction(targetOrg.id, user.id, user.email, "SWITCH_ORGANIZATION", "Organization", targetOrg.id, {}, req.ip);
     return res.json({
       success: true,
       token,
+      activeContext: {
+        type: "ORGANIZATION",
+        membershipId: membershipIdResolved,
+        organizationId: targetOrg.id,
+        organization: targetOrg,
+        role: targetRole,
+        studentProfileId: membership?.studentProfileId,
+        classroomId: membership?.classroomId,
+        isPersonal: false
+      },
       organization: targetOrg,
       activeRole: targetRole,
+      user: formatUserResponse(user),
       message: `\u062A\u0645 \u0627\u0644\u062A\u0628\u062F\u064A\u0644 \u0628\u0646\u062C\u0627\u062D \u0625\u0644\u0649: ${targetOrg.name}`
     });
   } catch {
     return res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
-});
+};
+authRouter.post("/switch-context", requireAuth, handleSwitchContext);
+authRouter.post("/switch-organization", requireAuth, handleSwitchContext);
 authRouter.get("/me", requireAuth, (req, res) => {
+  const activeCtx = req.activeContext || {
+    type: req.organization ? "ORGANIZATION" : "PERSONAL",
+    role: req.user.role,
+    organizationId: req.organization?.id,
+    organization: req.organization,
+    isPersonal: !req.organization
+  };
   return res.json({
     success: true,
     user: formatUserResponse(req.user),
-    organization: req.organization
+    organization: req.organization,
+    activeContext: activeCtx,
+    activeRole: req.user.role
   });
 });
 authRouter.post("/logout", requireAuth, (req, res) => {
