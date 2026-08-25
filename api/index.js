@@ -5046,83 +5046,134 @@ __export(migrate_exports, {
 import fs from "fs";
 import path from "path";
 async function runMigrations() {
+  const isVercelProduction = process.env.VERCEL_ENV === "production";
+  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+  if (!isVercelProduction || !hasDatabaseUrl) {
+    const reason = !hasDatabaseUrl ? "DATABASE_URL is not configured" : `VERCEL_ENV is "${process.env.VERCEL_ENV || "local"}" (requires "production")`;
+    return {
+      success: true,
+      message: `[Migration]: Skipped. Migrations strictly run only on Vercel Production. (${reason})`
+    };
+  }
   const status = await checkPostgresConnection();
   if (!status.connected) {
     return {
       success: false,
-      message: `Cannot run migrations: PostgreSQL is not connected (${status.error})`
+      message: `Cannot run migrations: PostgreSQL connection failed. (${status.message || "Unknown error"})`
     };
   }
   const pool2 = getPostgresPool();
   if (!pool2) {
-    return { success: false, message: "Pool not available" };
-  }
-  const client = await pool2.connect();
-  try {
-    await client.query("BEGIN");
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS _schema_migrations (
-        id SERIAL PRIMARY KEY,
-        version VARCHAR(64) UNIQUE NOT NULL,
-        executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-      );
-    `);
-    const appliedRes = await client.query(
-      `SELECT version FROM _schema_migrations;`
-    );
-    const appliedSet = new Set(appliedRes.rows.map((r) => r.version));
-    const appliedMigrations = [];
-    const schemaPath = path.join(process.cwd(), "src", "db", "schema.sql");
-    if (!appliedSet.has("001_initial_schema") && fs.existsSync(schemaPath)) {
-      const schemaSql = fs.readFileSync(schemaPath, "utf8");
-      await client.query(schemaSql);
-      await client.query(
-        `INSERT INTO _schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING;`,
-        ["001_initial_schema"]
-      );
-      appliedMigrations.push("001_initial_schema");
-    }
-    const migrationsDir = path.join(process.cwd(), "src", "db", "migrations");
-    if (fs.existsSync(migrationsDir)) {
-      const migrationFiles = fs.readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
-      for (const file of migrationFiles) {
-        const version = path.basename(file, ".sql");
-        if (!appliedSet.has(version) && !appliedMigrations.includes(version)) {
-          const filePath = path.join(migrationsDir, file);
-          const sql = fs.readFileSync(filePath, "utf8");
-          if (sql.trim()) {
-            await client.query(sql);
-          }
-          await client.query(
-            `INSERT INTO _schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING;`,
-            [version]
-          );
-          appliedMigrations.push(version);
-        }
-      }
-    }
-    await client.query("COMMIT");
-    const tableRes = await client.query(`
-      SELECT COUNT(*) as count 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' AND table_type = 'BASE TABLE';
-    `);
-    const count = parseInt(tableRes.rows[0]?.count || "0", 10);
-    return {
-      success: true,
-      message: `PostgreSQL schema and migrations applied successfully. (${count} tables in public schema)`,
-      tablesCount: count,
-      appliedMigrations
-    };
-  } catch (err) {
-    await client.query("ROLLBACK").catch(() => {
-    });
     return {
       success: false,
-      message: `Migration failed: ${err.message}`
+      message: "Cannot run migrations: PostgreSQL pool is not initialized."
+    };
+  }
+  const client = await pool2.connect();
+  let lockAcquired = false;
+  let clientDestroyRequired = false;
+  const appliedMigrations = [];
+  try {
+    console.log("[Migration]: Acquiring PostgreSQL advisory lock...");
+    await client.query("SELECT pg_advisory_lock($1);", [RTIQA_MIGRATION_ADVISORY_LOCK_ID]);
+    lockAcquired = true;
+    console.log("[Migration]: Advisory lock acquired successfully.");
+    try {
+      await client.query("BEGIN");
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS _schema_migrations (
+          id SERIAL PRIMARY KEY,
+          version VARCHAR(64) UNIQUE NOT NULL,
+          executed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+        );
+      `);
+      const appliedRes = await client.query(
+        `SELECT version FROM _schema_migrations;`
+      );
+      const appliedSet = new Set(appliedRes.rows.map((r) => r.version));
+      const schemaPath = path.join(process.cwd(), "src", "db", "schema.sql");
+      if (!appliedSet.has("001_initial_schema") && fs.existsSync(schemaPath)) {
+        console.log("[Migration]: Applying 001_initial_schema from schema.sql...");
+        const schemaSql = fs.readFileSync(schemaPath, "utf8");
+        await client.query(schemaSql);
+        await client.query(
+          `INSERT INTO _schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING;`,
+          ["001_initial_schema"]
+        );
+        appliedMigrations.push("001_initial_schema");
+        console.log("[Migration]: 001_initial_schema applied successfully.");
+      }
+      const migrationsDir = path.join(process.cwd(), "src", "db", "migrations");
+      if (fs.existsSync(migrationsDir)) {
+        const migrationFiles = fs.readdirSync(migrationsDir).filter((f) => f.endsWith(".sql")).sort();
+        for (const file of migrationFiles) {
+          const version = path.basename(file, ".sql");
+          if (!appliedSet.has(version) && !appliedMigrations.includes(version)) {
+            console.log(`[Migration]: Applying ${file}...`);
+            const filePath = path.join(migrationsDir, file);
+            const sql = fs.readFileSync(filePath, "utf8");
+            if (sql.trim()) {
+              await client.query(sql);
+            }
+            await client.query(
+              `INSERT INTO _schema_migrations (version) VALUES ($1) ON CONFLICT (version) DO NOTHING;`,
+              [version]
+            );
+            appliedMigrations.push(version);
+            console.log(`[Migration]: ${file} applied successfully.`);
+          }
+        }
+      }
+      await client.query("COMMIT");
+      console.log("[Migration]: Transaction committed successfully.");
+    } catch (txError) {
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackErr) {
+        console.error("[Migration Fatal]: Failed to rollback transaction:", rollbackErr);
+        clientDestroyRequired = true;
+      }
+      const errorMsg = txError instanceof Error ? txError.message : String(txError);
+      console.error("[Migration Error]: Transaction failed. Details:", errorMsg);
+      return {
+        success: false,
+        message: `Migration failed: ${errorMsg}`
+      };
+    }
+    let tablesCount = 0;
+    try {
+      const tablesRes = await client.query(`
+        SELECT COUNT(*)::int as count 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+          AND table_type = 'BASE TABLE';
+      `);
+      tablesCount = tablesRes.rows[0]?.count || 0;
+    } catch (verifyErr) {
+      console.warn("[Migration Warning]: Post-commit table count check failed, but migrations are committed successfully.");
+    }
+    return {
+      success: true,
+      message: `PostgreSQL schema and migrations committed successfully. (${tablesCount} tables in public schema)`,
+      tablesCount,
+      appliedMigrations
     };
   } finally {
-    client.release();
+    if (lockAcquired) {
+      try {
+        await client.query("SELECT pg_advisory_unlock($1);", [RTIQA_MIGRATION_ADVISORY_LOCK_ID]);
+        console.log("[Migration]: Advisory lock released successfully.");
+      } catch (unlockErr) {
+        console.error("[Migration Fatal]: Failed to release advisory lock. Destroying client connection to free locks:", unlockErr);
+        clientDestroyRequired = true;
+      }
+    }
+    if (clientDestroyRequired) {
+      client.release(true);
+      console.log("[Migration]: Client connection destroyed safely.");
+    } else {
+      client.release();
+    }
   }
 }
 async function getMigrationStatus() {
@@ -5155,13 +5206,21 @@ async function getMigrationStatus() {
     };
   }
 }
+var RTIQA_MIGRATION_ADVISORY_LOCK_ID;
 var init_migrate = __esm({
   "src/db/migrate.ts"() {
     init_postgres();
+    RTIQA_MIGRATION_ADVISORY_LOCK_ID = 8274619;
     if (process.argv[1] && process.argv[1].endsWith("migrate.ts")) {
       runMigrations().then((res) => {
         console.log("[Migration Result]:", res);
-        process.exit(res.success ? 0 : 1);
+        if (!res.success) {
+          process.exit(1);
+        }
+        process.exit(0);
+      }).catch((err) => {
+        console.error("[Migration Fatal]:", err instanceof Error ? err.message : String(err));
+        process.exit(1);
       });
     }
   }
