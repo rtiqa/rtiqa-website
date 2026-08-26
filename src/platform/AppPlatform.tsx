@@ -83,6 +83,21 @@ const PlatformRoot: React.FC<AppPlatformProps> = ({ onExitPlatform }) => {
     return <PlatformLoginPage onBackToMarketing={onExitPlatform} />;
   }
 
+  // Automatic routing for users without an active organization (e.g. newly registered or Google auth users)
+  const isUserWithoutOrg =
+    user.role === 'PENDING' ||
+    user.role === 'GUEST' ||
+    (!user.organizationId && user.role !== 'SUPER_ADMIN');
+
+  if (isUserWithoutOrg) {
+    return (
+      <OnboardingWizardPage
+        onBackToLogin={onExitPlatform}
+        onSuccess={() => navigate('dashboard')}
+      />
+    );
+  }
+
   // Role-Based Authorization Guard
   if (!isAllowed(currentPage)) {
     return (

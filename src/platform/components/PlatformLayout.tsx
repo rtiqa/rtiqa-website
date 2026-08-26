@@ -61,9 +61,11 @@ export const PlatformLayout: React.FC<PlatformLayoutProps> = ({
     TEACHER: { ar: 'معلم', en: 'Teacher', color: 'blue' as const },
     STUDENT: { ar: 'طالب', en: 'Student', color: 'amber' as const },
     PARENT: { ar: 'ولي أمر', en: 'Parent', color: 'slate' as const },
+    PENDING: { ar: 'حساب شخصي', en: 'Personal Account', color: 'slate' as const },
+    GUEST: { ar: 'حساب زائر', en: 'Guest', color: 'slate' as const },
   };
 
-  const currentRole = roleLabels[user.role] || roleLabels.STUDENT;
+  const currentRole = roleLabels[user.role as keyof typeof roleLabels] || roleLabels.STUDENT;
 
   // Role-based Nav items
   const navItems: { id: PlatformPage; label: string; icon: any; roles?: string[]; badge?: string }[] = [

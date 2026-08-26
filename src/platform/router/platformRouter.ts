@@ -41,11 +41,14 @@ export const ROLE_ROUTE_PERMISSIONS: Record<PlatformPage, UserRole[]> = {
   users: ['SUPER_ADMIN', 'ORG_ADMIN'],
   academic: ['SUPER_ADMIN', 'ORG_ADMIN'],
   settings: ['SUPER_ADMIN', 'ORG_ADMIN'],
-  onboarding: ['SUPER_ADMIN', 'ORG_ADMIN'],
+  onboarding: ['SUPER_ADMIN', 'ORG_ADMIN', 'PENDING', 'GUEST'],
 };
 
 export function isRouteAllowedForRole(page: PlatformPage, role?: UserRole): boolean {
   if (!role) return false;
+  if (role === 'PENDING' || role === 'GUEST') {
+    return page === 'onboarding';
+  }
   const allowed = ROLE_ROUTE_PERMISSIONS[page];
   if (!allowed) return true;
   return allowed.includes(role);

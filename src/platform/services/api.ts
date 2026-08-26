@@ -429,6 +429,21 @@ class PlatformApiClient {
     return res;
   }
 
+  async joinSchool(inviteCode: string) {
+    const res = await this.request<{ success: boolean; token: string; user: User; organization: Organization; message: string }>(
+      '/auth/join-school',
+      {
+        method: 'POST',
+        body: JSON.stringify({ inviteCode }),
+      }
+    );
+    this.setToken(res.token);
+    if (res.organization?.slug) {
+      this.setTenantSlug(res.organization.slug);
+    }
+    return res;
+  }
+
   // --- Health & Diagnostic ---
   async getHealth() {
     const res = await fetch('/api/v1/health');

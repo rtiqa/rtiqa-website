@@ -50,6 +50,7 @@ interface AuthContextType {
     password?: string;
     countryCode?: string;
   }) => Promise<void>;
+  joinSchool: (inviteCode: string) => Promise<void>;
   acceptInvitation: (data: { code: string; fullName?: string; password: string }) => Promise<void>;
   logout: () => Promise<void>;
   setTenantSlug: (slug: string) => void;
@@ -447,6 +448,24 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  const joinSchool = async (inviteCode: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await platformApi.joinSchool(inviteCode);
+      setUser(res.user);
+      setOrganization(res.organization);
+      if (res.organization?.slug) {
+        setTenantSlugState(res.organization.slug);
+      }
+    } catch (err: any) {
+      setError(err.message || 'فشل الانضمام إلى المدرسة');
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const acceptInvitation = async (data: { code: string; fullName?: string; password: string }) => {
     setIsLoading(true);
     setError(null);
@@ -513,6 +532,7 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         updateProfile,
         demoSwitch,
         registerSchool,
+        joinSchool,
         acceptInvitation,
         logout,
         setTenantSlug,
