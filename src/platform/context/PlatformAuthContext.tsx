@@ -468,8 +468,10 @@ export const PlatformAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     try {
       await platformApi.logout();
     } finally {
+      platformApi.setToken(null);
       setUser(null);
       setOrganization(null);
+      setActiveContext(null);
       setIsLoading(false);
     }
   };
