@@ -6026,6 +6026,30 @@ function isSuperAdminEmail(email) {
   if (configuredAdmins.length === 0) return false;
   return configuredAdmins.includes(email.trim().toLowerCase());
 }
+function generateLoginContext(user) {
+  const memberships = db.getMembershipsByUserId(user.id);
+  const isSuperAdmin = user.role === "SUPER_ADMIN";
+  const requiresOnboarding = !isSuperAdmin && memberships.length === 0;
+  let token;
+  let activeMembership = void 0;
+  let org = void 0;
+  if (isSuperAdmin) {
+    token = generateToken(user, void 0, "SUPER_ADMIN", void 0, "PERSONAL");
+  } else if (memberships.length > 0) {
+    activeMembership = memberships.find((m) => m.isDefault && m.status === "ACTIVE") || memberships.find((m) => m.status === "ACTIVE") || memberships[0];
+    token = generateToken(
+      user,
+      activeMembership.organizationId,
+      activeMembership.role,
+      activeMembership.id,
+      "ORGANIZATION"
+    );
+    org = db.getOrganizationById(activeMembership.organizationId);
+  } else {
+    token = generateToken(user, void 0, user.role, void 0, "PERSONAL");
+  }
+  return { token, activeMembership, org, requiresOnboarding };
+}
 authRouter.post("/login", loginLimiter, (req, res) => {
   try {
     const { email, identifier, phone, password, tenantSlug } = req.body;
@@ -6076,14 +6100,14 @@ authRouter.post("/login", loginLimiter, (req, res) => {
         user = updatedUser;
       }
     }
-    const org = db.getOrganizationById(user.organizationId);
-    const token = generateToken(user);
-    db.logAction(user.organizationId, user.id, user.email, "LOGIN", "User", user.id, {}, req.ip);
+    const { token, org, requiresOnboarding } = generateLoginContext(user);
+    db.logAction(org?.id || "platform", user.id, user.email, "LOGIN", "User", user.id, {}, req.ip);
     return res.json({
       success: true,
       token,
       user: formatUserResponse(user),
-      organization: org
+      organization: org,
+      requiresOnboarding
     });
   } catch {
     return res.status(500).json({ success: false, error: "SERVER_ERROR" });
@@ -6185,7 +6209,7 @@ authRouter.post("/register", registerLimiter, (req, res) => {
       authProviders: providers.length > 0 ? providers : ["email"],
       isActive: true
     });
-    const token = generateToken(newUser);
+    const { token, org: generatedOrg, requiresOnboarding } = generateLoginContext(newUser);
     let verificationSent = false;
     if (cleanEmail) {
       const rawToken = generateSecureToken(24);
@@ -6198,7 +6222,8 @@ authRouter.post("/register", registerLimiter, (req, res) => {
       success: true,
       token,
       user: formatUserResponse(newUser),
-      organization: org,
+      organization: generatedOrg || org,
+      requiresOnboarding,
       verificationSent,
       message: "\u062A\u0645 \u0625\u0646\u0634\u0627\u0621 \u0627\u0644\u062D\u0633\u0627\u0628 \u0628\u0646\u062C\u0627\u062D"
     });
@@ -6317,14 +6342,14 @@ authRouter.post("/phone/otp/verify", loginLimiter, (req, res) => {
       db.linkAccountProvider(user.id, "phone", { phone: phoneNorm.e164 });
       user = db.getUserById(user.id);
     }
-    const org = db.getOrganizationById(user.organizationId);
-    const token = generateToken(user);
-    db.logAction(user.organizationId, user.id, user.email, "LOGIN_PHONE_OTP", "User", user.id, { phone: phoneNorm.e164 }, req.ip);
+    const { token, org, requiresOnboarding } = generateLoginContext(user);
+    db.logAction(org?.id || "platform", user.id, user.email, "LOGIN_PHONE_OTP", "User", user.id, { phone: phoneNorm.e164 }, req.ip);
     return res.json({
       success: true,
       token,
       user: formatUserResponse(user),
       organization: org,
+      requiresOnboarding,
       message: "\u062A\u0645 \u0627\u0644\u062A\u062D\u0642\u0642 \u0648\u062A\u0633\u062C\u064A\u0644 \u0627\u0644\u062F\u062E\u0648\u0644 \u0628\u0646\u062C\u0627\u062D"
     });
   } catch {
@@ -6444,11 +6469,8 @@ var handleGoogleCallback = async (req, res) => {
         });
       }
     }
-    const memberships = db.getMembershipsByUserId(user.id);
-    const isNewUserPendingOnboarding = memberships.length === 0;
-    const org = user.organizationId ? db.getOrganizationById(user.organizationId) : void 0;
-    const token = generateToken(user);
-    const logOrgId = user.organizationId || "platform";
+    const { token, org, requiresOnboarding: isNewUserPendingOnboarding } = generateLoginContext(user);
+    const logOrgId = org?.id || "platform";
     db.logAction(logOrgId, user.id, user.email, "LOGIN_GOOGLE", "User", user.id, {
       googleSub: profile.sub,
       isPendingOnboarding: isNewUserPendingOnboarding
@@ -6569,11 +6591,8 @@ authRouter.post("/google/verify-credential", loginLimiter, async (req, res) => {
         });
       }
     }
-    const memberships = db.getMembershipsByUserId(user.id);
-    const isNewUserPendingOnboarding = memberships.length === 0;
-    const org = user.organizationId ? db.getOrganizationById(user.organizationId) : void 0;
-    const token = generateToken(user);
-    const logOrgId = user.organizationId || "platform";
+    const { token, org, requiresOnboarding: isNewUserPendingOnboarding } = generateLoginContext(user);
+    const logOrgId = org?.id || "platform";
     db.logAction(logOrgId, user.id, user.email, "LOGIN_GOOGLE_CREDENTIAL", "User", user.id, {
       isPendingOnboarding: isNewUserPendingOnboarding
     }, req.ip);
@@ -7071,12 +7090,13 @@ authRouter.post("/demo-switch", (req, res) => {
     if (!user) {
       return res.status(404).json({ success: false, error: "USER_NOT_FOUND" });
     }
-    const token = generateToken(user);
+    const { token, org: generatedOrg, requiresOnboarding } = generateLoginContext(user);
     return res.json({
       success: true,
       token,
       user: formatUserResponse(user),
-      organization: org
+      organization: generatedOrg || org,
+      requiresOnboarding
     });
   } catch {
     return res.status(500).json({ success: false, error: "SERVER_ERROR" });
