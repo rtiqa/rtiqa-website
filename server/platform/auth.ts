@@ -149,9 +149,10 @@ export const platformAuthMiddleware = (
     const verified = decodeAndVerifyToken(token);
 
     if (verified) {
-      const baseUser = db.getUserById(verified.uid, verified.oid);
+      // 1. Identify user strictly by verified.uid (Universal Identity)
+      const baseUser = db.getUserById(verified.uid);
       if (baseUser && baseUser.isActive) {
-        // If the context is explicitly PERSONAL:
+        // If the context is explicitly PERSONAL (or no oid/mid provided):
         if (verified.ctx === 'PERSONAL' || (!verified.oid && !verified.mid)) {
           const userRole = baseUser.role || 'GUEST';
           req.user = {
@@ -177,7 +178,7 @@ export const platformAuthMiddleware = (
           }
         }
 
-        // Fallback: If no valid mid, check by (userId, oid)
+        // Lookup active membership by (userId, oid)
         if (!activeMembership && verified.oid) {
           const m = db.getMembership(baseUser.id, verified.oid);
           if (m && m.status === 'ACTIVE') {
@@ -185,6 +186,7 @@ export const platformAuthMiddleware = (
           }
         }
 
+        // If active membership found for this organization
         if (activeMembership) {
           const org = db.getOrganizationById(activeMembership.organizationId);
           if (org && org.isActive) {
@@ -212,28 +214,29 @@ export const platformAuthMiddleware = (
           }
         }
 
-        // Fallback for super admin or users with organizationId on user model
-        if (verified.oid) {
+        // Special handling for SUPER_ADMIN when operating on any organization
+        if (baseUser.role === 'SUPER_ADMIN' && verified.oid) {
           const org = db.getOrganizationById(verified.oid);
-          if (org) {
+          if (org && org.isActive) {
             req.organization = org;
             req.user = {
               ...baseUser,
               organizationId: org.id,
-              role: verified.role || baseUser.role,
+              role: 'SUPER_ADMIN',
             };
             req.activeContext = {
               type: 'ORGANIZATION',
               organizationId: org.id,
               organization: org,
-              role: req.user.role,
+              role: 'SUPER_ADMIN',
               isPersonal: false,
             };
             return next();
           }
         }
 
-        // If no active membership in specified org, user is authenticated in personal context
+        // If token specified an oid/mid where the user has NO active membership (and is not SUPER_ADMIN),
+        // authenticate user in PERSONAL/GUEST context without granting access to the requested org
         req.user = {
           ...baseUser,
           organizationId: undefined,

@@ -5319,7 +5319,7 @@ var platformAuthMiddleware = (req, res, next) => {
     const token = authHeader.substring(7).trim();
     const verified = decodeAndVerifyToken(token);
     if (verified) {
-      const baseUser = db.getUserById(verified.uid, verified.oid);
+      const baseUser = db.getUserById(verified.uid);
       if (baseUser && baseUser.isActive) {
         if (verified.ctx === "PERSONAL" || !verified.oid && !verified.mid) {
           const userRole = baseUser.role || "GUEST";
@@ -5375,20 +5375,20 @@ var platformAuthMiddleware = (req, res, next) => {
             return next();
           }
         }
-        if (verified.oid) {
+        if (baseUser.role === "SUPER_ADMIN" && verified.oid) {
           const org = db.getOrganizationById(verified.oid);
-          if (org) {
+          if (org && org.isActive) {
             req.organization = org;
             req.user = {
               ...baseUser,
               organizationId: org.id,
-              role: verified.role || baseUser.role
+              role: "SUPER_ADMIN"
             };
             req.activeContext = {
               type: "ORGANIZATION",
               organizationId: org.id,
               organization: org,
-              role: req.user.role,
+              role: "SUPER_ADMIN",
               isPersonal: false
             };
             return next();
