@@ -125,8 +125,9 @@ export class AIService {
     let ragContextText = '';
     if (options.includeRAG && (courseId || lessonId)) {
       try {
-        const similarChunks = await RAGService.searchSimilarChunks({
-          organizationId: organization.id,
+        const membership = db.getMembership(user.id, organization.id);
+        if (!membership) throw new Error("Membership not found");
+        const similarChunks = await RAGService.secureSearch(user, membership, {
           query: prompt,
           topK: 2,
         });

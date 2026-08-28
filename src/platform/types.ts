@@ -142,6 +142,9 @@ export interface Classroom {
 export interface Subject {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   name: string;
   code: string;
   color?: string;
@@ -151,6 +154,9 @@ export interface Subject {
 export interface Course {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   subjectId: string;
   termId: string;
   teacherId?: string;
@@ -324,6 +330,9 @@ export interface ParentStudentLink {
 export interface Lesson {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   courseId: string;
   unitId?: string;
   unitTitle?: string;
@@ -430,6 +439,9 @@ export type AssessmentStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
 export interface Assessment {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   courseId: string;
   courseTitle?: string;
   subjectId?: string;
@@ -792,6 +804,9 @@ export type LibraryResourceStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export interface CurriculumUnit {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   courseId: string;
   courseTitle?: string;
   title: string;
@@ -805,6 +820,9 @@ export interface CurriculumUnit {
 export interface LibraryResource {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   title: string;
   description?: string;
   resourceType: LibraryResourceType;

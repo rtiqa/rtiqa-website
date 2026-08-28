@@ -287,18 +287,26 @@ describe('Rtiqa AI Engine - Comprehensive Suite (Multi-Tenant, Security, Safety 
       });
 
       // Horizon search for "كيبلر"
-      const horizonSearch = await RAGService.searchSimilarChunks({
-        organizationId: horizonOrg.id,
+      
+      const hUser = db.createUser({ email: 'h@test.com', fullName: 'H', role: 'STUDENT', isActive: true });
+      const hMem = db.createMembership({ userId: hUser.id, organizationId: horizonOrg.id, role: 'STUDENT', isDefault: true, status: 'ACTIVE' });
+      
+      const horizonSearch = await RAGService.secureSearch(hUser, hMem, {
         query: 'كيبلر والأجرام السماوية',
       });
+
       assert.strictEqual(horizonSearch.length, 1);
       assert.strictEqual(horizonSearch[0].chunk.documentId, 'doc_math_1');
 
+      
+      const eUser = db.createUser({ email: 'e@test.com', fullName: 'E', role: 'STUDENT', isActive: true });
+      const eMem = db.createMembership({ userId: eUser.id, organizationId: eliteOrg.id, role: 'STUDENT', isDefault: true, status: 'ACTIVE' });
+
       // Elite search for "كيبلر" -> should return 0 results
-      const eliteSearch = await RAGService.searchSimilarChunks({
-        organizationId: eliteOrg.id,
+      const eliteSearch = await RAGService.secureSearch(eUser, eMem, {
         query: 'كيبلر والأجرام السماوية',
       });
+
       assert.strictEqual(eliteSearch.length, 0);
     });
   });

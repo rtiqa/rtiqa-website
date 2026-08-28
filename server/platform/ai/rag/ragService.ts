@@ -1,6 +1,9 @@
 import { db } from '../../db.ts';
-import type { AIDocumentChunk } from '../../types.ts';
+import type { AIDocumentChunk, User, OrganizationMembership, AIUsageRecord } from '../../types.ts';
 import { providerRegistry } from '../gateway/registry.ts';
+import { RAGAuthZ } from './ragAuthZ.ts';
+import { getVectorStore, VectorStoreSearchParams, VectorSearchResult } from './vectorStore.ts';
+import { CurriculumResolver } from '../../curriculumResolver.ts';
 
 export interface ChunkingOptions {
   chunkSize?: number;
@@ -13,32 +16,25 @@ export interface SearchResult {
 }
 
 export interface SearchParams {
-  organizationId: string;
   query: string;
   topK?: number;
   documentId?: string;
   minScore?: number;
+  courseIds?: string[]; // Course/Context isolation
 }
 
 export class RAGService {
-  /**
-   * Split document text into overlapping chunks
-   */
   public static chunkText(text: string, options: ChunkingOptions = {}): string[] {
     const chunkSize = options.chunkSize || 500;
     const overlap = options.chunkOverlap || 50;
-
     if (!text || text.length <= chunkSize) {
       return [text.trim()];
     }
-
     const chunks: string[] = [];
     let start = 0;
-
     while (start < text.length) {
       let end = start + chunkSize;
       if (end < text.length) {
-        // Try to break at paragraph, sentence, or word boundary
         const nextBreak = text.lastIndexOf('\n', end);
         if (nextBreak > start + overlap) {
           end = nextBreak;
@@ -49,49 +45,56 @@ export class RAGService {
           }
         }
       }
-
       const chunk = text.substring(start, end).trim();
       if (chunk.length > 0) {
         chunks.push(chunk);
       }
-
       start = end - overlap;
       if (start >= text.length - overlap) break;
     }
-
     return chunks;
   }
 
-  /**
-   * Index educational document for a specific tenant
-   */
   public static async indexDocument(params: {
     organizationId: string;
     documentId: string;
+    sourceId?: string;
+    sourceType?: string;
+    sourceVisibility?: string;
+    courseIds?: string[];
+    userId?: string;
     title: string;
     content: string;
     metadata?: Record<string, unknown>;
   }): Promise<AIDocumentChunk[]> {
-    const { organizationId, documentId, title, content, metadata } = params;
+    const { organizationId, documentId, sourceId, sourceType, sourceVisibility, courseIds, userId, title, content, metadata } = params;
+    
+    if (sourceType === 'AI_CONVERSATION' && !userId) {
+      throw new Error('AI conversation indexing requires a mandatory userId for privacy and access control.');
+    }
+
     const textChunks = this.chunkText(content);
     const provider = providerRegistry.getProvider('gemini');
     const createdChunks: AIDocumentChunk[] = [];
+    const store = getVectorStore();
 
     for (let i = 0; i < textChunks.length; i++) {
       const chunkText = textChunks[i];
       let embedding: number[] | undefined;
+      
       if (provider.embedText) {
-        try {
-          embedding = await provider.embedText(chunkText);
-        } catch {
-          embedding = undefined;
-        }
+        embedding = await provider.embedText(chunkText);
       }
 
       const chunkRecord: AIDocumentChunk = {
-        id: `chk_${documentId}_${i}_${Date.now()}`,
+        id: `chk_${documentId}_${i}_${Date.now()}_${Math.random().toString(36).substring(2,7)}`,
         organizationId,
         documentId,
+        sourceId,
+        sourceType,
+        sourceVisibility,
+        courseIds,
+        userId,
         title,
         content: chunkText,
         chunkIndex: i,
@@ -99,68 +102,87 @@ export class RAGService {
         metadata: {
           ...metadata,
           indexedAt: new Date().toISOString(),
+          embeddingModel: provider.name,
         },
         createdAt: new Date().toISOString(),
       };
-
-      db.createAIDocumentChunk(chunkRecord);
+      
+      await store.indexChunk(chunkRecord);
       createdChunks.push(chunkRecord);
     }
-
     return createdChunks;
   }
 
-  /**
-   * Vector similarity search constrained strictly by tenant (organizationId)
-   */
-  public static async searchSimilarChunks(params: SearchParams): Promise<SearchResult[]> {
-    const { organizationId, query, topK = 3, documentId, minScore = 0.35 } = params;
+  public static async deleteBySource(organizationId: string, sourceId: string): Promise<void> {
+      await getVectorStore().deleteBySource(organizationId, sourceId);
+  }
+
+  public static async secureSearch(
+    activeUser: User,
+    activeMembership: OrganizationMembership,
+    params: SearchParams
+  ): Promise<SearchResult[]> {
+    const startTime = Date.now();
+    const { query, topK = 3, documentId, minScore = 0.35, courseIds } = params;
+    
+    const orgId = activeMembership.organizationId;
     const provider = providerRegistry.getProvider('gemini');
+    
+    
+
+    // Record AI Usage
+    let inputTokens = query.length / 4;
+    let outputTokens = 0;
+    let embeddingStart = Date.now();
+    
     const queryEmbedding = provider.embedText ? await provider.embedText(query) : [];
+    
+    const latencyMs = Date.now() - embeddingStart;
+    db.recordAIUsage({
+      id: `ai_use_${Date.now()}_${Math.random().toString(36).substring(2,7)}`,
+      createdAt: new Date().toISOString(),
+      organizationId: orgId,
+      userId: activeUser.id,
+      membershipId: activeMembership.id,
+      provider: 'gemini',
+      model: 'embedding',
+      featureName: 'RAG_SEARCH' as any,
+      inputTokens: Math.ceil(inputTokens),
+      outputTokens,
+      estimatedCost: 0,
+      latencyMs,
+      status: 'SUCCESS'
+    });
 
-    // Query chunks strictly from the caller's organization
-    const chunks = db.getAIDocumentChunks(organizationId, documentId);
+    // 2. Query VectorStore
+    const searchParams: VectorStoreSearchParams = {
+        queryEmbedding,
+        queryText: query,
+        topK: topK * 3, // Fetch extra for post-filtering
+        filter: {
+            organizationIds: [orgId, 'platform'],
+            courseIds,
+            
+            userId: activeUser.id,
+            embeddingModel: provider.name
+        }
+    };
+    
+    const store = getVectorStore();
+    const candidates = await store.search(searchParams);
 
+    // 3. Post-Filtering / AuthZ Mirroring (Strictly preserving original authorization boundary)
     const scored: SearchResult[] = [];
-    for (const chunk of chunks) {
-      const keywordScore = this.keywordSimilarity(query, chunk.content);
-      let score = 0;
-      if (chunk.embedding && queryEmbedding.length === chunk.embedding.length && queryEmbedding.length > 0) {
-        const cosine = this.cosineSimilarity(queryEmbedding, chunk.embedding);
-        score = keywordScore > 0 ? (cosine * 0.4 + keywordScore * 0.6) : (cosine * 0.5);
-      } else {
-        score = keywordScore;
+    for (const res of candidates) {
+      if (!RAGAuthZ.canAccessChunk(activeUser, activeMembership, res.chunk)) {
+        continue;
       }
-      if (score >= minScore) {
-        scored.push({ chunk, score });
+      
+      if (res.score >= minScore) {
+        scored.push({ chunk: res.chunk, score: res.score });
       }
     }
-
-    scored.sort((a, b) => b.score - a.score);
+    
     return scored.slice(0, topK);
-  }
-
-  private static cosineSimilarity(vecA: number[], vecB: number[]): number {
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      normA += vecA[i] * vecA[i];
-      normB += vecB[i] * vecB[i];
-    }
-    if (normA === 0 || normB === 0) return 0;
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-  }
-
-  private static keywordSimilarity(query: string, text: string): number {
-    const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
-    if (queryWords.length === 0) return 0;
-    const textLower = text.toLowerCase();
-    let matches = 0;
-    for (const w of queryWords) {
-      if (textLower.includes(w)) matches++;
-    }
-    return matches / queryWords.length;
   }
 }

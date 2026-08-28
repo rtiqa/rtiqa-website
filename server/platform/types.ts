@@ -181,6 +181,9 @@ export interface Classroom {
 export interface Subject {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   name: string; // e.g. 'الرياضيات المتقدمة / Advanced Mathematics'
   code: string; // e.g. 'MATH-10'
   color?: string;
@@ -190,6 +193,9 @@ export interface Subject {
 export interface Course {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   subjectId: string;
   termId: string;
   teacherId?: string;
@@ -359,6 +365,9 @@ export interface ParentStudentLink {
 export interface Lesson {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   courseId: string;
   unitId?: string;
   unitTitle?: string;
@@ -461,6 +470,9 @@ export type AssessmentStatus = 'DRAFT' | 'PUBLISHED' | 'CLOSED' | 'ARCHIVED';
 export interface Assessment {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   courseId: string;
   courseTitle?: string;
   subjectId?: string;
@@ -666,6 +678,7 @@ export interface AIUsageRecord {
   id: string;
   organizationId: string;
   userId: string;
+  membershipId?: string; // Links usage to the active context of the user
   provider: string;
   model: string;
   featureName: AIFeatureType;
@@ -680,7 +693,12 @@ export interface AIUsageRecord {
 export interface AIDocumentChunk {
   id: string;
   organizationId: string;
-  documentId: string;
+  documentId: string; // The original resource ID (Lesson, LibraryResource, etc.)
+  sourceId?: string; // Explicit source mapping for AuthZ post-filtering
+  sourceType?: string; // e.g., 'LESSON', 'LIBRARY_RESOURCE', 'ASSESSMENT', 'AI_CONVERSATION'
+  sourceVisibility?: string; // Inherited visibility from the source (e.g., 'PUBLIC_SCHOOL', 'COURSE_STUDENTS')
+  courseIds?: string[]; // To constrain searches within specific courses
+  userId?: string; // Mandatory security field when sourceType === 'AI_CONVERSATION'
   title: string;
   content: string;
   chunkIndex: number;
@@ -785,6 +803,9 @@ export type LibraryResourceStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 export interface CurriculumUnit {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   courseId: string;
   courseTitle?: string;
   title: string;
@@ -798,6 +819,9 @@ export interface CurriculumUnit {
 export interface LibraryResource {
   id: string;
   organizationId: string;
+  isGlobal?: boolean;
+  globalReferenceId?: string;
+  globalVersion?: number;
   title: string;
   description?: string;
   resourceType: LibraryResourceType;

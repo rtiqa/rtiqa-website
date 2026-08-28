@@ -277,11 +277,13 @@ var init_security = __esm({
 });
 
 // server/platform/db.ts
-var PlatformDatabase, db;
+import crypto2 from "node:crypto";
+var generateId, PlatformDatabase, db;
 var init_db = __esm({
   "server/platform/db.ts"() {
     init_postgres();
     init_security();
+    generateId = (prefix) => `${prefix}_${crypto2.randomUUID().replace(/-/g, "").substring(0, 16)}`;
     PlatformDatabase = class {
       constructor() {
         this.organizations = /* @__PURE__ */ new Map();
@@ -2321,7 +2323,7 @@ var init_db = __esm({
         return s;
       }
       createSubject(data) {
-        const id = `sub_${Date.now()}`;
+        const id = generateId("sub");
         const item = { ...data, id };
         this.subjects.set(id, item);
         return item;
@@ -2354,7 +2356,7 @@ var init_db = __esm({
         return course;
       }
       createCourse(data) {
-        const id = `crs_${Date.now()}`;
+        const id = generateId("crs");
         const subject = data.subjectId ? this.subjects.get(data.subjectId) : void 0;
         const teacher = data.teacherId ? this.users.get(data.teacherId) : void 0;
         const classroom = data.classroomId ? this.classrooms.get(data.classroomId) : void 0;
@@ -2763,7 +2765,7 @@ var init_db = __esm({
         return lesson;
       }
       createLesson(data) {
-        const id = `les_${Date.now()}`;
+        const id = generateId("les");
         const now = (/* @__PURE__ */ new Date()).toISOString();
         const lesson = { ...data, id, createdAt: now, updatedAt: now };
         this.lessons.set(id, lesson);
@@ -3972,6 +3974,13 @@ var init_db = __esm({
         this.aiDocumentChunks.set(chunk.id, chunk);
         return chunk;
       }
+      deleteAIDocumentChunksBySource(organizationId, sourceId) {
+        for (const [id, chunk] of this.aiDocumentChunks.entries()) {
+          if (chunk.organizationId === organizationId && chunk.sourceId === sourceId) {
+            this.aiDocumentChunks.delete(id);
+          }
+        }
+      }
       getAIDocumentChunks(organizationId, documentId) {
         return Array.from(this.aiDocumentChunks.values()).filter((c) => c.organizationId === organizationId && (!documentId || c.documentId === documentId)).sort((a, b) => a.chunkIndex - b.chunkIndex);
       }
@@ -4289,7 +4298,7 @@ var init_db = __esm({
         };
       }
       createUnit(data) {
-        const id = `unit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const id = generateId("unit");
         const now = (/* @__PURE__ */ new Date()).toISOString();
         const course = this.courses.get(data.courseId);
         const unit = {
@@ -4678,7 +4687,7 @@ __export(service_exports, {
   getStorageService: () => getStorageService,
   resetStorageServiceForTesting: () => resetStorageServiceForTesting
 });
-import crypto4 from "crypto";
+import crypto5 from "crypto";
 function getStorageService() {
   if (!globalStorageService) {
     globalStorageService = new StorageService();
@@ -4894,7 +4903,7 @@ var init_service = __esm({
             `FILE_SIZE_EXCEEDED: File size of ${sizeBytes} bytes exceeds maximum allowed limit of ${sizeCheck.maxSizeBytes} bytes.`
           );
         }
-        const storageObjectId = `obj_${Date.now()}_${crypto4.randomBytes(8).toString("hex")}`;
+        const storageObjectId = `obj_${Date.now()}_${crypto5.randomBytes(8).toString("hex")}`;
         const sanitizedFilename = this.sanitizeFilename(filename);
         const objectKey = this.generateObjectKey(
           organizationId,
@@ -5236,7 +5245,7 @@ import express15 from "express";
 
 // server/platform/auth.ts
 init_db();
-import crypto2 from "crypto";
+import crypto3 from "crypto";
 var devRuntimeSecret = null;
 function assertProductionAuthSecret() {
   const isProduction = process.env.NODE_ENV === "production";
@@ -5263,7 +5272,7 @@ function getAuthSecret() {
     return envSecret.trim();
   }
   if (!devRuntimeSecret) {
-    devRuntimeSecret = crypto2.randomBytes(32).toString("hex");
+    devRuntimeSecret = crypto3.randomBytes(32).toString("hex");
   }
   return devRuntimeSecret;
 }
@@ -5283,7 +5292,7 @@ function generateToken(user, overrideOrgId, overrideRole, overrideMembershipId, 
   };
   const secret = getAuthSecret();
   const payloadEncoded = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = crypto2.createHmac("sha256", secret).update(payloadEncoded).digest("base64url");
+  const signature = crypto3.createHmac("sha256", secret).update(payloadEncoded).digest("base64url");
   return `${payloadEncoded}.${signature}`;
 }
 function decodeAndVerifyToken(token) {
@@ -5293,10 +5302,10 @@ function decodeAndVerifyToken(token) {
     if (parts.length !== 2) return null;
     const [payloadEncoded, providedSignature] = parts;
     const secret = getAuthSecret();
-    const expectedSignature = crypto2.createHmac("sha256", secret).update(payloadEncoded).digest("base64url");
+    const expectedSignature = crypto3.createHmac("sha256", secret).update(payloadEncoded).digest("base64url");
     const sigBufferA = Buffer.from(providedSignature);
     const sigBufferB = Buffer.from(expectedSignature);
-    if (sigBufferA.length !== sigBufferB.length || !crypto2.timingSafeEqual(sigBufferA, sigBufferB)) {
+    if (sigBufferA.length !== sigBufferB.length || !crypto3.timingSafeEqual(sigBufferA, sigBufferB)) {
       return null;
     }
     const jsonStr = Buffer.from(payloadEncoded, "base64url").toString("utf-8");
@@ -5594,7 +5603,7 @@ function getActiveSmsProvider() {
 var devSmsProviderInstance = new DevConsoleSmsProvider();
 
 // server/platform/googleAuth.ts
-import crypto3 from "crypto";
+import crypto4 from "crypto";
 function getGoogleOAuthCredentials() {
   const clientId = process.env.GOOGLE_CLIENT_ID || process.env.CLIENT_ID || "";
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.CLIENT_SECRET || "";
@@ -5605,7 +5614,7 @@ function getGoogleOAuthCredentials() {
   };
 }
 function generateOAuthState(tenantSlug) {
-  const random = crypto3.randomBytes(16).toString("hex");
+  const random = crypto4.randomBytes(16).toString("hex");
   const payload = {
     random,
     tenantSlug: tenantSlug || "horizon",
@@ -9798,6 +9807,8 @@ var GeminiProvider = class {
     return result;
   }
   async embedText(text) {
+    const EXPECTED_DIMENSION = 768;
+    let embedding = null;
     if (this.aiClient && process.env.NODE_ENV !== "test") {
       try {
         const res = await this.aiClient.models.embedContent({
@@ -9805,19 +9816,23 @@ var GeminiProvider = class {
           contents: text
         });
         if (res?.embedding?.values) {
-          return res.embedding.values;
-        }
-        if (res?.embeddings?.[0]?.values) {
-          return res.embeddings[0].values;
+          embedding = res.embedding.values;
+        } else if (res?.embeddings?.[0]?.values) {
+          embedding = res.embeddings[0].values;
         }
       } catch (err) {
         console.warn("[GeminiProvider] Live embedding error:", err.message);
       }
     }
-    const embedding = new Array(64).fill(0);
-    for (let i = 0; i < text.length; i++) {
-      const charCode = text.charCodeAt(i);
-      embedding[i % 64] = (embedding[i % 64] * 31 + charCode) % 1e3 / 1e3;
+    if (!embedding) {
+      embedding = new Array(EXPECTED_DIMENSION).fill(0);
+      for (let i = 0; i < text.length; i++) {
+        const charCode = text.charCodeAt(i);
+        embedding[i % EXPECTED_DIMENSION] = (embedding[i % EXPECTED_DIMENSION] * 31 + charCode) % 1e3 / 1e3;
+      }
+    }
+    if (embedding.length !== EXPECTED_DIMENSION) {
+      throw new Error(`Embedding dimension mismatch: expected ${EXPECTED_DIMENSION}, but got ${embedding.length}. Invalid vector cannot be stored.`);
     }
     return embedding;
   }
@@ -10330,10 +10345,331 @@ var AIRateLimiterService = class {
 
 // server/platform/ai/rag/ragService.ts
 init_db();
-var RAGService = class {
+
+// server/platform/ai/rag/ragAuthZ.ts
+init_db();
+
+// server/platform/curriculumResolver.ts
+init_db();
+var CurriculumResolver = class {
   /**
-   * Split document text into overlapping chunks
+   * Fetches a course hierarchy. If the course is local and references a global blueprint,
+   * it merges the global lessons with any local overrides.
+   * If orgId is 'platform', it directly fetches the global content.
    */
+  static getResolvedCourseHierarchy(courseId, orgId) {
+    let course = db.getCourseById(courseId, orgId);
+    if (!course && orgId === "platform") {
+      course = db.getCourseById(courseId, "platform");
+    }
+    if (!course) return null;
+    const localUnits = db.getUnitsByCourse(course.id, course.organizationId);
+    const localLessons = db.getLessonsByCourse(course.id, course.organizationId);
+    let globalLessons = [];
+    if (course.globalReferenceId) {
+      globalLessons = db.getLessonsByCourse(course.globalReferenceId, "platform");
+    }
+    const overriddenGlobalLessonIds = /* @__PURE__ */ new Set();
+    for (const lLesson of localLessons) {
+      if (lLesson.globalReferenceId) {
+        overriddenGlobalLessonIds.add(lLesson.globalReferenceId);
+      }
+    }
+    const resolvedLessons = [];
+    for (const gLesson of globalLessons) {
+      if (!overriddenGlobalLessonIds.has(gLesson.id)) {
+        let targetUnitId = gLesson.unitId;
+        if (gLesson.unitId) {
+          const mappedUnit = localUnits.find((u) => u.globalReferenceId === gLesson.unitId);
+          if (mappedUnit) {
+            targetUnitId = mappedUnit.id;
+          }
+        }
+        resolvedLessons.push({
+          ...gLesson,
+          courseId: course.id,
+          unitId: targetUnitId
+          // We keep the ID as gLesson.id because it's unmodified global content.
+        });
+      }
+    }
+    resolvedLessons.push(...localLessons);
+    const resolvedUnitsMap = /* @__PURE__ */ new Map();
+    for (const unit of localUnits) {
+      resolvedUnitsMap.set(unit.id, {
+        ...unit,
+        lessons: []
+      });
+    }
+    const unassignedLessons = [];
+    for (const lesson of resolvedLessons) {
+      if (lesson.unitId && resolvedUnitsMap.has(lesson.unitId)) {
+        resolvedUnitsMap.get(lesson.unitId).lessons.push(lesson);
+      } else {
+        unassignedLessons.push(lesson);
+      }
+    }
+    for (const unit of resolvedUnitsMap.values()) {
+      unit.lessons.sort((a, b) => a.orderIndex - b.orderIndex);
+    }
+    const units = Array.from(resolvedUnitsMap.values()).sort((a, b) => a.orderIndex - b.orderIndex);
+    return {
+      course,
+      units
+    };
+  }
+  /**
+   * Adopts a global course for a specific tenant.
+   * Creates local Course and CurriculumUnits (Forked Spine).
+   * Lessons remain global until overridden.
+   */
+  static adoptGlobalCourse(globalCourseId, orgId, classroomId, termId) {
+    if (orgId === "platform") throw new Error("Cannot adopt a global course into the platform itself");
+    const globalCourse = db.getCourseById(globalCourseId, "platform");
+    if (!globalCourse) throw new Error("Global course not found");
+    const globalUnits = db.getUnitsByCourse(globalCourseId, "platform");
+    const localCourse = db.createCourse({
+      organizationId: orgId,
+      subjectId: globalCourse.subjectId,
+      termId,
+      classroomId,
+      title: globalCourse.title,
+      description: globalCourse.description,
+      isGlobal: false,
+      globalReferenceId: globalCourse.id
+    });
+    for (const gUnit of globalUnits) {
+      db.createUnit({
+        organizationId: orgId,
+        courseId: localCourse.id,
+        title: gUnit.title,
+        description: gUnit.description,
+        orderIndex: gUnit.orderIndex,
+        isPublished: gUnit.isPublished,
+        isGlobal: false,
+        globalReferenceId: gUnit.id
+      });
+    }
+    return localCourse;
+  }
+  /**
+   * Overrides a global lesson with local content.
+   */
+  static createLessonOverride(globalLessonId, orgId, localCourseId, localUnitId, updates) {
+    if (orgId === "platform") throw new Error("Cannot create overrides in the platform context");
+    const globalLesson = db.getLessonById(globalLessonId, "platform");
+    if (!globalLesson) throw new Error("Global lesson not found");
+    const localCourse = db.getCourseById(localCourseId, orgId);
+    if (!localCourse) throw new Error("Local course not found in this organization");
+    if (localCourse.globalReferenceId !== globalLesson.courseId) {
+      throw new Error("Lesson does not belong to the global course associated with this local course");
+    }
+    const localUnit = db.getUnitById(localUnitId, orgId);
+    if (!localUnit) throw new Error("Local unit not found in this organization");
+    if (localUnit.courseId !== localCourseId) {
+      throw new Error("Local unit does not belong to the specified local course");
+    }
+    const localLessons = db.getLessonsByCourse(localCourseId, orgId);
+    if (localLessons.some((l) => l.globalReferenceId === globalLessonId)) {
+      throw new Error("An override already exists for this lesson in this course");
+    }
+    const localLesson = db.createLesson({
+      organizationId: orgId,
+      courseId: localCourseId,
+      unitId: localUnitId,
+      title: updates.title || globalLesson.title,
+      contentHtml: updates.contentHtml !== void 0 ? updates.contentHtml : globalLesson.contentHtml,
+      mediaUrl: updates.mediaUrl !== void 0 ? updates.mediaUrl : globalLesson.mediaUrl,
+      orderIndex: updates.orderIndex !== void 0 ? updates.orderIndex : globalLesson.orderIndex,
+      isPublished: updates.isPublished !== void 0 ? updates.isPublished : globalLesson.isPublished,
+      isGlobal: false,
+      globalReferenceId: globalLesson.id
+    });
+    return localLesson;
+  }
+};
+
+// server/platform/ai/rag/ragAuthZ.ts
+var RAGAuthZ = class {
+  static canAccessChunk(activeUser, activeMembership, chunk) {
+    const orgId = activeMembership.organizationId;
+    const role = activeMembership.role;
+    if (chunk.organizationId !== orgId && chunk.organizationId !== "platform") {
+      return false;
+    }
+    if (chunk.sourceType === "AI_CONVERSATION") {
+      if (!chunk.userId || chunk.userId !== activeUser.id) {
+        return false;
+      }
+    }
+    if (chunk.organizationId === "platform") {
+      if (chunk.sourceType === "LESSON" && chunk.sourceId) {
+        const localCourses = db.getCourses(orgId);
+        let hasOverride = false;
+        for (const course of localCourses) {
+          try {
+            const resolvedHierarchy = CurriculumResolver.getResolvedCourseHierarchy(course.id, orgId);
+            for (const unit of resolvedHierarchy.units) {
+              for (const lesson of unit.lessons) {
+                if (lesson.globalReferenceId === chunk.sourceId && lesson.organizationId === orgId) {
+                  hasOverride = true;
+                  break;
+                }
+              }
+              if (hasOverride) break;
+            }
+          } catch {
+          }
+          if (hasOverride) break;
+        }
+        if (hasOverride) {
+          return false;
+        }
+      }
+      if (chunk.sourceType === "LIBRARY_RESOURCE" && chunk.sourceId) {
+        const lr = db.getLibraryResourceById(chunk.sourceId, "platform");
+        if (!lr) return false;
+        if (lr.status !== "PUBLISHED") return false;
+        if (role === "STUDENT" && (lr.visibility === "PRIVATE" || lr.visibility === "TEACHERS_ONLY")) return false;
+        if (role === "PARENT" && (lr.visibility === "PRIVATE" || lr.visibility === "TEACHERS_ONLY")) return false;
+      }
+    } else {
+      if (chunk.sourceType === "LESSON" && chunk.sourceId) {
+        const lesson = db.getLessonById(chunk.sourceId, orgId);
+        if (!lesson) return false;
+        if (!lesson.isPublished && role === "STUDENT") return false;
+      }
+      if (chunk.sourceType === "LIBRARY_RESOURCE" && chunk.sourceId) {
+        const lr = db.getLibraryResourceById(chunk.sourceId, orgId);
+        if (!lr) return false;
+        if (lr.status !== "PUBLISHED" && role !== "TEACHER" && role !== "ORG_ADMIN") return false;
+        if (role === "STUDENT" && (lr.visibility === "PRIVATE" || lr.visibility === "TEACHERS_ONLY")) return false;
+        if (role === "PARENT" && (lr.visibility === "PRIVATE" || lr.visibility === "TEACHERS_ONLY")) return false;
+      }
+    }
+    if (chunk.sourceVisibility === "PRIVATE" && role !== "TEACHER" && role !== "ORG_ADMIN") {
+      return false;
+    }
+    if (chunk.sourceVisibility === "TEACHERS_ONLY" && (role === "STUDENT" || role === "PARENT")) {
+      return false;
+    }
+    return true;
+  }
+};
+
+// server/platform/ai/rag/inMemoryVectorStore.ts
+init_db();
+var InMemoryVectorStore = class {
+  async indexChunk(chunk) {
+    if (chunk.sourceType === "AI_CONVERSATION" && !chunk.userId) {
+      throw new Error("AI conversation indexing requires a mandatory userId for privacy and access control.");
+    }
+    if (chunk.embedding && chunk.embedding.length !== 768) {
+      throw new Error("Embedding dimension mismatch");
+    }
+    db.createAIDocumentChunk(chunk);
+  }
+  async deleteBySource(organizationId, sourceId) {
+    db.deleteAIDocumentChunksBySource(organizationId, sourceId);
+  }
+  async search(params) {
+    const { queryEmbedding, queryText = "", topK, filter } = params;
+    let allCandidates = [];
+    for (const orgId of filter.organizationIds) {
+      const chunks = db.getAIDocumentChunks(orgId);
+      allCandidates.push(...chunks);
+    }
+    const filtered = allCandidates.filter((chunk) => {
+      if (filter.courseIds && filter.courseIds.length > 0) {
+        if (chunk.courseIds && chunk.courseIds.length > 0) {
+          const intersects = chunk.courseIds.some((cid) => filter.courseIds.includes(cid));
+          if (!intersects) return false;
+        }
+      }
+      if (chunk.sourceType === "AI_CONVERSATION") {
+        if (!chunk.userId || chunk.userId !== filter.userId) {
+          return false;
+        }
+      }
+      if (filter.embeddingModel && chunk.metadata?.embeddingModel) {
+        if (chunk.metadata.embeddingModel !== filter.embeddingModel) {
+          return false;
+        }
+      }
+      return true;
+    });
+    const scored = [];
+    for (const chunk of filtered) {
+      const keywordScore = this.keywordSimilarity(queryText, chunk.content);
+      let score = 0;
+      if (chunk.embedding && queryEmbedding.length === chunk.embedding.length && queryEmbedding.length > 0) {
+        const cosine = this.cosineSimilarity(queryEmbedding, chunk.embedding);
+        score = keywordScore > 0 ? cosine * 0.4 + keywordScore * 0.6 : cosine * 0.5;
+      } else {
+        score = keywordScore;
+      }
+      scored.push({ chunk, score });
+    }
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, topK);
+  }
+  cosineSimilarity(vecA, vecB) {
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+    for (let i = 0; i < vecA.length; i++) {
+      dotProduct += vecA[i] * vecB[i];
+      normA += vecA[i] * vecA[i];
+      normB += vecB[i] * vecB[i];
+    }
+    if (normA === 0 || normB === 0) return 0;
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+  keywordSimilarity(query, text) {
+    const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
+    if (queryWords.length === 0) return 0;
+    const textLower = text.toLowerCase();
+    let matches = 0;
+    for (const w of queryWords) {
+      if (textLower.includes(w)) matches++;
+    }
+    return matches / queryWords.length;
+  }
+};
+
+// server/platform/ai/rag/pgVectorStore.ts
+var PgVectorStore = class {
+  async indexChunk(chunk) {
+    if (chunk.sourceType === "AI_CONVERSATION" && !chunk.userId) {
+      throw new Error("AI conversation indexing requires a mandatory userId for privacy and access control.");
+    }
+    if (chunk.embedding && chunk.embedding.length !== 768) {
+      throw new Error("Embedding dimension mismatch");
+    }
+  }
+  async deleteBySource(organizationId, sourceId) {
+  }
+  async search(params) {
+    return [];
+  }
+};
+
+// server/platform/ai/rag/vectorStore.ts
+var USE_PG_VECTOR = process.env.ENABLE_PG_VECTOR === "true";
+var instance = null;
+function getVectorStore() {
+  if (!instance) {
+    if (USE_PG_VECTOR) {
+      instance = new PgVectorStore();
+    } else {
+      instance = new InMemoryVectorStore();
+    }
+  }
+  return instance;
+}
+
+// server/platform/ai/rag/ragService.ts
+var RAGService = class {
   static chunkText(text, options = {}) {
     const chunkSize = options.chunkSize || 500;
     const overlap = options.chunkOverlap || 50;
@@ -10364,89 +10700,98 @@ var RAGService = class {
     }
     return chunks;
   }
-  /**
-   * Index educational document for a specific tenant
-   */
   static async indexDocument(params) {
-    const { organizationId, documentId, title, content, metadata } = params;
+    const { organizationId, documentId, sourceId, sourceType, sourceVisibility, courseIds, userId, title, content, metadata } = params;
+    if (sourceType === "AI_CONVERSATION" && !userId) {
+      throw new Error("AI conversation indexing requires a mandatory userId for privacy and access control.");
+    }
     const textChunks = this.chunkText(content);
     const provider = providerRegistry.getProvider("gemini");
     const createdChunks = [];
+    const store = getVectorStore();
     for (let i = 0; i < textChunks.length; i++) {
       const chunkText = textChunks[i];
       let embedding;
       if (provider.embedText) {
-        try {
-          embedding = await provider.embedText(chunkText);
-        } catch {
-          embedding = void 0;
-        }
+        embedding = await provider.embedText(chunkText);
       }
       const chunkRecord = {
-        id: `chk_${documentId}_${i}_${Date.now()}`,
+        id: `chk_${documentId}_${i}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
         organizationId,
         documentId,
+        sourceId,
+        sourceType,
+        sourceVisibility,
+        courseIds,
+        userId,
         title,
         content: chunkText,
         chunkIndex: i,
         embedding,
         metadata: {
           ...metadata,
-          indexedAt: (/* @__PURE__ */ new Date()).toISOString()
+          indexedAt: (/* @__PURE__ */ new Date()).toISOString(),
+          embeddingModel: provider.name
         },
         createdAt: (/* @__PURE__ */ new Date()).toISOString()
       };
-      db.createAIDocumentChunk(chunkRecord);
+      await store.indexChunk(chunkRecord);
       createdChunks.push(chunkRecord);
     }
     return createdChunks;
   }
-  /**
-   * Vector similarity search constrained strictly by tenant (organizationId)
-   */
-  static async searchSimilarChunks(params) {
-    const { organizationId, query, topK = 3, documentId, minScore = 0.35 } = params;
+  static async deleteBySource(organizationId, sourceId) {
+    await getVectorStore().deleteBySource(organizationId, sourceId);
+  }
+  static async secureSearch(activeUser, activeMembership, params) {
+    const startTime = Date.now();
+    const { query, topK = 3, documentId, minScore = 0.35, courseIds } = params;
+    const orgId = activeMembership.organizationId;
     const provider = providerRegistry.getProvider("gemini");
+    let inputTokens = query.length / 4;
+    let outputTokens = 0;
+    let embeddingStart = Date.now();
     const queryEmbedding = provider.embedText ? await provider.embedText(query) : [];
-    const chunks = db.getAIDocumentChunks(organizationId, documentId);
+    const latencyMs = Date.now() - embeddingStart;
+    db.recordAIUsage({
+      id: `ai_use_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+      organizationId: orgId,
+      userId: activeUser.id,
+      membershipId: activeMembership.id,
+      provider: "gemini",
+      model: "embedding",
+      featureName: "RAG_SEARCH",
+      inputTokens: Math.ceil(inputTokens),
+      outputTokens,
+      estimatedCost: 0,
+      latencyMs,
+      status: "SUCCESS"
+    });
+    const searchParams = {
+      queryEmbedding,
+      queryText: query,
+      topK: topK * 3,
+      // Fetch extra for post-filtering
+      filter: {
+        organizationIds: [orgId, "platform"],
+        courseIds,
+        userId: activeUser.id,
+        embeddingModel: provider.name
+      }
+    };
+    const store = getVectorStore();
+    const candidates = await store.search(searchParams);
     const scored = [];
-    for (const chunk of chunks) {
-      const keywordScore = this.keywordSimilarity(query, chunk.content);
-      let score = 0;
-      if (chunk.embedding && queryEmbedding.length === chunk.embedding.length && queryEmbedding.length > 0) {
-        const cosine = this.cosineSimilarity(queryEmbedding, chunk.embedding);
-        score = keywordScore > 0 ? cosine * 0.4 + keywordScore * 0.6 : cosine * 0.5;
-      } else {
-        score = keywordScore;
+    for (const res of candidates) {
+      if (!RAGAuthZ.canAccessChunk(activeUser, activeMembership, res.chunk)) {
+        continue;
       }
-      if (score >= minScore) {
-        scored.push({ chunk, score });
+      if (res.score >= minScore) {
+        scored.push({ chunk: res.chunk, score: res.score });
       }
     }
-    scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, topK);
-  }
-  static cosineSimilarity(vecA, vecB) {
-    let dotProduct = 0;
-    let normA = 0;
-    let normB = 0;
-    for (let i = 0; i < vecA.length; i++) {
-      dotProduct += vecA[i] * vecB[i];
-      normA += vecA[i] * vecA[i];
-      normB += vecB[i] * vecB[i];
-    }
-    if (normA === 0 || normB === 0) return 0;
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-  }
-  static keywordSimilarity(query, text) {
-    const queryWords = query.toLowerCase().split(/\s+/).filter((w) => w.length > 2);
-    if (queryWords.length === 0) return 0;
-    const textLower = text.toLowerCase();
-    let matches = 0;
-    for (const w of queryWords) {
-      if (textLower.includes(w)) matches++;
-    }
-    return matches / queryWords.length;
   }
 };
 
@@ -10530,8 +10875,9 @@ var AIService = class {
     let ragContextText = "";
     if (options.includeRAG && (courseId || lessonId)) {
       try {
-        const similarChunks = await RAGService.searchSimilarChunks({
-          organizationId: organization.id,
+        const membership = db.getMembership(user.id, organization.id);
+        if (!membership) throw new Error("Membership not found");
+        const similarChunks = await RAGService.secureSearch(user, membership, {
           query: prompt,
           topK: 2
         });

@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import type {
   Organization,
   User,
@@ -70,6 +71,9 @@ import type { PostgresStatus } from '../../src/db/postgres.ts';
 import { hashPassword } from './security.ts';
 
 // In-Memory & PostgreSQL Dual Storage Engine
+
+const generateId = (prefix: string) => `${prefix}_${crypto.randomUUID().replace(/-/g, '').substring(0, 16)}`;
+
 class PlatformDatabase {
   private organizations: Map<string, Organization> = new Map();
   private users: Map<string, User> = new Map();
@@ -2337,7 +2341,7 @@ class PlatformDatabase {
   }
 
   createSubject(data: Omit<Subject, 'id'>): Subject {
-    const id = `sub_${Date.now()}`;
+    const id = generateId('sub');
     const item: Subject = { ...data, id };
     this.subjects.set(id, item);
     return item;
@@ -2374,8 +2378,8 @@ class PlatformDatabase {
     return course;
   }
 
-  createCourse(data: Omit<Course, 'id'>): Course {
-    const id = `crs_${Date.now()}`;
+  createCourse(data: Omit<Course, 'id' | 'createdAt' | 'updatedAt'>): Course {
+    const id = generateId('crs');
     const subject = data.subjectId ? this.subjects.get(data.subjectId) : undefined;
     const teacher = data.teacherId ? this.users.get(data.teacherId) : undefined;
     const classroom = data.classroomId ? this.classrooms.get(data.classroomId) : undefined;
@@ -2889,7 +2893,7 @@ class PlatformDatabase {
   }
 
   createLesson(data: Omit<Lesson, 'id' | 'createdAt' | 'updatedAt'>): Lesson {
-    const id = `les_${Date.now()}`;
+    const id = generateId('les');
     const now = new Date().toISOString();
     const lesson: Lesson = { ...data, id, createdAt: now, updatedAt: now };
     this.lessons.set(id, lesson);
@@ -4299,6 +4303,14 @@ class PlatformDatabase {
     return chunk;
   }
 
+  deleteAIDocumentChunksBySource(organizationId: string, sourceId: string): void {
+    for (const [id, chunk] of this.aiDocumentChunks.entries()) {
+      if (chunk.organizationId === organizationId && chunk.sourceId === sourceId) {
+        this.aiDocumentChunks.delete(id);
+      }
+    }
+  }
+
   getAIDocumentChunks(organizationId: string, documentId?: string): AIDocumentChunk[] {
     return Array.from(this.aiDocumentChunks.values())
       .filter((c) => c.organizationId === organizationId && (!documentId || c.documentId === documentId))
@@ -4682,7 +4694,7 @@ class PlatformDatabase {
   }
 
   createUnit(data: Omit<CurriculumUnit, 'id' | 'createdAt' | 'updatedAt'>): CurriculumUnit {
-    const id = `unit_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const id = generateId('unit');
     const now = new Date().toISOString();
     const course = this.courses.get(data.courseId);
     const unit: CurriculumUnit = {

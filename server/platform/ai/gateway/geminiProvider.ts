@@ -108,6 +108,10 @@ export class GeminiProvider implements AIProvider {
   }
 
   async embedText(text: string): Promise<number[]> {
+    const EXPECTED_DIMENSION = 768; // Contract for text-embedding-004
+
+    let embedding: number[] | null = null;
+
     if (this.aiClient && process.env.NODE_ENV !== 'test') {
       try {
         const res: any = await this.aiClient.models.embedContent({
@@ -115,22 +119,28 @@ export class GeminiProvider implements AIProvider {
           contents: text,
         });
         if (res?.embedding?.values) {
-          return res.embedding.values;
-        }
-        if (res?.embeddings?.[0]?.values) {
-          return res.embeddings[0].values;
+          embedding = res.embedding.values;
+        } else if (res?.embeddings?.[0]?.values) {
+          embedding = res.embeddings[0].values;
         }
       } catch (err) {
         console.warn('[GeminiProvider] Live embedding error:', (err as Error).message);
       }
     }
 
-    // Deterministic pseudo-embedding for testing/local vector baseline (length 64)
-    const embedding = new Array(64).fill(0);
-    for (let i = 0; i < text.length; i++) {
-      const charCode = text.charCodeAt(i);
-      embedding[i % 64] = ((embedding[i % 64] * 31 + charCode) % 1000) / 1000;
+    if (!embedding) {
+      // Deterministic pseudo-embedding for testing/local vector baseline
+      embedding = new Array(EXPECTED_DIMENSION).fill(0);
+      for (let i = 0; i < text.length; i++) {
+        const charCode = text.charCodeAt(i);
+        embedding[i % EXPECTED_DIMENSION] = ((embedding[i % EXPECTED_DIMENSION] * 31 + charCode) % 1000) / 1000;
+      }
     }
+
+    if (embedding.length !== EXPECTED_DIMENSION) {
+      throw new Error(`Embedding dimension mismatch: expected ${EXPECTED_DIMENSION}, but got ${embedding.length}. Invalid vector cannot be stored.`);
+    }
+
     return embedding;
   }
 
