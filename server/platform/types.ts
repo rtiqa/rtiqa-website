@@ -699,6 +699,7 @@ export interface AIDocumentChunk {
   sourceVisibility?: string; // Inherited visibility from the source (e.g., 'PUBLIC_SCHOOL', 'COURSE_STUDENTS')
   courseIds?: string[]; // To constrain searches within specific courses
   userId?: string; // Mandatory security field when sourceType === 'AI_CONVERSATION'
+  embeddingModel: string;
   title: string;
   content: string;
   chunkIndex: number;

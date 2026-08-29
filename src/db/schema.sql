@@ -548,19 +548,30 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_org_time ON ai_usage(organization_id, cr
 CREATE INDEX IF NOT EXISTS idx_ai_usage_org_user ON ai_usage(organization_id, user_id);
 
 -- 18. AI Document Chunks (RAG Foundation)
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE IF NOT EXISTS ai_document_chunks (
     id VARCHAR(64) PRIMARY KEY,
     organization_id VARCHAR(64) NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     document_id VARCHAR(64) NOT NULL,
+    source_id VARCHAR(64),
+    source_type VARCHAR(64),
+    source_visibility VARCHAR(64),
+    user_id VARCHAR(64) REFERENCES users(id) ON DELETE SET NULL,
+    course_ids VARCHAR(64)[],
+    embedding_model VARCHAR(128) NOT NULL,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
     chunk_index INT DEFAULT 0 NOT NULL,
-    embedding JSONB,
+    embedding vector(768),
     metadata JSONB DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT ai_conv_privacy CHECK (source_type != 'AI_CONVERSATION' OR user_id IS NOT NULL)
 );
 
-CREATE INDEX IF NOT EXISTS idx_ai_chunks_org_doc ON ai_document_chunks(organization_id, document_id);
+CREATE INDEX IF NOT EXISTS idx_ai_chunks_org_source ON ai_document_chunks(organization_id, source_id);
+CREATE INDEX IF NOT EXISTS idx_ai_chunks_user_conv ON ai_document_chunks(user_id) WHERE source_type = 'AI_CONVERSATION';
+CREATE INDEX IF NOT EXISTS idx_ai_chunks_embedding ON ai_document_chunks USING hnsw (embedding vector_cosine_ops) WITH (m = 16, ef_construction = 64);
 
 -- 19. Storage Objects (Multi-Tenant Secure Object Storage Metadata)
 CREATE TABLE IF NOT EXISTS storage_objects (
@@ -811,8 +822,14 @@ CREATE POLICY tenant_isolation_ai_usage ON ai_usage
 -- 18. AI Document Chunks Policy
 DROP POLICY IF EXISTS tenant_isolation_ai_document_chunks ON ai_document_chunks;
 CREATE POLICY tenant_isolation_ai_document_chunks ON ai_document_chunks
-    USING (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''))
-    WITH CHECK (organization_id = NULLIF(current_setting('app.current_tenant_id', true), ''));
+    USING (
+        (organization_id = NULLIF(current_setting('app.current_tenant_id', true), '') OR organization_id = 'platform')
+        AND (source_type != 'AI_CONVERSATION' OR source_type IS NULL OR user_id = NULLIF(current_setting('app.current_user_id', true), ''))
+    )
+    WITH CHECK (
+        organization_id = NULLIF(current_setting('app.current_tenant_id', true), '')
+        AND (source_type != 'AI_CONVERSATION' OR source_type IS NULL OR user_id = NULLIF(current_setting('app.current_user_id', true), ''))
+    );
 
 -- 19. Organization Memberships Policy
 ALTER TABLE organization_memberships ENABLE ROW LEVEL SECURITY;

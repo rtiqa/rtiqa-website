@@ -18,6 +18,7 @@ test('VectorStore Abstraction Contract Test Suite', async (t) => {
         chunkIndex: 0,
         sourceType: isConv ? 'AI_CONVERSATION' : 'DOCUMENT',
         userId,
+        embeddingModel: 'test-model',
         embedding: new Array(768).fill(0.1), // Valid dimension
         createdAt: new Date().toISOString()
     });
@@ -152,10 +153,77 @@ test('VectorStore Abstraction Contract Test Suite', async (t) => {
         assert.ok(results.some(r => r.chunk.organizationId === 'platform'), 'VectorStore returns platform chunks, RAGAuthZ handles overrides');
     });
 
-    await t.test('TEST 12: PgVectorStore returns empty search as Dormant Adapter', async () => {
-        const pgStore = new PgVectorStore();
-        const result = await pgStore.search({ queryEmbedding: [], topK: 3, filter: { organizationIds: ['org1'] } });
-        assert.deepStrictEqual(result, [], 'PgVectorStore should return empty array in dormant mode');
+    await t.test('TEST 12: PGVECTOR ACTIVATION is DISABLED by default', () => {
+        const store = getVectorStore();
+        assert.ok(store instanceof InMemoryVectorStore, 'IN_MEMORY DEFAULT: PRESERVED');
+        assert.ok(!(store instanceof PgVectorStore), 'PGVECTOR ACTIVATION: DISABLED');
     });
 
+    await t.test('TEST 13: PgVectorStore Integration Tests', async (t2) => {
+        const { checkPostgresConnection } = await import('../src/db/postgres.ts');
+        const status = await checkPostgresConnection();
+        
+        if (!status.connected) {
+            console.log('NOT EXECUTED — PostgreSQL unavailable');
+            return;
+        }
+
+        const pgStore = new PgVectorStore();
+        
+        await t2.test('PgVectorStore rejects wrong embedding dimension', async () => {
+            const invalidChunk = {
+                ...createValidChunk('pg_inv_dim', 'org1'),
+                embedding: [0.1, 0.2]
+            };
+            await assert.rejects(pgStore.indexChunk(invalidChunk), /dimension mismatch/);
+        });
+        
+        await t2.test('PgVectorStore rejects AI_CONVERSATION without userId', async () => {
+            const invalidChunk = {
+                ...createValidChunk('pg_inv_usr', 'org1', undefined, true)
+            };
+            await assert.rejects(pgStore.indexChunk(invalidChunk), /mandatory userId/);
+        });
+
+        // The remaining real DB tests (indexChunk, search, delete) would go here
+        // if we decide to mutate the test database, but since we are respecting
+        // 'DATABASE MUTATION: NOT EXECUTED' in this context, we will skip actual writes
+        // unless we have an isolated test database.
+        console.log('REAL POSTGRESQL TESTS: EXECUTED (Validation only, skipping mutation)');
+    });
+
+});
+
+test('Schema Static Validation for PgVector', async (t) => {
+    const fs = await import('fs/promises');
+    const path = await import('path');
+    
+    let schemaSql = '';
+    try {
+        schemaSql = await fs.readFile(path.join(process.cwd(), 'src/db/schema.sql'), 'utf-8');
+    } catch {
+        // Ignore if file doesn't exist in testing env
+    }
+
+    if (schemaSql) {
+        await t.test('schema.sql contains vector extension', () => {
+            assert.ok(schemaSql.includes('CREATE EXTENSION IF NOT EXISTS vector;'), 'Extension must be created');
+        });
+
+        await t.test('schema.sql ai_document_chunks uses vector(768)', () => {
+            assert.ok(schemaSql.includes('embedding vector(768)'), 'Embedding column must be vector(768)');
+        });
+
+        await t.test('schema.sql ai_document_chunks enforces AI conversation privacy constraint', () => {
+            assert.ok(schemaSql.includes('CHECK (source_type != \'AI_CONVERSATION\' OR user_id IS NOT NULL)'), 'Must enforce privacy check constraint');
+        });
+
+        await t.test('schema.sql ai_document_chunks RLS allows platform reads', () => {
+            assert.ok(schemaSql.includes('organization_id = \'platform\''), 'RLS must allow platform reads');
+        });
+        
+        await t.test('schema.sql ai_document_chunks RLS enforces conversation owner', () => {
+            assert.ok(schemaSql.includes('user_id = NULLIF(current_setting(\'app.current_user_id\', true), \'\')'), 'RLS must check current user id');
+        });
+    }
 });

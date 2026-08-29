@@ -39,8 +39,8 @@ export class InMemoryVectorStore implements VectorStore {
           return false;
         }
       }
-      if (filter.embeddingModel && chunk.metadata?.embeddingModel) {
-        if (chunk.metadata.embeddingModel !== filter.embeddingModel) {
+      if (filter.embeddingModel && chunk.embeddingModel) {
+        if (chunk.embeddingModel !== filter.embeddingModel) {
           return false;
         }
       }

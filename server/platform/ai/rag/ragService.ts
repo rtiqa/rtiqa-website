@@ -98,6 +98,7 @@ export class RAGService {
         title,
         content: chunkText,
         chunkIndex: i,
+        embeddingModel: provider.name,
         embedding,
         metadata: {
           ...metadata,
