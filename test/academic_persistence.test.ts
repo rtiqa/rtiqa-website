@@ -54,7 +54,7 @@ describe('Phase 2.4: Academic Operations Restart-Persistence Test Suite', () => 
     const orgId = 'org_horizon_001';
     
     // Create attendance session
-    const session = db.createAttendanceSession({
+    const session = await db.createAttendanceSession({
       organizationId: orgId,
       classroomId: 'class_horizon_10a',
       courseId: 'crs_horizon_math_10a',
@@ -74,7 +74,7 @@ describe('Phase 2.4: Academic Operations Restart-Persistence Test Suite', () => 
     assert.strictEqual(session.title, 'حصة الرياضيات التطبيقية');
 
     // Batch record attendance
-    const records = db.recordAttendanceBatch(
+    const records = await db.recordAttendanceBatch(
       orgId,
       [
         {
@@ -115,7 +115,7 @@ describe('Phase 2.4: Academic Operations Restart-Persistence Test Suite', () => 
     const orgId = 'org_horizon_001';
 
     // Create Assessment
-    const assessment = db.createAssessment({
+    const assessment = await db.createAssessment({
       organizationId: orgId,
       courseId: 'crs_horizon_math_10a',
       subjectId: 'sub_horizon_math',
@@ -135,7 +135,7 @@ describe('Phase 2.4: Academic Operations Restart-Persistence Test Suite', () => 
     assert.strictEqual(assessment.maxScore, 20);
 
     // Record Grade
-    const grade = db.recordAssessmentGrade({
+    const grade = await await db.recordAssessmentGrade({
       organizationId: orgId,
       assessmentId: assessment.id,
       studentId: 'usr_horizon_s_omar',
@@ -149,7 +149,7 @@ describe('Phase 2.4: Academic Operations Restart-Persistence Test Suite', () => 
     assert.strictEqual(grade.percentage, 97.5);
 
     // Update Assessment
-    const updatedAssessment = db.updateAssessment(assessment.id, orgId, {
+    const updatedAssessment = await db.updateAssessment(assessment.id, orgId, {
       title: 'اختبار الوحدة الأولى المحدث',
     });
     assert.strictEqual(updatedAssessment?.title, 'اختبار الوحدة الأولى المحدث');
@@ -165,7 +165,7 @@ describe('Phase 2.4: Academic Operations Restart-Persistence Test Suite', () => 
 
     // 1. Create a unique persistent assessment
     const uniqueTitle = `اختبار التحقق المستمر - ${Date.now()}`;
-    const persistentAssessment = db.createAssessment({
+    const persistentAssessment = await db.createAssessment({
       organizationId: orgId,
       courseId: 'crs_horizon_math_10a',
       subjectId: 'sub_horizon_math',
@@ -179,7 +179,7 @@ describe('Phase 2.4: Academic Operations Restart-Persistence Test Suite', () => 
       createdBy: 'usr_horizon_teacher',
     });
 
-    const persistentGrade = db.recordAssessmentGrade({
+    const persistentGrade = await db.recordAssessmentGrade({
       organizationId: orgId,
       assessmentId: persistentAssessment.id,
       studentId: 'usr_horizon_s_omar',
@@ -204,7 +204,7 @@ describe('Phase 2.4: Academic Operations Restart-Persistence Test Suite', () => 
 
   it('4. Multi-Tenant Isolation Enforcement on Academic Data', async () => {
     // Org 1 (Horizon) assessment
-    const horizonAssessment = db.createAssessment({
+    const horizonAssessment = await db.createAssessment({
       organizationId: 'org_horizon_001',
       courseId: 'crs_horizon_math_10a',
       title: 'اختبار هورايزون الخاص',

@@ -278,7 +278,7 @@ export class StorageService {
     ).toISOString();
 
     // 5. Record metadata in PostgreSQL database (state: PENDING)
-    db.createStorageObject({
+    await db.createStorageObject({
       id: storageObjectId,
       organizationId,
       objectKey,
@@ -330,12 +330,12 @@ export class StorageService {
     const headResult = await this.provider.headObject(record.objectKey);
     if (!headResult.exists) {
       // Mark as failed if not found in bucket
-      db.updateStorageObject(storageObjectId, organizationId, { status: 'FAILED' });
+      await db.updateStorageObject(storageObjectId, organizationId, { status: 'FAILED' });
       throw new Error('UPLOAD_VERIFICATION_FAILED: Object was not found in storage bucket.');
     }
 
     // Update metadata to UPLOADED with verified size & ETag
-    const updated = db.updateStorageObject(storageObjectId, organizationId, {
+    const updated = await db.updateStorageObject(storageObjectId, organizationId, {
       status: 'UPLOADED',
       sizeBytes: headResult.sizeBytes || record.sizeBytes,
       checksum: headResult.etag ? headResult.etag.replace(/"/g, '') : record.checksum,

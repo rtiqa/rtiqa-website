@@ -13,7 +13,7 @@ gradebookRouter.use(requireAuth);
 // ========================================================
 
 // GET /api/v1/gradebook/assessments
-gradebookRouter.get('/assessments', (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.get('/assessments', async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const courseId = req.query.courseId as string | undefined;
@@ -48,7 +48,7 @@ gradebookRouter.get('/assessments', (req: PlatformRequest, res: express.Response
 });
 
 // POST /api/v1/gradebook/assessments
-gradebookRouter.post('/assessments', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.post('/assessments', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const { title, courseId, subjectId, classroomId, termId, category, maxScore, weightPercentage, dueDate, description, status } = req.body;
@@ -69,7 +69,7 @@ gradebookRouter.post('/assessments', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', '
       }
     }
 
-    const assessment = db.createAssessment({
+    const assessment = await db.createAssessment({
       organizationId: orgId,
       title: String(title).trim(),
       courseId,
@@ -102,7 +102,7 @@ gradebookRouter.post('/assessments', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', '
 });
 
 // GET /api/v1/gradebook/assessments/:id
-gradebookRouter.get('/assessments/:id', (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.get('/assessments/:id', async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -117,7 +117,7 @@ gradebookRouter.get('/assessments/:id', (req: PlatformRequest, res: express.Resp
 });
 
 // PATCH /api/v1/gradebook/assessments/:id
-gradebookRouter.patch('/assessments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.patch('/assessments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -132,7 +132,7 @@ gradebookRouter.patch('/assessments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMI
       }
     }
 
-    const updated = db.updateAssessment(req.params.id, orgId, req.body);
+    const updated = await db.updateAssessment(req.params.id, orgId, req.body);
 
     db.logAction(
       orgId,
@@ -151,7 +151,7 @@ gradebookRouter.patch('/assessments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMI
 });
 
 // DELETE /api/v1/gradebook/assessments/:id
-gradebookRouter.delete('/assessments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.delete('/assessments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -163,7 +163,7 @@ gradebookRouter.delete('/assessments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADM
       return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'لا يمكن حذف تقييم أنشأه مستخدم آخر' });
     }
 
-    db.deleteAssessment(req.params.id, orgId);
+    await db.deleteAssessment(req.params.id, orgId);
 
     db.logAction(
       orgId,
@@ -185,7 +185,7 @@ gradebookRouter.delete('/assessments/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADM
 // ========================================================
 
 // GET /api/v1/gradebook/assessments/:id/grades (All student scores for this assessment)
-gradebookRouter.get('/assessments/:id/grades', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.get('/assessments/:id/grades', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -229,7 +229,7 @@ gradebookRouter.get('/assessments/:id/grades', requireRoles(['ORG_ADMIN', 'SUPER
 });
 
 // POST /api/v1/gradebook/assessments/:id/grades (Batch save grades for an assessment)
-gradebookRouter.post('/assessments/:id/grades', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.post('/assessments/:id/grades', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -252,7 +252,7 @@ gradebookRouter.post('/assessments/:id/grades', requireRoles(['ORG_ADMIN', 'SUPE
       gradedBy: req.user!.id,
     }));
 
-    const saved = db.recordAssessmentGradesBatch(orgId, preparedGrades);
+    const saved = await db.recordAssessmentGradesBatch(orgId, preparedGrades);
 
     db.logAction(
       orgId,
@@ -275,7 +275,7 @@ gradebookRouter.post('/assessments/:id/grades', requireRoles(['ORG_ADMIN', 'SUPE
 // ========================================================
 
 // GET /api/v1/gradebook (Holistic matrix view for a course)
-gradebookRouter.get('/', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.get('/', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const courseId = req.query.courseId as string | undefined;
@@ -307,7 +307,7 @@ gradebookRouter.get('/', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), 
 });
 
 // GET /api/v1/gradebook/export-csv (Export holistic assessment matrix)
-gradebookRouter.get('/export-csv', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.get('/export-csv', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const courseId = req.query.courseId as string | undefined;
@@ -360,7 +360,7 @@ gradebookRouter.get('/export-csv', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TE
 });
 
 // GET /api/v1/gradebook/student/:studentId/performance (Holistic student performance summary)
-gradebookRouter.get('/student/:studentId/performance', (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.get('/student/:studentId/performance', async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const targetStudentId = req.params.studentId;
@@ -386,7 +386,7 @@ gradebookRouter.get('/student/:studentId/performance', (req: PlatformRequest, re
 });
 
 // GET /api/v1/gradebook/my-grades (Direct student view for current student)
-gradebookRouter.get('/my-grades', (req: PlatformRequest, res: express.Response) => {
+gradebookRouter.get('/my-grades', async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     let targetStudentId = req.user!.id;

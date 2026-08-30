@@ -309,7 +309,7 @@ storageRouter.get('/download-url/:id', async (req: PlatformRequest, res: express
  * GET /api/v1/storage/metadata/:id
  * Retrieves metadata for a specific storage object.
  */
-storageRouter.get('/metadata/:id', (req: PlatformRequest, res: express.Response) => {
+storageRouter.get('/metadata/:id', async (req: PlatformRequest, res: express.Response) => {
   try {
     const storageObjectId = req.params.id;
     const orgId = req.organization!.id;
@@ -346,7 +346,7 @@ storageRouter.get('/metadata/:id', (req: PlatformRequest, res: express.Response)
  * GET /api/v1/storage/resource/:resourceType/:resourceId
  * Lists storage objects associated with a specific business entity.
  */
-storageRouter.get('/resource/:resourceType/:resourceId', (req: PlatformRequest, res: express.Response) => {
+storageRouter.get('/resource/:resourceType/:resourceId', async (req: PlatformRequest, res: express.Response) => {
   try {
     const { resourceType, resourceId } = req.params;
     const orgId = req.organization!.id;

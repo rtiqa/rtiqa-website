@@ -13,7 +13,7 @@ attendanceRouter.use(requireAuth);
 // ========================================================
 
 // GET /api/v1/attendance/sessions
-attendanceRouter.get('/sessions', (req: PlatformRequest, res: express.Response) => {
+attendanceRouter.get('/sessions', async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const classroomId = req.query.classroomId as string | undefined;
@@ -44,7 +44,7 @@ attendanceRouter.get('/sessions', (req: PlatformRequest, res: express.Response) 
 });
 
 // POST /api/v1/attendance/sessions (Create a new attendance roll call session)
-attendanceRouter.post('/sessions', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+attendanceRouter.post('/sessions', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const { classroomId, courseId, date, periodNumber, title, notes } = req.body;
@@ -75,7 +75,7 @@ attendanceRouter.post('/sessions', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TE
     const classroom = db.getClassroomById(classroomId, orgId);
     const students = db.getStudentsByClassroom(classroomId, orgId);
 
-    const newSession = db.createAttendanceSession({
+    const newSession = await db.createAttendanceSession({
       organizationId: orgId,
       classroomId,
       classroomName: classroom?.name,
@@ -110,7 +110,7 @@ attendanceRouter.post('/sessions', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TE
 });
 
 // GET /api/v1/attendance/sessions/:id (Session with student roll call records)
-attendanceRouter.get('/sessions/:id', (req: PlatformRequest, res: express.Response) => {
+attendanceRouter.get('/sessions/:id', async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const session = db.getAttendanceSessionById(req.params.id, orgId);
@@ -165,7 +165,7 @@ attendanceRouter.get('/sessions/:id', (req: PlatformRequest, res: express.Respon
 });
 
 // POST /api/v1/attendance/sessions/:id/roll-call (Submit complete roll-call for a session)
-attendanceRouter.post('/sessions/:id/roll-call', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+attendanceRouter.post('/sessions/:id/roll-call', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const session = db.getAttendanceSessionById(req.params.id, orgId);
@@ -200,10 +200,10 @@ attendanceRouter.post('/sessions/:id/roll-call', requireRoles(['ORG_ADMIN', 'SUP
       notes: r.notes ? String(r.notes).trim() : undefined,
     }));
 
-    const saved = db.recordAttendanceBatch(orgId, preparedRecords, session.id);
+    const saved = await db.recordAttendanceBatch(orgId, preparedRecords, session.id);
 
     // Auto mark session as COMPLETED once roll call is recorded
-    db.updateAttendanceSession(session.id, orgId, { status: 'COMPLETED' });
+    await db.updateAttendanceSession(session.id, orgId, { status: 'COMPLETED' });
 
     db.logAction(
       orgId,
@@ -222,7 +222,7 @@ attendanceRouter.post('/sessions/:id/roll-call', requireRoles(['ORG_ADMIN', 'SUP
 });
 
 // DELETE /api/v1/attendance/sessions/:id
-attendanceRouter.delete('/sessions/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+attendanceRouter.delete('/sessions/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const session = db.getAttendanceSessionById(req.params.id, orgId);
@@ -234,7 +234,7 @@ attendanceRouter.delete('/sessions/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN
       return res.status(403).json({ success: false, error: 'FORBIDDEN', message: 'لا يمكن حذف جلسة أنشأها معلم آخر' });
     }
 
-    db.deleteAttendanceSession(session.id, orgId);
+    await db.deleteAttendanceSession(session.id, orgId);
 
     db.logAction(
       orgId,
@@ -256,7 +256,7 @@ attendanceRouter.delete('/sessions/:id', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN
 // ========================================================
 
 // GET /api/v1/attendance (Scoping with student/parent isolation)
-attendanceRouter.get('/', (req: PlatformRequest, res: express.Response) => {
+attendanceRouter.get('/', async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const courseId = req.query.courseId as string | undefined;
@@ -298,7 +298,7 @@ attendanceRouter.get('/', (req: PlatformRequest, res: express.Response) => {
 });
 
 // POST /api/v1/attendance (Batch save individual roll-call)
-attendanceRouter.post('/', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), (req: PlatformRequest, res: express.Response) => {
+attendanceRouter.post('/', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER']), async (req: PlatformRequest, res: express.Response) => {
   try {
     const { records, courseId, classroomId, date, sessionId } = req.body;
     if (!Array.isArray(records) || records.length === 0) {
@@ -341,7 +341,7 @@ attendanceRouter.post('/', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER'])
       notes: r.notes ? String(r.notes).trim() : undefined,
     }));
 
-    const saved = db.recordAttendanceBatch(orgId, prepared, sessionId);
+    const saved = await db.recordAttendanceBatch(orgId, prepared, sessionId);
 
     db.logAction(
       orgId,
@@ -360,7 +360,7 @@ attendanceRouter.post('/', requireRoles(['ORG_ADMIN', 'SUPER_ADMIN', 'TEACHER'])
 });
 
 // GET /api/v1/attendance/student/:studentId (Individual student summary & full history)
-attendanceRouter.get('/student/:studentId', (req: PlatformRequest, res: express.Response) => {
+attendanceRouter.get('/student/:studentId', async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const targetStudentId = req.params.studentId;
@@ -386,7 +386,7 @@ attendanceRouter.get('/student/:studentId', (req: PlatformRequest, res: express.
 });
 
 // GET /api/v1/attendance/summary (Organization or context-level metrics)
-attendanceRouter.get('/summary', (req: PlatformRequest, res: express.Response) => {
+attendanceRouter.get('/summary', async (req: PlatformRequest, res: express.Response) => {
   try {
     const orgId = req.organization!.id;
     const studentId = req.user!.role === 'STUDENT' ? req.user!.id : (req.query.studentId as string | undefined);

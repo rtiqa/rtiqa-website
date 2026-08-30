@@ -3164,7 +3164,7 @@ class PlatformDatabase {
     }
   }
 
-  private persistAttendanceSessionToPostgres(session: AttendanceSession): void {
+  private async persistAttendanceSessionToPostgres(session: AttendanceSession): Promise<void> {
     const pool = getPostgresPool();
     if (!pool) {
       if (process.env.NODE_ENV === 'production') {
@@ -3172,7 +3172,8 @@ class PlatformDatabase {
       }
       return;
     }
-    pool.query(
+    try {
+      await pool.query(
       `INSERT INTO attendance_sessions (
         id, organization_id, classroom_id, course_id, date, period_number, title, status, opened_by, created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -3197,16 +3198,17 @@ class PlatformDatabase {
         session.createdAt,
         session.updatedAt,
       ]
-    ).catch((err) => {
+      );
+    } catch (err: any) {
       if (process.env.NODE_ENV === 'production') {
         console.error('[PostgreSQL Critical Error]: Failed to persist attendance session', err);
         throw err;
       }
-      console.error('[PostgreSQL Session Persist Warning]:', (err as Error).message);
-    });
+      console.error('[PostgreSQL Session Persist Warning]:', err.message);
+    }
   }
 
-  private deleteAttendanceSessionFromPostgres(id: string, organizationId: string): void {
+  private async deleteAttendanceSessionFromPostgres(id: string, organizationId: string): Promise<void> {
     const pool = getPostgresPool();
     if (!pool) {
       if (process.env.NODE_ENV === 'production') {
@@ -3214,15 +3216,17 @@ class PlatformDatabase {
       }
       return;
     }
-    pool.query('DELETE FROM attendance_sessions WHERE id = $1 AND organization_id = $2', [id, organizationId]).catch((err) => {
+    try {
+      await pool.query('DELETE FROM attendance_sessions WHERE id = $1 AND organization_id = $2', [id, organizationId]);
+    } catch (err: any) {
       if (process.env.NODE_ENV === 'production') {
         throw err;
       }
-      console.error('[PostgreSQL Delete Session Warning]:', (err as Error).message);
-    });
+      console.error('[PostgreSQL Delete Session Warning]:', err.message);
+    }
   }
 
-  private persistAttendanceRecordToPostgres(rec: AttendanceRecord): void {
+  private async persistAttendanceRecordToPostgres(rec: AttendanceRecord): Promise<void> {
     const pool = getPostgresPool();
     if (!pool) {
       if (process.env.NODE_ENV === 'production') {
@@ -3230,7 +3234,8 @@ class PlatformDatabase {
       }
       return;
     }
-    pool.query(
+    try {
+      await pool.query(
       `INSERT INTO attendance_records (
         id, organization_id, session_id, course_id, classroom_id, student_id, recorded_by, date, status, notes, created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
@@ -3254,16 +3259,17 @@ class PlatformDatabase {
         rec.createdAt,
         rec.updatedAt,
       ]
-    ).catch((err) => {
+      );
+    } catch (err: any) {
       if (process.env.NODE_ENV === 'production') {
         console.error('[PostgreSQL Critical Error]: Failed to persist attendance record', err);
         throw err;
       }
-      console.error('[PostgreSQL Record Persist Warning]:', (err as Error).message);
-    });
+      console.error('[PostgreSQL Record Persist Warning]:', err.message);
+    }
   }
 
-  private persistAssessmentToPostgres(assessment: Assessment): void {
+  private async persistAssessmentToPostgres(assessment: Assessment): Promise<void> {
     const pool = getPostgresPool();
     if (!pool) {
       if (process.env.NODE_ENV === 'production') {
@@ -3271,7 +3277,8 @@ class PlatformDatabase {
       }
       return;
     }
-    pool.query(
+    try {
+      await pool.query(
       `INSERT INTO assessments (
         id, organization_id, course_id, subject_id, classroom_id, term_id, academic_year_id,
         title, description, category, max_score, weight_percentage, due_date, assessment_date,
@@ -3307,16 +3314,17 @@ class PlatformDatabase {
         assessment.createdAt,
         assessment.updatedAt,
       ]
-    ).catch((err) => {
+      );
+    } catch (err: any) {
       if (process.env.NODE_ENV === 'production') {
         console.error('[PostgreSQL Critical Error]: Failed to persist assessment', err);
         throw err;
       }
-      console.error('[PostgreSQL Assessment Persist Warning]:', (err as Error).message);
-    });
+      console.error('[PostgreSQL Assessment Persist Warning]:', err.message);
+    }
   }
 
-  private deleteAssessmentFromPostgres(id: string, organizationId: string): void {
+  private async deleteAssessmentFromPostgres(id: string, organizationId: string): Promise<void> {
     const pool = getPostgresPool();
     if (!pool) {
       if (process.env.NODE_ENV === 'production') {
@@ -3324,15 +3332,17 @@ class PlatformDatabase {
       }
       return;
     }
-    pool.query('DELETE FROM assessments WHERE id = $1 AND organization_id = $2', [id, organizationId]).catch((err) => {
+    try {
+      await pool.query('DELETE FROM assessments WHERE id = $1 AND organization_id = $2', [id, organizationId]);
+    } catch (err: any) {
       if (process.env.NODE_ENV === 'production') {
         throw err;
       }
-      console.error('[PostgreSQL Delete Assessment Warning]:', (err as Error).message);
-    });
+      console.error('[PostgreSQL Delete Assessment Warning]:', err.message);
+    }
   }
 
-  private persistAssessmentGradeToPostgres(grade: AssessmentGrade): void {
+  private async persistAssessmentGradeToPostgres(grade: AssessmentGrade): Promise<void> {
     const pool = getPostgresPool();
     if (!pool) {
       if (process.env.NODE_ENV === 'production') {
@@ -3340,7 +3350,8 @@ class PlatformDatabase {
       }
       return;
     }
-    pool.query(
+    try {
+      await pool.query(
       `INSERT INTO assessment_grades (
         id, organization_id, assessment_id, student_id, score, feedback, graded_by, graded_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -3361,16 +3372,17 @@ class PlatformDatabase {
         grade.gradedAt,
         grade.updatedAt,
       ]
-    ).catch((err) => {
+      );
+    } catch (err: any) {
       if (process.env.NODE_ENV === 'production') {
         console.error('[PostgreSQL Critical Error]: Failed to persist assessment grade', err);
         throw err;
       }
-      console.error('[PostgreSQL Grade Persist Warning]:', (err as Error).message);
-    });
+      console.error('[PostgreSQL Grade Persist Warning]:', err.message);
+    }
   }
 
-  private deleteAssessmentGradeFromPostgres(id: string, organizationId: string): void {
+  private async deleteAssessmentGradeFromPostgres(id: string, organizationId: string): Promise<void> {
     const pool = getPostgresPool();
     if (!pool) {
       if (process.env.NODE_ENV === 'production') {
@@ -3378,12 +3390,14 @@ class PlatformDatabase {
       }
       return;
     }
-    pool.query('DELETE FROM assessment_grades WHERE id = $1 AND organization_id = $2', [id, organizationId]).catch((err) => {
+    try {
+      await pool.query('DELETE FROM assessment_grades WHERE id = $1 AND organization_id = $2', [id, organizationId]);
+    } catch (err: any) {
       if (process.env.NODE_ENV === 'production') {
         throw err;
       }
-      console.error('[PostgreSQL Delete Grade Warning]:', (err as Error).message);
-    });
+      console.error('[PostgreSQL Delete Grade Warning]:', err.message);
+    }
   }
 
   getAttendanceSessions(
@@ -3408,9 +3422,9 @@ class PlatformDatabase {
     return s;
   }
 
-  createAttendanceSession(
+  async createAttendanceSession(
     data: Omit<AttendanceSession, 'id' | 'createdAt' | 'updatedAt'>
-  ): AttendanceSession {
+  ): Promise<AttendanceSession> {
     const id = `att_sess_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const classroom = this.getClassroomById(data.classroomId, data.organizationId);
     const course = data.courseId ? this.getCourseById(data.courseId, data.organizationId) : undefined;
@@ -3431,16 +3445,16 @@ class PlatformDatabase {
       createdAt: now,
       updatedAt: now,
     };
+    await this.persistAttendanceSessionToPostgres(session);
     this.attendanceSessions.set(id, session);
-    this.persistAttendanceSessionToPostgres(session);
     return session;
   }
 
-  updateAttendanceSession(
+  async updateAttendanceSession(
     id: string,
     organizationId: string,
     updates: Partial<AttendanceSession>
-  ): AttendanceSession | undefined {
+  ): Promise<AttendanceSession | undefined> {
     const s = this.getAttendanceSessionById(id, organizationId);
     if (!s) return undefined;
 
@@ -3449,16 +3463,16 @@ class PlatformDatabase {
       ...updates,
       updatedAt: new Date().toISOString(),
     };
+    await this.persistAttendanceSessionToPostgres(updated);
     this.attendanceSessions.set(id, updated);
-    this.persistAttendanceSessionToPostgres(updated);
     return updated;
   }
 
-  deleteAttendanceSession(id: string, organizationId: string): boolean {
+  async deleteAttendanceSession(id: string, organizationId: string): Promise<boolean> {
     const s = this.getAttendanceSessionById(id, organizationId);
     if (!s) return false;
+    await this.deleteAttendanceSessionFromPostgres(id, organizationId);
     this.attendanceSessions.delete(id);
-    this.deleteAttendanceSessionFromPostgres(id, organizationId);
     // Delete linked attendance records or unlink them
     for (const [recId, rec] of this.attendanceRecords.entries()) {
       if (rec.organizationId === organizationId && rec.sessionId === id) {
@@ -3496,11 +3510,11 @@ class PlatformDatabase {
     return r;
   }
 
-  recordAttendanceBatch(
+  async recordAttendanceBatch(
     organizationId: string,
     records: Omit<AttendanceRecord, 'id' | 'createdAt'>[],
     sessionId?: string
-  ): AttendanceRecord[] {
+  ): Promise<AttendanceRecord[]> {
     const saved: AttendanceRecord[] = [];
     const now = new Date().toISOString();
 
@@ -3527,8 +3541,9 @@ class PlatformDatabase {
         createdAt: now,
         updatedAt: now,
       };
+
+      await this.persistAttendanceRecordToPostgres(entry);
       this.attendanceRecords.set(key, entry);
-      this.persistAttendanceRecordToPostgres(entry);
       saved.push(entry);
 
       if (rec.status === 'PRESENT') present++;
@@ -3548,19 +3563,19 @@ class PlatformDatabase {
         session.excusedCount = excused;
         session.totalStudents = records.length;
         session.updatedAt = now;
+        await this.persistAttendanceSessionToPostgres(session);
         this.attendanceSessions.set(activeSessionId, session);
-        this.persistAttendanceSessionToPostgres(session);
       }
     }
 
     return saved;
   }
 
-  updateAttendanceRecord(
+  async updateAttendanceRecord(
     id: string,
     organizationId: string,
     updates: Partial<AttendanceRecord>
-  ): AttendanceRecord | undefined {
+  ): Promise<AttendanceRecord | undefined> {
     const r = this.getAttendanceRecordById(id, organizationId);
     if (!r) return undefined;
 
@@ -3569,8 +3584,8 @@ class PlatformDatabase {
       ...updates,
       updatedAt: new Date().toISOString(),
     };
+    await this.persistAttendanceRecordToPostgres(updated);
     this.attendanceRecords.set(id, updated);
-    this.persistAttendanceRecordToPostgres(updated);
     return updated;
   }
 
@@ -3625,7 +3640,7 @@ class PlatformDatabase {
     return a;
   }
 
-  createAssessment(data: Omit<Assessment, 'id' | 'createdAt' | 'updatedAt'>): Assessment {
+  async createAssessment(data: Omit<Assessment, 'id' | 'createdAt' | 'updatedAt'>): Promise<Assessment> {
     const id = `ass_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const course = this.getCourseById(data.courseId, data.organizationId);
     const subject = data.subjectId ? this.getSubjectById(data.subjectId, data.organizationId) : course ? this.getSubjectById(course.subjectId, data.organizationId) : undefined;
@@ -3648,16 +3663,16 @@ class PlatformDatabase {
       createdAt: now,
       updatedAt: now,
     };
+    await this.persistAssessmentToPostgres(assessment);
     this.assessments.set(id, assessment);
-    this.persistAssessmentToPostgres(assessment);
     return assessment;
   }
 
-  updateAssessment(
+  async updateAssessment(
     id: string,
     organizationId: string,
     updates: Partial<Assessment>
-  ): Assessment | undefined {
+  ): Promise<Assessment | undefined> {
     const a = this.getAssessmentById(id, organizationId);
     if (!a) return undefined;
 
@@ -3666,21 +3681,21 @@ class PlatformDatabase {
       ...updates,
       updatedAt: new Date().toISOString(),
     };
+    await this.persistAssessmentToPostgres(updated);
     this.assessments.set(id, updated);
-    this.persistAssessmentToPostgres(updated);
     return updated;
   }
 
-  deleteAssessment(id: string, organizationId: string): boolean {
+  async deleteAssessment(id: string, organizationId: string): Promise<boolean> {
     const a = this.getAssessmentById(id, organizationId);
     if (!a) return false;
+    await this.deleteAssessmentFromPostgres(id, organizationId);
     this.assessments.delete(id);
-    this.deleteAssessmentFromPostgres(id, organizationId);
     // Delete linked student grades
     for (const [gid, gr] of this.assessmentGrades.entries()) {
       if (gr.organizationId === organizationId && gr.assessmentId === id) {
+        await this.deleteAssessmentGradeFromPostgres(gid, organizationId);
         this.assessmentGrades.delete(gid);
-        this.deleteAssessmentGradeFromPostgres(gid, organizationId);
       }
     }
     return true;
@@ -3705,11 +3720,11 @@ class PlatformDatabase {
     return g;
   }
 
-  deleteAssessmentGrade(id: string, organizationId: string): boolean {
+  async deleteAssessmentGrade(id: string, organizationId: string): Promise<boolean> {
     const g = this.getAssessmentGradeById(id, organizationId);
     if (!g) return false;
+    await this.deleteAssessmentGradeFromPostgres(id, organizationId);
     this.assessmentGrades.delete(id);
-    this.deleteAssessmentGradeFromPostgres(id, organizationId);
     return true;
   }
 
@@ -3723,9 +3738,9 @@ class PlatformDatabase {
     );
   }
 
-  recordAssessmentGrade(
+  async recordAssessmentGrade(
     data: Omit<AssessmentGrade, 'id' | 'gradedAt' | 'updatedAt'>
-  ): AssessmentGrade {
+  ): Promise<AssessmentGrade> {
     const assessment = this.getAssessmentById(data.assessmentId, data.organizationId);
     const student = this.getUserById(data.studentId, data.organizationId);
     const grader = data.gradedBy ? this.getUserById(data.gradedBy, data.organizationId) : undefined;
@@ -3749,8 +3764,9 @@ class PlatformDatabase {
         gradedByName: grader?.fullName || existing.gradedByName,
         updatedAt: now,
       };
+
+      await this.persistAssessmentGradeToPostgres(updated);
       this.assessmentGrades.set(existing.id, updated);
-      this.persistAssessmentGradeToPostgres(updated);
       return updated;
     }
 
@@ -3768,18 +3784,19 @@ class PlatformDatabase {
       gradedAt: now,
       updatedAt: now,
     };
+
+    await this.persistAssessmentGradeToPostgres(grade);
     this.assessmentGrades.set(id, grade);
-    this.persistAssessmentGradeToPostgres(grade);
     return grade;
   }
 
-  recordAssessmentGradesBatch(
+  async recordAssessmentGradesBatch(
     organizationId: string,
     grades: Omit<AssessmentGrade, 'id' | 'gradedAt' | 'updatedAt'>[]
-  ): AssessmentGrade[] {
+  ): Promise<AssessmentGrade[]> {
     const recorded: AssessmentGrade[] = [];
     for (const g of grades) {
-      recorded.push(this.recordAssessmentGrade({ ...g, organizationId }));
+      recorded.push(await this.recordAssessmentGrade({ ...g, organizationId }));
     }
     return recorded;
   }
@@ -4321,9 +4338,9 @@ class PlatformDatabase {
   // Object Storage Metadata Methods (Multi-Tenant)
   // ==========================================
 
-  createStorageObject(
+  async createStorageObject(
     data: Omit<StorageObjectMetadata, 'createdAt' | 'updatedAt'> & { createdAt?: string; updatedAt?: string }
-  ): StorageObjectMetadata {
+  ): Promise<StorageObjectMetadata> {
     const now = new Date().toISOString();
     const obj: StorageObjectMetadata = {
       ...data,
@@ -4331,8 +4348,9 @@ class PlatformDatabase {
       createdAt: data.createdAt || now,
       updatedAt: data.updatedAt || now,
     };
+
+    await this.persistStorageObjectToPostgres(obj);
     this.storageObjects.set(obj.id, obj);
-    this.persistStorageObjectToPostgres(obj);
     return obj;
   }
 
@@ -4364,11 +4382,11 @@ class PlatformDatabase {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
-  updateStorageObject(
+  async updateStorageObject(
     id: string,
     organizationId: string,
     updates: Partial<StorageObjectMetadata>
-  ): StorageObjectMetadata | undefined {
+  ): Promise<StorageObjectMetadata | undefined> {
     const obj = this.getStorageObjectById(id, organizationId);
     if (!obj) return undefined;
 
@@ -4377,18 +4395,18 @@ class PlatformDatabase {
       ...updates,
       updatedAt: new Date().toISOString(),
     };
+    await this.persistStorageObjectToPostgres(updated);
     this.storageObjects.set(id, updated);
-    this.persistStorageObjectToPostgres(updated);
     return updated;
   }
 
-  deleteStorageObject(id: string, organizationId: string, hardDelete = false): boolean {
+  async deleteStorageObject(id: string, organizationId: string, hardDelete = false): Promise<boolean> {
     const obj = this.getStorageObjectById(id, organizationId);
     if (!obj) return false;
 
     if (hardDelete) {
+      await this.deleteStorageObjectFromPostgres(id, organizationId, true);
       this.storageObjects.delete(id);
-      this.deleteStorageObjectFromPostgres(id, organizationId, true);
     } else {
       const now = new Date().toISOString();
       const updated: StorageObjectMetadata = {
@@ -4397,13 +4415,13 @@ class PlatformDatabase {
         deletedAt: now,
         updatedAt: now,
       };
+      await this.persistStorageObjectToPostgres(updated);
       this.storageObjects.set(id, updated);
-      this.persistStorageObjectToPostgres(updated);
     }
     return true;
   }
 
-  private persistStorageObjectToPostgres(obj: StorageObjectMetadata): void {
+  private async persistStorageObjectToPostgres(obj: StorageObjectMetadata): Promise<void> {
     const pool = getPostgresPool();
     if (!pool) {
       if (process.env.NODE_ENV === 'production') {
@@ -4411,7 +4429,8 @@ class PlatformDatabase {
       }
       return;
     }
-    pool.query(
+    try {
+      await pool.query(
       `INSERT INTO storage_objects (
         id, organization_id, object_key, original_filename, content_type, size_bytes,
         checksum, resource_type, resource_id, uploaded_by, status, metadata,
@@ -4446,16 +4465,17 @@ class PlatformDatabase {
         obj.updatedAt,
         obj.deletedAt || null,
       ]
-    ).catch((err) => {
+      );
+    } catch (err: any) {
       if (process.env.NODE_ENV === 'production') {
         console.error('[PostgreSQL Critical Error]: Failed to persist storage object', err);
         throw err;
       }
-      console.error('[PostgreSQL Storage Object Persist Warning]:', (err as Error).message);
-    });
+      console.error('[PostgreSQL Storage Object Persist Warning]:', err.message);
+    }
   }
 
-  private deleteStorageObjectFromPostgres(id: string, organizationId: string, hardDelete = false): void {
+  private async deleteStorageObjectFromPostgres(id: string, organizationId: string, hardDelete = false): Promise<void> {
     const pool = getPostgresPool();
     if (!pool) {
       if (process.env.NODE_ENV === 'production') {
@@ -4464,18 +4484,22 @@ class PlatformDatabase {
       return;
     }
     if (hardDelete) {
-      pool.query('DELETE FROM storage_objects WHERE id = $1 AND organization_id = $2', [id, organizationId]).catch((err) => {
+      try {
+        await pool.query('DELETE FROM storage_objects WHERE id = $1 AND organization_id = $2', [id, organizationId]);
+      } catch (err: any) {
         if (process.env.NODE_ENV === 'production') throw err;
-        console.error('[PostgreSQL Delete Storage Object Warning]:', (err as Error).message);
-      });
+        console.error('[PostgreSQL Delete Storage Object Warning]:', err.message);
+      }
     } else {
-      pool.query(
+      try {
+        await pool.query(
         "UPDATE storage_objects SET status = 'DELETED', deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND organization_id = $2",
         [id, organizationId]
-      ).catch((err) => {
+        );
+      } catch (err: any) {
         if (process.env.NODE_ENV === 'production') throw err;
-        console.error('[PostgreSQL Soft Delete Storage Object Warning]:', (err as Error).message);
-      });
+        console.error('[PostgreSQL Soft Delete Storage Object Warning]:', err.message);
+      }
     }
   }
 

@@ -3006,7 +3006,7 @@ var init_db = __esm({
           console.error("[PostgreSQL Academic Sync Warning]:", err.message);
         }
       }
-      persistAttendanceSessionToPostgres(session) {
+      async persistAttendanceSessionToPostgres(session) {
         const pool2 = getPostgresPool();
         if (!pool2) {
           if (process.env.NODE_ENV === "production") {
@@ -3014,8 +3014,9 @@ var init_db = __esm({
           }
           return;
         }
-        pool2.query(
-          `INSERT INTO attendance_sessions (
+        try {
+          await pool2.query(
+            `INSERT INTO attendance_sessions (
         id, organization_id, classroom_id, course_id, date, period_number, title, status, opened_by, created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       ON CONFLICT (id) DO UPDATE SET
@@ -3026,28 +3027,29 @@ var init_db = __esm({
         title = EXCLUDED.title,
         status = EXCLUDED.status,
         updated_at = EXCLUDED.updated_at;`,
-          [
-            session.id,
-            session.organizationId,
-            session.classroomId,
-            session.courseId || null,
-            session.date,
-            session.periodNumber || 1,
-            session.title || null,
-            session.status,
-            session.openedBy,
-            session.createdAt,
-            session.updatedAt
-          ]
-        ).catch((err) => {
+            [
+              session.id,
+              session.organizationId,
+              session.classroomId,
+              session.courseId || null,
+              session.date,
+              session.periodNumber || 1,
+              session.title || null,
+              session.status,
+              session.openedBy,
+              session.createdAt,
+              session.updatedAt
+            ]
+          );
+        } catch (err) {
           if (process.env.NODE_ENV === "production") {
             console.error("[PostgreSQL Critical Error]: Failed to persist attendance session", err);
             throw err;
           }
           console.error("[PostgreSQL Session Persist Warning]:", err.message);
-        });
+        }
       }
-      deleteAttendanceSessionFromPostgres(id, organizationId) {
+      async deleteAttendanceSessionFromPostgres(id, organizationId) {
         const pool2 = getPostgresPool();
         if (!pool2) {
           if (process.env.NODE_ENV === "production") {
@@ -3055,14 +3057,16 @@ var init_db = __esm({
           }
           return;
         }
-        pool2.query("DELETE FROM attendance_sessions WHERE id = $1 AND organization_id = $2", [id, organizationId]).catch((err) => {
+        try {
+          await pool2.query("DELETE FROM attendance_sessions WHERE id = $1 AND organization_id = $2", [id, organizationId]);
+        } catch (err) {
           if (process.env.NODE_ENV === "production") {
             throw err;
           }
           console.error("[PostgreSQL Delete Session Warning]:", err.message);
-        });
+        }
       }
-      persistAttendanceRecordToPostgres(rec) {
+      async persistAttendanceRecordToPostgres(rec) {
         const pool2 = getPostgresPool();
         if (!pool2) {
           if (process.env.NODE_ENV === "production") {
@@ -3070,8 +3074,9 @@ var init_db = __esm({
           }
           return;
         }
-        pool2.query(
-          `INSERT INTO attendance_records (
+        try {
+          await pool2.query(
+            `INSERT INTO attendance_records (
         id, organization_id, session_id, course_id, classroom_id, student_id, recorded_by, date, status, notes, created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       ON CONFLICT (id) DO UPDATE SET
@@ -3080,29 +3085,30 @@ var init_db = __esm({
         notes = EXCLUDED.notes,
         recorded_by = EXCLUDED.recorded_by,
         updated_at = EXCLUDED.updated_at;`,
-          [
-            rec.id,
-            rec.organizationId,
-            rec.sessionId || null,
-            rec.courseId || null,
-            rec.classroomId,
-            rec.studentId,
-            rec.recordedBy || null,
-            rec.date,
-            rec.status,
-            rec.notes || null,
-            rec.createdAt,
-            rec.updatedAt
-          ]
-        ).catch((err) => {
+            [
+              rec.id,
+              rec.organizationId,
+              rec.sessionId || null,
+              rec.courseId || null,
+              rec.classroomId,
+              rec.studentId,
+              rec.recordedBy || null,
+              rec.date,
+              rec.status,
+              rec.notes || null,
+              rec.createdAt,
+              rec.updatedAt
+            ]
+          );
+        } catch (err) {
           if (process.env.NODE_ENV === "production") {
             console.error("[PostgreSQL Critical Error]: Failed to persist attendance record", err);
             throw err;
           }
           console.error("[PostgreSQL Record Persist Warning]:", err.message);
-        });
+        }
       }
-      persistAssessmentToPostgres(assessment) {
+      async persistAssessmentToPostgres(assessment) {
         const pool2 = getPostgresPool();
         if (!pool2) {
           if (process.env.NODE_ENV === "production") {
@@ -3110,8 +3116,9 @@ var init_db = __esm({
           }
           return;
         }
-        pool2.query(
-          `INSERT INTO assessments (
+        try {
+          await pool2.query(
+            `INSERT INTO assessments (
         id, organization_id, course_id, subject_id, classroom_id, term_id, academic_year_id,
         title, description, category, max_score, weight_percentage, due_date, assessment_date,
         status, created_by, created_at, updated_at
@@ -3126,35 +3133,36 @@ var init_db = __esm({
         assessment_date = EXCLUDED.assessment_date,
         status = EXCLUDED.status,
         updated_at = EXCLUDED.updated_at;`,
-          [
-            assessment.id,
-            assessment.organizationId,
-            assessment.courseId,
-            assessment.subjectId || null,
-            assessment.classroomId || null,
-            assessment.termId || null,
-            assessment.academicYearId || null,
-            assessment.title,
-            assessment.description || null,
-            assessment.category,
-            assessment.maxScore,
-            assessment.weightPercentage,
-            assessment.dueDate || null,
-            assessment.assessmentDate || null,
-            assessment.status,
-            assessment.createdBy || null,
-            assessment.createdAt,
-            assessment.updatedAt
-          ]
-        ).catch((err) => {
+            [
+              assessment.id,
+              assessment.organizationId,
+              assessment.courseId,
+              assessment.subjectId || null,
+              assessment.classroomId || null,
+              assessment.termId || null,
+              assessment.academicYearId || null,
+              assessment.title,
+              assessment.description || null,
+              assessment.category,
+              assessment.maxScore,
+              assessment.weightPercentage,
+              assessment.dueDate || null,
+              assessment.assessmentDate || null,
+              assessment.status,
+              assessment.createdBy || null,
+              assessment.createdAt,
+              assessment.updatedAt
+            ]
+          );
+        } catch (err) {
           if (process.env.NODE_ENV === "production") {
             console.error("[PostgreSQL Critical Error]: Failed to persist assessment", err);
             throw err;
           }
           console.error("[PostgreSQL Assessment Persist Warning]:", err.message);
-        });
+        }
       }
-      deleteAssessmentFromPostgres(id, organizationId) {
+      async deleteAssessmentFromPostgres(id, organizationId) {
         const pool2 = getPostgresPool();
         if (!pool2) {
           if (process.env.NODE_ENV === "production") {
@@ -3162,14 +3170,16 @@ var init_db = __esm({
           }
           return;
         }
-        pool2.query("DELETE FROM assessments WHERE id = $1 AND organization_id = $2", [id, organizationId]).catch((err) => {
+        try {
+          await pool2.query("DELETE FROM assessments WHERE id = $1 AND organization_id = $2", [id, organizationId]);
+        } catch (err) {
           if (process.env.NODE_ENV === "production") {
             throw err;
           }
           console.error("[PostgreSQL Delete Assessment Warning]:", err.message);
-        });
+        }
       }
-      persistAssessmentGradeToPostgres(grade) {
+      async persistAssessmentGradeToPostgres(grade) {
         const pool2 = getPostgresPool();
         if (!pool2) {
           if (process.env.NODE_ENV === "production") {
@@ -3177,8 +3187,9 @@ var init_db = __esm({
           }
           return;
         }
-        pool2.query(
-          `INSERT INTO assessment_grades (
+        try {
+          await pool2.query(
+            `INSERT INTO assessment_grades (
         id, organization_id, assessment_id, student_id, score, feedback, graded_by, graded_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       ON CONFLICT (id) DO UPDATE SET
@@ -3187,26 +3198,27 @@ var init_db = __esm({
         graded_by = EXCLUDED.graded_by,
         graded_at = EXCLUDED.graded_at,
         updated_at = EXCLUDED.updated_at;`,
-          [
-            grade.id,
-            grade.organizationId,
-            grade.assessmentId,
-            grade.studentId,
-            grade.score,
-            grade.feedback || null,
-            grade.gradedBy || null,
-            grade.gradedAt,
-            grade.updatedAt
-          ]
-        ).catch((err) => {
+            [
+              grade.id,
+              grade.organizationId,
+              grade.assessmentId,
+              grade.studentId,
+              grade.score,
+              grade.feedback || null,
+              grade.gradedBy || null,
+              grade.gradedAt,
+              grade.updatedAt
+            ]
+          );
+        } catch (err) {
           if (process.env.NODE_ENV === "production") {
             console.error("[PostgreSQL Critical Error]: Failed to persist assessment grade", err);
             throw err;
           }
           console.error("[PostgreSQL Grade Persist Warning]:", err.message);
-        });
+        }
       }
-      deleteAssessmentGradeFromPostgres(id, organizationId) {
+      async deleteAssessmentGradeFromPostgres(id, organizationId) {
         const pool2 = getPostgresPool();
         if (!pool2) {
           if (process.env.NODE_ENV === "production") {
@@ -3214,12 +3226,14 @@ var init_db = __esm({
           }
           return;
         }
-        pool2.query("DELETE FROM assessment_grades WHERE id = $1 AND organization_id = $2", [id, organizationId]).catch((err) => {
+        try {
+          await pool2.query("DELETE FROM assessment_grades WHERE id = $1 AND organization_id = $2", [id, organizationId]);
+        } catch (err) {
           if (process.env.NODE_ENV === "production") {
             throw err;
           }
           console.error("[PostgreSQL Delete Grade Warning]:", err.message);
-        });
+        }
       }
       getAttendanceSessions(organizationId, filters) {
         return Array.from(this.attendanceSessions.values()).filter((s) => {
@@ -3236,7 +3250,7 @@ var init_db = __esm({
         if (!s || s.organizationId !== organizationId) return void 0;
         return s;
       }
-      createAttendanceSession(data) {
+      async createAttendanceSession(data) {
         const id = `att_sess_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
         const classroom = this.getClassroomById(data.classroomId, data.organizationId);
         const course = data.courseId ? this.getCourseById(data.courseId, data.organizationId) : void 0;
@@ -3256,11 +3270,11 @@ var init_db = __esm({
           createdAt: now,
           updatedAt: now
         };
+        await this.persistAttendanceSessionToPostgres(session);
         this.attendanceSessions.set(id, session);
-        this.persistAttendanceSessionToPostgres(session);
         return session;
       }
-      updateAttendanceSession(id, organizationId, updates) {
+      async updateAttendanceSession(id, organizationId, updates) {
         const s = this.getAttendanceSessionById(id, organizationId);
         if (!s) return void 0;
         const updated = {
@@ -3268,15 +3282,15 @@ var init_db = __esm({
           ...updates,
           updatedAt: (/* @__PURE__ */ new Date()).toISOString()
         };
+        await this.persistAttendanceSessionToPostgres(updated);
         this.attendanceSessions.set(id, updated);
-        this.persistAttendanceSessionToPostgres(updated);
         return updated;
       }
-      deleteAttendanceSession(id, organizationId) {
+      async deleteAttendanceSession(id, organizationId) {
         const s = this.getAttendanceSessionById(id, organizationId);
         if (!s) return false;
+        await this.deleteAttendanceSessionFromPostgres(id, organizationId);
         this.attendanceSessions.delete(id);
-        this.deleteAttendanceSessionFromPostgres(id, organizationId);
         for (const [recId, rec] of this.attendanceRecords.entries()) {
           if (rec.organizationId === organizationId && rec.sessionId === id) {
             this.attendanceRecords.delete(recId);
@@ -3306,7 +3320,7 @@ var init_db = __esm({
         if (!r || r.organizationId !== organizationId) return void 0;
         return r;
       }
-      recordAttendanceBatch(organizationId, records, sessionId) {
+      async recordAttendanceBatch(organizationId, records, sessionId) {
         const saved = [];
         const now = (/* @__PURE__ */ new Date()).toISOString();
         let present = 0;
@@ -3330,8 +3344,8 @@ var init_db = __esm({
             createdAt: now,
             updatedAt: now
           };
+          await this.persistAttendanceRecordToPostgres(entry);
           this.attendanceRecords.set(key, entry);
-          this.persistAttendanceRecordToPostgres(entry);
           saved.push(entry);
           if (rec.status === "PRESENT") present++;
           else if (rec.status === "ABSENT") absent++;
@@ -3348,13 +3362,13 @@ var init_db = __esm({
             session.excusedCount = excused;
             session.totalStudents = records.length;
             session.updatedAt = now;
+            await this.persistAttendanceSessionToPostgres(session);
             this.attendanceSessions.set(activeSessionId, session);
-            this.persistAttendanceSessionToPostgres(session);
           }
         }
         return saved;
       }
-      updateAttendanceRecord(id, organizationId, updates) {
+      async updateAttendanceRecord(id, organizationId, updates) {
         const r = this.getAttendanceRecordById(id, organizationId);
         if (!r) return void 0;
         const updated = {
@@ -3362,8 +3376,8 @@ var init_db = __esm({
           ...updates,
           updatedAt: (/* @__PURE__ */ new Date()).toISOString()
         };
+        await this.persistAttendanceRecordToPostgres(updated);
         this.attendanceRecords.set(id, updated);
-        this.persistAttendanceRecordToPostgres(updated);
         return updated;
       }
       getAttendanceSummaryForStudent(studentId, organizationId) {
@@ -3407,7 +3421,7 @@ var init_db = __esm({
         if (!a || a.organizationId !== organizationId) return void 0;
         return a;
       }
-      createAssessment(data) {
+      async createAssessment(data) {
         const id = `ass_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
         const course = this.getCourseById(data.courseId, data.organizationId);
         const subject = data.subjectId ? this.getSubjectById(data.subjectId, data.organizationId) : course ? this.getSubjectById(course.subjectId, data.organizationId) : void 0;
@@ -3429,11 +3443,11 @@ var init_db = __esm({
           createdAt: now,
           updatedAt: now
         };
+        await this.persistAssessmentToPostgres(assessment);
         this.assessments.set(id, assessment);
-        this.persistAssessmentToPostgres(assessment);
         return assessment;
       }
-      updateAssessment(id, organizationId, updates) {
+      async updateAssessment(id, organizationId, updates) {
         const a = this.getAssessmentById(id, organizationId);
         if (!a) return void 0;
         const updated = {
@@ -3441,19 +3455,19 @@ var init_db = __esm({
           ...updates,
           updatedAt: (/* @__PURE__ */ new Date()).toISOString()
         };
+        await this.persistAssessmentToPostgres(updated);
         this.assessments.set(id, updated);
-        this.persistAssessmentToPostgres(updated);
         return updated;
       }
-      deleteAssessment(id, organizationId) {
+      async deleteAssessment(id, organizationId) {
         const a = this.getAssessmentById(id, organizationId);
         if (!a) return false;
+        await this.deleteAssessmentFromPostgres(id, organizationId);
         this.assessments.delete(id);
-        this.deleteAssessmentFromPostgres(id, organizationId);
         for (const [gid, gr] of this.assessmentGrades.entries()) {
           if (gr.organizationId === organizationId && gr.assessmentId === id) {
+            await this.deleteAssessmentGradeFromPostgres(gid, organizationId);
             this.assessmentGrades.delete(gid);
-            this.deleteAssessmentGradeFromPostgres(gid, organizationId);
           }
         }
         return true;
@@ -3472,11 +3486,11 @@ var init_db = __esm({
         if (!g || g.organizationId !== organizationId) return void 0;
         return g;
       }
-      deleteAssessmentGrade(id, organizationId) {
+      async deleteAssessmentGrade(id, organizationId) {
         const g = this.getAssessmentGradeById(id, organizationId);
         if (!g) return false;
+        await this.deleteAssessmentGradeFromPostgres(id, organizationId);
         this.assessmentGrades.delete(id);
-        this.deleteAssessmentGradeFromPostgres(id, organizationId);
         return true;
       }
       getAssessmentGradeByStudentAndAssessment(assessmentId, studentId, organizationId) {
@@ -3484,7 +3498,7 @@ var init_db = __esm({
           (g) => g.organizationId === organizationId && g.assessmentId === assessmentId && g.studentId === studentId
         );
       }
-      recordAssessmentGrade(data) {
+      async recordAssessmentGrade(data) {
         const assessment = this.getAssessmentById(data.assessmentId, data.organizationId);
         const student = this.getUserById(data.studentId, data.organizationId);
         const grader = data.gradedBy ? this.getUserById(data.gradedBy, data.organizationId) : void 0;
@@ -3506,8 +3520,8 @@ var init_db = __esm({
             gradedByName: grader?.fullName || existing.gradedByName,
             updatedAt: now
           };
+          await this.persistAssessmentGradeToPostgres(updated);
           this.assessmentGrades.set(existing.id, updated);
-          this.persistAssessmentGradeToPostgres(updated);
           return updated;
         }
         const id = `grd_${data.assessmentId}_${data.studentId}`;
@@ -3524,14 +3538,14 @@ var init_db = __esm({
           gradedAt: now,
           updatedAt: now
         };
+        await this.persistAssessmentGradeToPostgres(grade);
         this.assessmentGrades.set(id, grade);
-        this.persistAssessmentGradeToPostgres(grade);
         return grade;
       }
-      recordAssessmentGradesBatch(organizationId, grades) {
+      async recordAssessmentGradesBatch(organizationId, grades) {
         const recorded = [];
         for (const g of grades) {
-          recorded.push(this.recordAssessmentGrade({ ...g, organizationId }));
+          recorded.push(await this.recordAssessmentGrade({ ...g, organizationId }));
         }
         return recorded;
       }
@@ -3987,7 +4001,7 @@ var init_db = __esm({
       // ==========================================
       // Object Storage Metadata Methods (Multi-Tenant)
       // ==========================================
-      createStorageObject(data) {
+      async createStorageObject(data) {
         const now = (/* @__PURE__ */ new Date()).toISOString();
         const obj = {
           ...data,
@@ -3995,8 +4009,8 @@ var init_db = __esm({
           createdAt: data.createdAt || now,
           updatedAt: data.updatedAt || now
         };
+        await this.persistStorageObjectToPostgres(obj);
         this.storageObjects.set(obj.id, obj);
-        this.persistStorageObjectToPostgres(obj);
         return obj;
       }
       getStorageObjectById(id, organizationId) {
@@ -4012,7 +4026,7 @@ var init_db = __esm({
       getStorageObjectsByOrg(organizationId) {
         return Array.from(this.storageObjects.values()).filter((o) => o.organizationId === organizationId && o.status !== "DELETED").sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       }
-      updateStorageObject(id, organizationId, updates) {
+      async updateStorageObject(id, organizationId, updates) {
         const obj = this.getStorageObjectById(id, organizationId);
         if (!obj) return void 0;
         const updated = {
@@ -4020,16 +4034,16 @@ var init_db = __esm({
           ...updates,
           updatedAt: (/* @__PURE__ */ new Date()).toISOString()
         };
+        await this.persistStorageObjectToPostgres(updated);
         this.storageObjects.set(id, updated);
-        this.persistStorageObjectToPostgres(updated);
         return updated;
       }
-      deleteStorageObject(id, organizationId, hardDelete = false) {
+      async deleteStorageObject(id, organizationId, hardDelete = false) {
         const obj = this.getStorageObjectById(id, organizationId);
         if (!obj) return false;
         if (hardDelete) {
+          await this.deleteStorageObjectFromPostgres(id, organizationId, true);
           this.storageObjects.delete(id);
-          this.deleteStorageObjectFromPostgres(id, organizationId, true);
         } else {
           const now = (/* @__PURE__ */ new Date()).toISOString();
           const updated = {
@@ -4038,12 +4052,12 @@ var init_db = __esm({
             deletedAt: now,
             updatedAt: now
           };
+          await this.persistStorageObjectToPostgres(updated);
           this.storageObjects.set(id, updated);
-          this.persistStorageObjectToPostgres(updated);
         }
         return true;
       }
-      persistStorageObjectToPostgres(obj) {
+      async persistStorageObjectToPostgres(obj) {
         const pool2 = getPostgresPool();
         if (!pool2) {
           if (process.env.NODE_ENV === "production") {
@@ -4051,8 +4065,9 @@ var init_db = __esm({
           }
           return;
         }
-        pool2.query(
-          `INSERT INTO storage_objects (
+        try {
+          await pool2.query(
+            `INSERT INTO storage_objects (
         id, organization_id, object_key, original_filename, content_type, size_bytes,
         checksum, resource_type, resource_id, uploaded_by, status, metadata,
         created_at, updated_at, deleted_at
@@ -4069,32 +4084,33 @@ var init_db = __esm({
         metadata = EXCLUDED.metadata,
         updated_at = EXCLUDED.updated_at,
         deleted_at = EXCLUDED.deleted_at;`,
-          [
-            obj.id,
-            obj.organizationId,
-            obj.objectKey,
-            obj.originalFilename,
-            obj.contentType,
-            obj.sizeBytes,
-            obj.checksum || null,
-            obj.resourceType,
-            obj.resourceId,
-            obj.uploadedBy,
-            obj.status,
-            JSON.stringify(obj.metadata || {}),
-            obj.createdAt,
-            obj.updatedAt,
-            obj.deletedAt || null
-          ]
-        ).catch((err) => {
+            [
+              obj.id,
+              obj.organizationId,
+              obj.objectKey,
+              obj.originalFilename,
+              obj.contentType,
+              obj.sizeBytes,
+              obj.checksum || null,
+              obj.resourceType,
+              obj.resourceId,
+              obj.uploadedBy,
+              obj.status,
+              JSON.stringify(obj.metadata || {}),
+              obj.createdAt,
+              obj.updatedAt,
+              obj.deletedAt || null
+            ]
+          );
+        } catch (err) {
           if (process.env.NODE_ENV === "production") {
             console.error("[PostgreSQL Critical Error]: Failed to persist storage object", err);
             throw err;
           }
           console.error("[PostgreSQL Storage Object Persist Warning]:", err.message);
-        });
+        }
       }
-      deleteStorageObjectFromPostgres(id, organizationId, hardDelete = false) {
+      async deleteStorageObjectFromPostgres(id, organizationId, hardDelete = false) {
         const pool2 = getPostgresPool();
         if (!pool2) {
           if (process.env.NODE_ENV === "production") {
@@ -4103,18 +4119,22 @@ var init_db = __esm({
           return;
         }
         if (hardDelete) {
-          pool2.query("DELETE FROM storage_objects WHERE id = $1 AND organization_id = $2", [id, organizationId]).catch((err) => {
+          try {
+            await pool2.query("DELETE FROM storage_objects WHERE id = $1 AND organization_id = $2", [id, organizationId]);
+          } catch (err) {
             if (process.env.NODE_ENV === "production") throw err;
             console.error("[PostgreSQL Delete Storage Object Warning]:", err.message);
-          });
+          }
         } else {
-          pool2.query(
-            "UPDATE storage_objects SET status = 'DELETED', deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND organization_id = $2",
-            [id, organizationId]
-          ).catch((err) => {
+          try {
+            await pool2.query(
+              "UPDATE storage_objects SET status = 'DELETED', deleted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND organization_id = $2",
+              [id, organizationId]
+            );
+          } catch (err) {
             if (process.env.NODE_ENV === "production") throw err;
             console.error("[PostgreSQL Soft Delete Storage Object Warning]:", err.message);
-          });
+          }
         }
       }
       async syncStorageObjectsFromPostgres(organizationId) {
@@ -4920,7 +4940,7 @@ var init_service = __esm({
         const expiresAt = new Date(
           Date.now() + this.config.presignedUrlTtlSeconds * 1e3
         ).toISOString();
-        db.createStorageObject({
+        await db.createStorageObject({
           id: storageObjectId,
           organizationId,
           objectKey,
@@ -4956,10 +4976,10 @@ var init_service = __esm({
         }
         const headResult = await this.provider.headObject(record.objectKey);
         if (!headResult.exists) {
-          db.updateStorageObject(storageObjectId, organizationId, { status: "FAILED" });
+          await db.updateStorageObject(storageObjectId, organizationId, { status: "FAILED" });
           throw new Error("UPLOAD_VERIFICATION_FAILED: Object was not found in storage bucket.");
         }
-        const updated = db.updateStorageObject(storageObjectId, organizationId, {
+        const updated = await db.updateStorageObject(storageObjectId, organizationId, {
           status: "UPLOADED",
           sizeBytes: headResult.sizeBytes || record.sizeBytes,
           checksum: headResult.etag ? headResult.etag.replace(/"/g, "") : record.checksum
@@ -5054,35 +5074,30 @@ __export(migrate_exports, {
 });
 import fs from "fs";
 import path from "path";
+import pg2 from "pg";
 async function runMigrations() {
-  const isVercelProduction = process.env.VERCEL_ENV === "production";
-  const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
-  if (!isVercelProduction || !hasDatabaseUrl) {
-    const reason = !hasDatabaseUrl ? "DATABASE_URL is not configured" : `VERCEL_ENV is "${process.env.VERCEL_ENV || "local"}" (requires "production")`;
+  const runMigrationsFlag = process.env.RUN_MIGRATIONS === "true";
+  const directUrl = process.env.DIRECT_DATABASE_URL;
+  if (!runMigrationsFlag) {
     return {
       success: true,
-      message: `[Migration]: Skipped. Migrations strictly run only on Vercel Production. (${reason})`
+      message: `[Migration]: Skipped. RUN_MIGRATIONS is not "true". Preview environments and local development do not run migrations automatically.`
     };
   }
-  const status = await checkPostgresConnection();
-  if (!status.connected) {
+  if (!directUrl) {
     return {
       success: false,
-      message: `Cannot run migrations: PostgreSQL connection failed. (${status.message || "Unknown error"})`
+      message: `Cannot run migrations: RUN_MIGRATIONS is true but DIRECT_DATABASE_URL is missing. Migrations require a direct database connection.`
     };
   }
-  const pool2 = getPostgresPool();
-  if (!pool2) {
-    return {
-      success: false,
-      message: "Cannot run migrations: PostgreSQL pool is not initialized."
-    };
-  }
-  const client = await pool2.connect();
+  const client = new pg2.Client({
+    connectionString: directUrl,
+    ssl: process.env.PGSSLMODE === "require" || directUrl.includes("sslmode=require") ? { rejectUnauthorized: false } : void 0
+  });
   let lockAcquired = false;
-  let clientDestroyRequired = false;
   const appliedMigrations = [];
   try {
+    await client.connect();
     console.log("[Migration]: Acquiring PostgreSQL advisory lock...");
     await client.query("SELECT pg_advisory_lock($1);", [RTIQA_MIGRATION_ADVISORY_LOCK_ID]);
     lockAcquired = true;
@@ -5140,7 +5155,6 @@ async function runMigrations() {
         await client.query("ROLLBACK");
       } catch (rollbackErr) {
         console.error("[Migration Fatal]: Failed to rollback transaction:", rollbackErr);
-        clientDestroyRequired = true;
       }
       const errorMsg = txError instanceof Error ? txError.message : String(txError);
       console.error("[Migration Error]: Transaction failed. Details:", errorMsg);
@@ -5173,15 +5187,14 @@ async function runMigrations() {
         await client.query("SELECT pg_advisory_unlock($1);", [RTIQA_MIGRATION_ADVISORY_LOCK_ID]);
         console.log("[Migration]: Advisory lock released successfully.");
       } catch (unlockErr) {
-        console.error("[Migration Fatal]: Failed to release advisory lock. Destroying client connection to free locks:", unlockErr);
-        clientDestroyRequired = true;
+        console.error("[Migration Fatal]: Failed to release advisory lock:", unlockErr);
       }
     }
-    if (clientDestroyRequired) {
-      client.release(true);
-      console.log("[Migration]: Client connection destroyed safely.");
-    } else {
-      client.release();
+    try {
+      await client.end();
+      console.log("[Migration]: Client connection closed safely.");
+    } catch (endErr) {
+      console.error("[Migration Error]: Failed to close client connection:", endErr);
     }
   }
 }
@@ -8812,7 +8825,7 @@ init_db();
 import express7 from "express";
 var attendanceRouter = express7.Router();
 attendanceRouter.use(requireAuth);
-attendanceRouter.get("/sessions", (req, res) => {
+attendanceRouter.get("/sessions", async (req, res) => {
   try {
     const orgId = req.organization.id;
     const classroomId = req.query.classroomId;
@@ -8833,7 +8846,7 @@ attendanceRouter.get("/sessions", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-attendanceRouter.post("/sessions", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+attendanceRouter.post("/sessions", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const { classroomId, courseId, date, periodNumber, title, notes } = req.body;
@@ -8858,7 +8871,7 @@ attendanceRouter.post("/sessions", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TE
     const sessionDate = date || (/* @__PURE__ */ new Date()).toISOString().split("T")[0];
     const classroom = db.getClassroomById(classroomId, orgId);
     const students = db.getStudentsByClassroom(classroomId, orgId);
-    const newSession = db.createAttendanceSession({
+    const newSession = await db.createAttendanceSession({
       organizationId: orgId,
       classroomId,
       classroomName: classroom?.name,
@@ -8889,7 +8902,7 @@ attendanceRouter.post("/sessions", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TE
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-attendanceRouter.get("/sessions/:id", (req, res) => {
+attendanceRouter.get("/sessions/:id", async (req, res) => {
   try {
     const orgId = req.organization.id;
     const session = db.getAttendanceSessionById(req.params.id, orgId);
@@ -8931,7 +8944,7 @@ attendanceRouter.get("/sessions/:id", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-attendanceRouter.post("/sessions/:id/roll-call", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+attendanceRouter.post("/sessions/:id/roll-call", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const session = db.getAttendanceSessionById(req.params.id, orgId);
@@ -8962,8 +8975,8 @@ attendanceRouter.post("/sessions/:id/roll-call", requireRoles(["ORG_ADMIN", "SUP
       status: r.status || "PRESENT",
       notes: r.notes ? String(r.notes).trim() : void 0
     }));
-    const saved = db.recordAttendanceBatch(orgId, preparedRecords, session.id);
-    db.updateAttendanceSession(session.id, orgId, { status: "COMPLETED" });
+    const saved = await db.recordAttendanceBatch(orgId, preparedRecords, session.id);
+    await db.updateAttendanceSession(session.id, orgId, { status: "COMPLETED" });
     db.logAction(
       orgId,
       req.user.id,
@@ -8978,7 +8991,7 @@ attendanceRouter.post("/sessions/:id/roll-call", requireRoles(["ORG_ADMIN", "SUP
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-attendanceRouter.delete("/sessions/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+attendanceRouter.delete("/sessions/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const session = db.getAttendanceSessionById(req.params.id, orgId);
@@ -8988,7 +9001,7 @@ attendanceRouter.delete("/sessions/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN
     if (req.user.role === "TEACHER" && session.openedBy !== req.user.id) {
       return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u0644\u0627 \u064A\u0645\u0643\u0646 \u062D\u0630\u0641 \u062C\u0644\u0633\u0629 \u0623\u0646\u0634\u0623\u0647\u0627 \u0645\u0639\u0644\u0645 \u0622\u062E\u0631" });
     }
-    db.deleteAttendanceSession(session.id, orgId);
+    await db.deleteAttendanceSession(session.id, orgId);
     db.logAction(
       orgId,
       req.user.id,
@@ -9002,7 +9015,7 @@ attendanceRouter.delete("/sessions/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-attendanceRouter.get("/", (req, res) => {
+attendanceRouter.get("/", async (req, res) => {
   try {
     const orgId = req.organization.id;
     const courseId = req.query.courseId;
@@ -9034,7 +9047,7 @@ attendanceRouter.get("/", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-attendanceRouter.post("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+attendanceRouter.post("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const { records, courseId, classroomId, date, sessionId } = req.body;
     if (!Array.isArray(records) || records.length === 0) {
@@ -9069,7 +9082,7 @@ attendanceRouter.post("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"])
       status: r.status || "PRESENT",
       notes: r.notes ? String(r.notes).trim() : void 0
     }));
-    const saved = db.recordAttendanceBatch(orgId, prepared, sessionId);
+    const saved = await db.recordAttendanceBatch(orgId, prepared, sessionId);
     db.logAction(
       orgId,
       req.user.id,
@@ -9084,7 +9097,7 @@ attendanceRouter.post("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"])
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-attendanceRouter.get("/student/:studentId", (req, res) => {
+attendanceRouter.get("/student/:studentId", async (req, res) => {
   try {
     const orgId = req.organization.id;
     const targetStudentId = req.params.studentId;
@@ -9104,7 +9117,7 @@ attendanceRouter.get("/student/:studentId", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-attendanceRouter.get("/summary", (req, res) => {
+attendanceRouter.get("/summary", async (req, res) => {
   try {
     const orgId = req.organization.id;
     const studentId = req.user.role === "STUDENT" ? req.user.id : req.query.studentId;
@@ -9140,7 +9153,7 @@ init_db();
 import express8 from "express";
 var gradebookRouter = express8.Router();
 gradebookRouter.use(requireAuth);
-gradebookRouter.get("/assessments", (req, res) => {
+gradebookRouter.get("/assessments", async (req, res) => {
   try {
     const orgId = req.organization.id;
     const courseId = req.query.courseId;
@@ -9168,7 +9181,7 @@ gradebookRouter.get("/assessments", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.post("/assessments", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+gradebookRouter.post("/assessments", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const { title, courseId, subjectId, classroomId, termId, category, maxScore, weightPercentage, dueDate, description, status } = req.body;
@@ -9185,7 +9198,7 @@ gradebookRouter.post("/assessments", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "
         return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u0625\u0646\u0634\u0627\u0621 \u062A\u0642\u064A\u064A\u0645 \u0644\u0647\u0630\u0627 \u0627\u0644\u0645\u0642\u0631\u0631" });
       }
     }
-    const assessment = db.createAssessment({
+    const assessment = await db.createAssessment({
       organizationId: orgId,
       title: String(title).trim(),
       courseId,
@@ -9214,7 +9227,7 @@ gradebookRouter.post("/assessments", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.get("/assessments/:id", (req, res) => {
+gradebookRouter.get("/assessments/:id", async (req, res) => {
   try {
     const orgId = req.organization.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -9226,7 +9239,7 @@ gradebookRouter.get("/assessments/:id", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.patch("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+gradebookRouter.patch("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -9239,7 +9252,7 @@ gradebookRouter.patch("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMI
         return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u063A\u064A\u0631 \u0645\u0635\u0631\u062D \u0628\u062A\u0639\u062F\u064A\u0644 \u0647\u0630\u0627 \u0627\u0644\u062A\u0642\u064A\u064A\u0645" });
       }
     }
-    const updated = db.updateAssessment(req.params.id, orgId, req.body);
+    const updated = await db.updateAssessment(req.params.id, orgId, req.body);
     db.logAction(
       orgId,
       req.user.id,
@@ -9254,7 +9267,7 @@ gradebookRouter.patch("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMI
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.delete("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+gradebookRouter.delete("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -9264,7 +9277,7 @@ gradebookRouter.delete("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADM
     if (req.user.role === "TEACHER" && assessment.createdBy !== req.user.id) {
       return res.status(403).json({ success: false, error: "FORBIDDEN", message: "\u0644\u0627 \u064A\u0645\u0643\u0646 \u062D\u0630\u0641 \u062A\u0642\u064A\u064A\u0645 \u0623\u0646\u0634\u0623\u0647 \u0645\u0633\u062A\u062E\u062F\u0645 \u0622\u062E\u0631" });
     }
-    db.deleteAssessment(req.params.id, orgId);
+    await db.deleteAssessment(req.params.id, orgId);
     db.logAction(
       orgId,
       req.user.id,
@@ -9278,7 +9291,7 @@ gradebookRouter.delete("/assessments/:id", requireRoles(["ORG_ADMIN", "SUPER_ADM
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.get("/assessments/:id/grades", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+gradebookRouter.get("/assessments/:id/grades", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -9314,7 +9327,7 @@ gradebookRouter.get("/assessments/:id/grades", requireRoles(["ORG_ADMIN", "SUPER
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.post("/assessments/:id/grades", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+gradebookRouter.post("/assessments/:id/grades", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const assessment = db.getAssessmentById(req.params.id, orgId);
@@ -9334,7 +9347,7 @@ gradebookRouter.post("/assessments/:id/grades", requireRoles(["ORG_ADMIN", "SUPE
       feedback: g.feedback ? String(g.feedback).trim() : void 0,
       gradedBy: req.user.id
     }));
-    const saved = db.recordAssessmentGradesBatch(orgId, preparedGrades);
+    const saved = await db.recordAssessmentGradesBatch(orgId, preparedGrades);
     db.logAction(
       orgId,
       req.user.id,
@@ -9349,7 +9362,7 @@ gradebookRouter.post("/assessments/:id/grades", requireRoles(["ORG_ADMIN", "SUPE
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.get("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+gradebookRouter.get("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const courseId = req.query.courseId;
@@ -9374,7 +9387,7 @@ gradebookRouter.get("/", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), 
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.get("/export-csv", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), (req, res) => {
+gradebookRouter.get("/export-csv", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TEACHER"]), async (req, res) => {
   try {
     const orgId = req.organization.id;
     const courseId = req.query.courseId;
@@ -9418,7 +9431,7 @@ gradebookRouter.get("/export-csv", requireRoles(["ORG_ADMIN", "SUPER_ADMIN", "TE
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.get("/student/:studentId/performance", (req, res) => {
+gradebookRouter.get("/student/:studentId/performance", async (req, res) => {
   try {
     const orgId = req.organization.id;
     const targetStudentId = req.params.studentId;
@@ -9438,7 +9451,7 @@ gradebookRouter.get("/student/:studentId/performance", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR" });
   }
 });
-gradebookRouter.get("/my-grades", (req, res) => {
+gradebookRouter.get("/my-grades", async (req, res) => {
   try {
     const orgId = req.organization.id;
     let targetStudentId = req.user.id;
@@ -12456,7 +12469,7 @@ storageRouter.get("/download-url/:id", async (req, res) => {
     });
   }
 });
-storageRouter.get("/metadata/:id", (req, res) => {
+storageRouter.get("/metadata/:id", async (req, res) => {
   try {
     const storageObjectId = req.params.id;
     const orgId = req.organization.id;
@@ -12485,7 +12498,7 @@ storageRouter.get("/metadata/:id", (req, res) => {
     res.status(500).json({ success: false, error: "SERVER_ERROR", message: err.message });
   }
 });
-storageRouter.get("/resource/:resourceType/:resourceId", (req, res) => {
+storageRouter.get("/resource/:resourceType/:resourceId", async (req, res) => {
   try {
     const { resourceType, resourceId } = req.params;
     const orgId = req.organization.id;
